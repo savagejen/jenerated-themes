@@ -16,9 +16,15 @@ the Palette Creator. Or start it directly:
 ```
 
 It opens the page in your browser (use `--no-browser` to just print the
-address, or `--port` to pick another port). Press `Ctrl+C` in the terminal to
-stop it. The page only works while `serve.py` is running, and only from this
+address, or `--port` to pick a port). Press `Ctrl+C` in the terminal to stop
+it. The page only works while `serve.py` is running, and only from this
 computer.
+
+It uses port 8765, or the next free one if another program has it. If the
+Palette Creator is already running there from this folder (left open in
+another terminal, say), it asks whether to open that one in your browser, or
+stop it and start a fresh one. Start a fresh one after updating the
+repository, so the page and the server are the new versions.
 
 ## Design a palette
 

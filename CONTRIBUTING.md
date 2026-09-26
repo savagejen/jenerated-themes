@@ -274,9 +274,10 @@ isn't: typographic dashes, ellipses, arrows, middle dots, curly quotes,
 emoji, and invisible characters like non-breaking and zero-width spaces.
 That goes for code, comments, docs, palettes and the Palette Creator.
 
-Write symbols as HTML entities in HTML (`&middot;`, `&#9888;`), as `\u`
-escapes in JavaScript and Python strings (`"\u2022"`), and as plain text
-everywhere else (`...`, `-`, `->`, straight quotes). The pre-commit hook
+Write plain text instead: `...`, `-`, `->`, straight quotes, a word instead
+of an icon (`1 error`, not a symbol before the `1`). Don't bring a symbol
+back in disguise, as an HTML entity (like `&middot;`) or an escape code
+(like `\u2022`): the page would still show the symbol. The pre-commit hook
 refuses a commit that adds anything else, naming each file and line, and a
 test in `tests/repo/` checks the whole repository. Both use Perl, which
 comes with Linux and macOS.

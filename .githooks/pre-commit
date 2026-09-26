@@ -80,10 +80,9 @@ fi
 if [ -n "$found" ]; then
   [ "$status" -eq 0 ] || printf '\n' >&2
   printf 'These lines have forbidden symbols or emojis (likely Claude clutter):\n\n%s\n\n' "$found" >&2
-  printf 'Letters in any language are fine, but keep symbols plain ASCII: "..." for\n' >&2
-  printf 'an ellipsis, "-" for a dash, "->" for an arrow, HTML entities in HTML\n' >&2
-  printf '(&middot;), and \\u escapes in JavaScript and Python strings. See\n' >&2
-  printf '"Symbols stay ASCII" in CONTRIBUTING.md.\n' >&2
+  printf 'Letters in any language are fine, but write symbols as plain text: "..."\n' >&2
+  printf 'for an ellipsis, "-" for a dash, "->" for an arrow, a word instead of an\n' >&2
+  printf 'icon. See "Symbols stay ASCII" in CONTRIBUTING.md.\n' >&2
   status=1
 fi
 

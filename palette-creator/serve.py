@@ -3,8 +3,14 @@
 
 Usage:
     ./palette-creator/serve.py              # open the page in your browser
-    ./palette-creator/serve.py --port 9000  # use another port
+    ./palette-creator/serve.py --port 9000  # use exactly this port
     ./palette-creator/serve.py --no-browser # just print the address
+
+Without --port it uses port 8765, or the next free one if another program
+has it. If this folder's Palette Creator is already running there (left
+open in another terminal, say), it asks whether to open that one or stop it
+and start a fresh one; Back exits with status 3, which setup.sh takes as a
+way back to its menu.
 
 Serves palette-creator.html on 127.0.0.1 (this computer only). The page edits
 work-in-progress-palette.toml, which is created from Blue Purple the first
@@ -15,7 +21,9 @@ match the palette. Without a dialog, the page asks for a file name. Palettes are
 saving and loading keep the file's comments and layout.
 
 Set PALETTE_CREATOR_DIALOG=none to always name the file in the page instead
-(the tests do this).
+(the tests do this), and PALETTE_CREATOR_PORT to start from another port than
+8765 (the tests do this too, so they never meet a Palette Creator you have
+running).
 """
 
 import argparse
@@ -26,8 +34,12 @@ import re
 import shutil
 import subprocess
 import sys
+import signal
+import socket
 import tempfile
 import textwrap
+import time
+import urllib.request
 import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -56,6 +68,14 @@ COLOR_NOTE = ["Every color is a #rrggbb hex value, or the name of another color 
 # Header comment lines are wrapped to fit 78 columns with their "# ".
 HEADER_WIDTH = 76
 MAX_BODY = 1_000_000
+# The port to start from without --port, and how many after it to try when
+# another program has it.
+DEFAULT_PORT = int(os.environ.get("PALETTE_CREATOR_PORT") or 8765)
+PORT_TRIES = 20
+# The exit status for Back, at the question about a Palette Creator that's
+# already running.
+EXIT_BACK = 3
+STARTED = time.time()
 
 
 class PaletteError(Exception):
@@ -429,6 +449,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send(HTTPStatus.OK, PAGE.read_bytes(), "text/html")
         elif url.path == "/api/palette":
             self.get_palette()
+        elif url.path == "/api/info":
+            # What a later serve.py asks, to tell this Palette Creator apart
+            # from another program on the port.
+            self.send(HTTPStatus.OK, {"app": "palette-creator", "root": str(jenerate.ROOT),
+                                      "pid": os.getpid(), "started": STARTED})
         else:
             self.send(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
@@ -491,9 +516,79 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+def running_here(port):
+    """The /api/info of this folder's Palette Creator if it's running on
+    `port`, or None for anything else there (or nothing)."""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/info", timeout=2) as response:
+            info = json.load(response)
+        if (info.get("app") == "palette-creator" and info.get("pid") != os.getpid()
+                and Path(info["root"]).resolve() == jenerate.ROOT.resolve()):
+            return info
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        pass
+    return None
+
+
+def ask_about_running(info, url):
+    """Ask what to do about this folder's Palette Creator, already running at
+    `url`: "open", "restart" or "back" (also for no answer)."""
+    started = time.localtime(info.get("started") or time.time())
+    when = time.strftime("%H:%M" if started[:3] == time.localtime()[:3] else "%b %d at %H:%M",
+                         started)
+    print(f"\nThe Palette Creator is already running, at {url} (started {when}).")
+    print("  1) Open it in your browser")
+    print("  2) Stop it and start a fresh one (do this after updating the repository)")
+    print("  0) Back")
+    while True:
+        try:
+            reply = input("Enter a number (0-2): ").strip()
+        except EOFError:
+            return "back"
+        if reply in ("0", "1", "2"):
+            return {"0": "back", "1": "open", "2": "restart"}[reply]
+        print("Please enter a number between 0 and 2.")
+
+
+def stop_running(info, port):
+    """Stop the Palette Creator that `info` describes, and wait for its port."""
+    pid = info["pid"]
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    except OSError as error:
+        sys.exit(f"Couldn't stop the Palette Creator (process {pid}): {error.strerror}. "
+                 f"Stop it with Ctrl+C in its terminal.")
+    for _ in range(100):
+        with socket.socket() as probe:
+            if probe.connect_ex(("127.0.0.1", port)) != 0:
+                print("Stopped it.")
+                return
+        time.sleep(0.05)
+    sys.exit(f"The Palette Creator (process {pid}) didn't stop. Stop it with Ctrl+C "
+             f"in its terminal, then try again.")
+
+
+def start_server(port, tries):
+    """An HTTPServer on the first free port of `tries` from `port`."""
+    for candidate in range(port, port + tries):
+        try:
+            return HTTPServer(("127.0.0.1", candidate), Handler)
+        except OSError as error:
+            reason = error.strerror
+    if tries == 1:
+        sys.exit(f"Can't use port {port} ({reason}); choose another with --port, "
+                 f"or leave --port out to use a free one")
+    sys.exit(f"Can't find a free port from {port} to {port + tries - 1}; "
+             f"choose one with --port")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--port", type=int,
+                        help=f"use exactly this port (without it: {DEFAULT_PORT}, "
+                             f"or the next free one)")
     parser.add_argument("--no-browser", action="store_true",
                         help="don't open the page, just print its address")
     args = parser.parse_args()
@@ -501,11 +596,23 @@ def main():
     if not WIP.exists():
         WIP.write_text(STARTER.read_text())
         print(f"Created {WIP.relative_to(jenerate.ROOT)} from Blue Purple")
-    try:
-        server = HTTPServer(("127.0.0.1", args.port), Handler)
-    except OSError as error:
-        sys.exit(f"Can't use port {args.port} ({error.strerror}); "
-                 f"try another with --port")
+
+    if args.port is None:
+        running = running_here(DEFAULT_PORT)
+        if running:
+            url = f"http://127.0.0.1:{DEFAULT_PORT}/"
+            choice = ask_about_running(running, url)
+            if choice == "back":
+                sys.exit(EXIT_BACK)
+            if choice == "open":
+                print(f"It's at {url}, and keeps running in the terminal it was started in.")
+                if not args.no_browser:
+                    webbrowser.open(url)
+                return
+            stop_running(running, DEFAULT_PORT)
+        server = start_server(DEFAULT_PORT, PORT_TRIES)
+    else:
+        server = start_server(args.port, 1)
 
     url = f"http://127.0.0.1:{server.server_address[1]}/"
     print(f"Palette Creator is running at {url}")

@@ -13,8 +13,7 @@ source "$(dirname "$0")/../lib.sh"
 # WHEN looking for characters outside ASCII that aren't letters or accent
 #      marks, the same rule as the pre-commit hook
 # THEN there are none: letters in any language are fine, but symbols are
-#      written as HTML entities in HTML, as \u escapes in JavaScript and
-#      Python, or as plain-ASCII text
+#      written as plain text ("...", "-", "->")
 test_symbols_are_plain_ascii() {
   command -v perl >/dev/null 2>&1 || return 0
   OUTPUT="$(cd "$SANDBOX/repo" && find . -type f ! -path './.git/*' -print0 |

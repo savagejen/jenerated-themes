@@ -123,18 +123,6 @@ test_start_keeps_an_existing_work_in_progress_palette() {
   assert_json 'd["palette"]["name"]' "Sunset"
 }
 
-# GIVEN serve.py is running on a port
-# WHEN a second serve.py tries the same port
-# THEN it exits with status 1, suggesting another port
-test_port_in_use_is_reported() {
-  start_server
-  OUTPUT="$("$PYTHON" "$SANDBOX/repo/palette-creator/serve.py" --no-browser --port "$PORT" 2>&1)"
-  STATUS=$?
-  assert_status 1
-  assert_contains "Can't use port $PORT"
-  assert_contains "try another with --port"
-}
-
 # GIVEN serve.py is running
 # WHEN the browser asks for the page
 # THEN it gets the Palette Creator page
@@ -154,6 +142,148 @@ test_unknown_path_is_not_found() {
   assert_code 404
   post /api/nothing '{"palette": {}}'
   assert_code 404
+}
+
+# --- Tests: the port -----------------------------------------------------------
+
+# run_serve answers [serve.py options...] -> runs another serve.py from the
+# sandbox, starting from port $PORT (as it would from 8765), feeding it the
+# answers; sets OUTPUT and STATUS. It gives up after 3 seconds, since one that
+# starts a server keeps running (those tests use start_second instead).
+run_serve() {
+  local answers="$1"
+  shift
+  OUTPUT="$(printf '%b' "$answers" | PALETTE_CREATOR_PORT="$PORT" PALETTE_CREATOR_DIALOG=none \
+    timeout 3 "$PYTHON" "$SANDBOX/repo/palette-creator/serve.py" --no-browser "$@" 2>&1)"
+  STATUS=$?
+}
+
+# start_second answers [folder] -> starts another serve.py in the background,
+# from the sandbox (or another copy of the repository), starting from port
+# $PORT and feeding it the answers. Its output goes to $SANDBOX/second.log;
+# sets SECOND_PID, and stops it when the test ends.
+start_second() {
+  printf '%b' "$1" | PALETTE_CREATOR_PORT="$PORT" PALETTE_CREATOR_DIALOG=none \
+    "$PYTHON" "${2:-$SANDBOX/repo}/palette-creator/serve.py" --no-browser \
+    >"$SANDBOX/second.log" 2>&1 &
+  SECOND_PID=$!
+  trap 'kill "$SERVER_PID" "$SECOND_PID" 2>/dev/null; rm -rf "$SANDBOX"' EXIT
+}
+
+# second_url -> waits until the second serve.py says where it's running, and
+# prints that address.
+second_url() {
+  for _ in $(seq 100); do
+    sed -n 's/^Palette Creator is running at //p' "$SANDBOX/second.log" | grep . && return
+    "$PYTHON" -c 'import time; time.sleep(0.05)'
+  done
+  fail "the second serve.py didn't start: $(cat "$SANDBOX/second.log")"
+}
+
+# GIVEN a running Palette Creator
+# WHEN asking for /api/info
+# THEN it says it's the Palette Creator, from which folder, and its process
+test_info_says_which_palette_creator_it_is() {
+  start_server
+  get /api/info
+  assert_code 200
+  assert_json 'd["app"]' "palette-creator"
+  assert_json 'd["root"]' "$SANDBOX/repo"
+  assert_json 'd["pid"]' "$SERVER_PID"
+}
+
+# GIVEN another program on the port serve.py starts from
+# WHEN starting serve.py
+# THEN it quietly uses another port, without asking anything
+test_another_program_on_the_port_means_another_port() {
+  PORT="$("$PYTHON" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
+  "$PYTHON" -c '
+import socket, sys, time
+s = socket.socket(); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(); time.sleep(30)
+' "$PORT" &
+  SERVER_PID=$!
+  "$PYTHON" -c 'import time; time.sleep(0.3)'
+  start_second ""
+  url="$(second_url)"
+  [ -n "$url" ] && [ "$url" != "http://127.0.0.1:$PORT/" ] ||
+    fail "expected another port than $PORT, got '$url'"
+  assert_file_not_contains "$SANDBOX/second.log" "already running"
+  curl -s -o /dev/null "$url" || fail "expected the Palette Creator at $url"
+}
+
+# GIVEN this folder's Palette Creator already running on the port
+# WHEN starting serve.py again, and choosing to open the running one
+# THEN it asks, says where the running one is, and exits, leaving it running
+test_running_palette_creator_can_be_opened() {
+  start_server
+  run_serve "1\n"
+  assert_status 0
+  assert_contains "The Palette Creator is already running, at http://127.0.0.1:$PORT/ (started "
+  assert_contains "  1) Open it in your browser
+  2) Stop it and start a fresh one (do this after updating the repository)
+  0) Back"
+  assert_contains "It's at http://127.0.0.1:$PORT/, and keeps running"
+  get /api/info
+  assert_json 'd["pid"]' "$SERVER_PID"
+}
+
+# GIVEN this folder's Palette Creator already running on the port
+# WHEN starting serve.py again, and choosing to stop it and start afresh
+# THEN the old one stops, and the new one runs on the same port
+test_running_palette_creator_can_be_restarted() {
+  start_server
+  start_second "2\n"
+  url="$(second_url)"
+  [ "$url" = "http://127.0.0.1:$PORT/" ] || fail "expected the same port, got '$url'"
+  assert_file_contains "$SANDBOX/second.log" "Stopped it."
+  kill -0 "$SERVER_PID" 2>/dev/null && fail "expected the old Palette Creator to have stopped"
+  get /api/info
+  assert_json 'd["pid"]' "$SECOND_PID"
+}
+
+# GIVEN this folder's Palette Creator already running on the port
+# WHEN starting serve.py again, and choosing Back, or giving no answer
+# THEN it exits with status 3 (setup.sh's way back), leaving it running
+test_running_palette_creator_back_exits_3() {
+  start_server
+  run_serve "0\n"
+  assert_status 3
+  run_serve ""
+  assert_status 3
+  get /api/info
+  assert_json 'd["pid"]' "$SERVER_PID"
+}
+
+# GIVEN the Palette Creator of another copy of the repository on the port
+# WHEN starting serve.py from this one
+# THEN it isn't asked about: this one quietly uses another port
+test_another_folders_palette_creator_means_another_port() {
+  mkdir -p "$SANDBOX/other"
+  cp -r "$SANDBOX/repo" "$SANDBOX/other/repo"
+  PORT="$("$PYTHON" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
+  PALETTE_CREATOR_DIALOG=none "$PYTHON" "$SANDBOX/other/repo/palette-creator/serve.py" \
+    --no-browser --port "$PORT" >/dev/null 2>&1 &
+  SERVER_PID=$!
+  for _ in $(seq 100); do
+    curl -s -o /dev/null "http://127.0.0.1:$PORT/" && break
+    "$PYTHON" -c 'import time; time.sleep(0.05)'
+  done
+  start_second ""
+  url="$(second_url)"
+  [ "$url" != "http://127.0.0.1:$PORT/" ] || fail "expected another port than $PORT"
+  assert_file_not_contains "$SANDBOX/second.log" "already running"
+}
+
+# GIVEN a running Palette Creator
+# WHEN starting serve.py with --port set to its port
+# THEN it stops, saying the port can't be used, without asking anything
+test_a_taken_port_given_with_port_is_explained() {
+  start_server
+  run_serve "" --port "$PORT"
+  assert_status 1
+  assert_contains "Can't use port $PORT"
+  assert_contains "leave --port out to use a free one"
+  assert_not_contains "already running"
 }
 
 # --- Tests: loading ----------------------------------------------------------

@@ -580,6 +580,31 @@ test_palette_creator_choice_starts_the_server() {
   assert_file_equals "$SANDBOX/serve-ran" "$SANDBOX/repo|"
 }
 
+# GIVEN serve.py exiting with status 3, as it does for Back when asked about
+#       a Palette Creator that's already running
+# WHEN choosing to design a palette, then installing Slack's Blue Purple
+# THEN the first menu is shown again, and installing works from there
+test_palette_creator_back_returns_to_the_first_menu() {
+  stub_palette_creator
+  printf 'sys.exit(3)\n' >>"$SANDBOX/repo/palette-creator/serve.py"
+  run_setup "2\n1\nslack\n1\n1\n"
+  assert_status 0
+  [ "$(printf '%s\n' "$OUTPUT" | grep -c 'What would you like to do?')" = "2" ] ||
+    fail "expected the first menu twice"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN serve.py stopping with an error
+# WHEN choosing to design a palette
+# THEN setup.sh exits with the same status
+test_palette_creator_error_status_is_kept() {
+  stub_palette_creator
+  printf 'sys.exit(1)\n' >>"$SANDBOX/repo/palette-creator/serve.py"
+  run_setup "2\n"
+  assert_status 1
+  assert_not_contains "Which app"
+}
+
 # GIVEN no Python 3.11 or later
 # WHEN choosing to design a palette
 # THEN it exits with status 1, saying the Palette Creator needs Python, and

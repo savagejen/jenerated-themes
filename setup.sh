@@ -218,8 +218,12 @@ esac
 
 # --- Install a theme, or design a palette -----------------------------------
 
-# Explains the Palette Creator, then runs its server until Ctrl+C.
+# Explains the Palette Creator, then runs its server until Ctrl+C, and exits
+# when it stops. If this folder's Palette Creator is already running, serve.py
+# asks whether to open it or start a fresh one; Back there (serve.py's exit
+# status 3) returns here, so the first menu can be shown again.
 start_palette_creator() {
+  local status=0
   [ -n "$PYTHON" ] ||
     die "the Palette Creator needs Python 3.11 or later (python3 --version to check)"
 
@@ -240,7 +244,9 @@ start_palette_creator() {
   say "5. When you're done, press Ctrl+C here to stop it, then run ./setup.sh"
   say "   again and choose \"Install a theme\": your palette will be listed."
   say ""
-  exec "$PYTHON" palette-creator/serve.py
+  "$PYTHON" palette-creator/serve.py || status=$?
+  [ "$status" -eq 3 ] && return 0
+  exit "$status"
 }
 
 # --- Menus with a way back ---------------------------------------------------
@@ -602,7 +608,10 @@ while :; do
   choose "What would you like to do?" \
     "Install a theme for an app" \
     "Design a new palette (opens the Palette Creator)"
-  [ "$CHOICE" -eq 1 ] && start_palette_creator
+  if [ "$CHOICE" -eq 1 ]; then
+    start_palette_creator
+    continue
+  fi
 
   APP_MENU=""
   chosen=""

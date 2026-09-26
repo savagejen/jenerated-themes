@@ -178,6 +178,8 @@
   .minimap i { display: block; height: 2px; background: var(--c-text_faint, var(--missing)); border-radius: 1px; }
   .indent { box-shadow: inset 1px 0 var(--c-guide, var(--missing)); }
   .ws { color: var(--c-whitespace, var(--missing)); }
+  /* A solid box before each terminal color, so colors close to the background still show. */
+  .swatch { display: inline-block; width: 0.6em; height: 1em; background: currentColor; vertical-align: -0.15em; }
   .cursor { border-left: 2px solid var(--c-accent, var(--missing)); margin-left: -1px; }
   .sel { background: var(--c-selection, var(--missing)); }
   .match { background: color-mix(in srgb, var(--c-magenta, var(--missing)) 40%, transparent); }
@@ -301,7 +303,7 @@
 
           <div class="sidebar" data-c="bg_sidebar text_subtle">
             <h3 data-c="text">EXPLORER</h3>
-            <div class="file" data-c="text_subtle">&#9662; src</div>
+            <div class="file" data-c="text_subtle">src</div>
             <div class="file nested" data-c="guide text_subtle">theme.py</div>
             <div class="file nested focus" data-c="accent text_strong">preview.py</div>
             <div class="file nested hover" data-c="bg_hover">colors.py</div>
@@ -321,7 +323,7 @@
 
             <div class="editor" data-c="bg text">
               <div class="gutter" data-c="text_faint">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br><span class="current" data-c="text_subtle">10</span><br>11<br>12</div>
-              <div class="code"><div class="line"><span class="t-comment" data-c="text_muted"># A quick look at every syntax color</span></div><div class="line"><span class="t-keyword" data-c="accent_soft">import</span> re</div><div class="line"> </div><div class="line"><span class="t-storage" data-c="accent">class</span> <span class="t-class" data-c="cyan">Theme</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-class" data-c="cyan">Base</span><span class="t-punct" data-c="text_subtle">):</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="t-string" data-c="green">"""Colors for the preview."""</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="t-storage" data-c="accent">def</span> <span class="t-function" data-c="accent_light">render</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-param" data-c="orange">self</span><span class="t-punct" data-c="text_subtle">,</span> <span class="t-param" data-c="orange">name</span><span class="t-punct" data-c="text_subtle">,</span> <span class="t-param" data-c="orange">size</span><span class="t-punct" data-c="text_subtle">=</span><span class="t-number" data-c="orange">12</span><span class="t-punct" data-c="text_subtle">):</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span>self<span class="t-punct" data-c="text_subtle">.</span><span class="t-property" data-c="accent_pale">bold</span> <span class="t-punct" data-c="text_subtle">=</span> <span class="t-constant" data-c="magenta">True</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span>pattern <span class="t-punct" data-c="text_subtle">=</span> re<span class="t-punct" data-c="text_subtle">.</span><span class="t-function" data-c="accent_light">compile</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-regex" data-c="yellow">r"#[0-9a-f]{6}"</span><span class="t-punct" data-c="text_subtle">)</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span><span class="squiggle-warning" data-c="yellow">unused</span> <span class="t-punct" data-c="text_subtle">=</span> <span class="squiggle-error" data-c="red">undefined_name</span></div><div class="line highlight" data-c="bg_line_highlight"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span><span class="t-keyword" data-c="accent_soft">return</span> <span class="t-string" data-c="green">f"{</span><span class="sel" data-c="selection">name</span><span class="t-string" data-c="green">}: {size}"</span><span class="cursor" data-c="accent"></span></div><div class="line"><span class="ws" data-c="whitespace">&middot;&middot;&middot;&middot;</span><span class="t-comment" data-c="text_muted"># search: </span><span class="match" data-c="magenta">render</span></div><div class="line"> </div></div>
+              <div class="code"><div class="line"><span class="t-comment" data-c="text_muted"># A quick look at every syntax color</span></div><div class="line"><span class="t-keyword" data-c="accent_soft">import</span> re</div><div class="line"> </div><div class="line"><span class="t-storage" data-c="accent">class</span> <span class="t-class" data-c="cyan">Theme</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-class" data-c="cyan">Base</span><span class="t-punct" data-c="text_subtle">):</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="t-string" data-c="green">"""Colors for the preview."""</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="t-storage" data-c="accent">def</span> <span class="t-function" data-c="accent_light">render</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-param" data-c="orange">self</span><span class="t-punct" data-c="text_subtle">,</span> <span class="t-param" data-c="orange">name</span><span class="t-punct" data-c="text_subtle">,</span> <span class="t-param" data-c="orange">size</span><span class="t-punct" data-c="text_subtle">=</span><span class="t-number" data-c="orange">12</span><span class="t-punct" data-c="text_subtle">):</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span>self<span class="t-punct" data-c="text_subtle">.</span><span class="t-property" data-c="accent_pale">bold</span> <span class="t-punct" data-c="text_subtle">=</span> <span class="t-constant" data-c="magenta">True</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span>pattern <span class="t-punct" data-c="text_subtle">=</span> re<span class="t-punct" data-c="text_subtle">.</span><span class="t-function" data-c="accent_light">compile</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-regex" data-c="yellow">r"#[0-9a-f]{6}"</span><span class="t-punct" data-c="text_subtle">)</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span><span class="squiggle-warning" data-c="yellow">unused</span> <span class="t-punct" data-c="text_subtle">=</span> <span class="squiggle-error" data-c="red">undefined_name</span></div><div class="line highlight" data-c="bg_line_highlight"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span><span class="t-keyword" data-c="accent_soft">return</span> <span class="t-string" data-c="green">f"{</span><span class="sel" data-c="selection">name</span><span class="t-string" data-c="green">}: {size}"</span><span class="cursor" data-c="accent"></span></div><div class="line"><span class="ws" data-c="whitespace">....</span><span class="t-comment" data-c="text_muted"># search: </span><span class="match" data-c="magenta">render</span></div><div class="line"> </div></div>
               <div class="minimap" data-c="bg_minimap border"><i style="width:70%"></i><i style="width:40%"></i><i style="width:0"></i><i style="width:60%"></i><i style="width:80%"></i><i style="width:90%"></i><i style="width:55%"></i><i style="width:95%"></i><i style="width:60%"></i><i style="width:75%"></i><i style="width:50%"></i></div>
               <div class="widget" data-c="bg_widget border">
                 <div class="picked" data-c="accent"><b data-c="accent_soft">ren</b>der</div>
@@ -340,10 +342,10 @@
         </div>
 
         <div class="statusbar" data-c="bg_chrome text_subtle">
-          <span class="remote" data-c="accent text_bright">&#8961; local</span>
-          <span>&#9095; main</span>
-          <span class="err" data-c="red">&#8855; 1</span>
-          <span class="warn" data-c="yellow">&#9888; 1</span>
+          <span class="remote" data-c="accent text_bright">local</span>
+          <span>main</span>
+          <span class="err" data-c="red">1 error</span>
+          <span class="warn" data-c="yellow">1 warning</span>
           <span class="spacer"></span>
           <span>Ln 10, Col 32</span>
           <span>Python</span>
@@ -365,15 +367,15 @@
             <h4 data-c="text_muted">INPUTS AND LINKS</h4>
             <div class="pinput" data-c="bg_hover border"><span class="placeholder" data-c="text_muted">Search files...</span></div>
             <div class="pinput focused" data-c="bg_hover accent text">focused input</div>
-            <div><span class="link" data-c="accent_soft">A link</span> &middot; <span class="link-hover" data-c="accent_pale">hovered link</span> &middot; <span class="chip" data-c="accent text_bright">badge</span></div>
+            <div><span class="link" data-c="accent_soft">A link</span> | <span class="link-hover" data-c="accent_pale">hovered link</span> | <span class="chip" data-c="accent text_bright">badge</span></div>
           </section>
           <section>
             <h4 data-c="text_muted">NOTIFICATIONS</h4>
             <div class="note-box" data-c="bg_widget border">
-              <span class="e" data-c="red">&#8855; Error: something failed</span>
-              <span class="w" data-c="yellow">&#9888; Warning: check this</span>
-              <span class="i" data-c="accent">&#9432; Info: good to know</span>
-              <span class="s" data-c="green">&#10003; Saved</span>
+              <span class="e" data-c="red">Error: something failed</span>
+              <span class="w" data-c="yellow">Warning: check this</span>
+              <span class="i" data-c="accent">Info: good to know</span>
+              <span class="s" data-c="green">Saved</span>
             </div>
           </section>
           <section>
@@ -513,7 +515,7 @@ function applyColors() {
       const ref = document.createElement("span");
       ref.className = "ref";
       ref.textContent = `-> ${result.chain.slice(1).join(" -> ")} (${result.hex})`;
-      note.append(ref, color.note ? ` \u00b7 ${color.note}` : "");
+      note.append(ref, color.note ? ` - ${color.note}` : "");
     } else {
       note.textContent = color.note;
     }
@@ -530,8 +532,9 @@ function buildTerminal() {
       const span = document.createElement("span");
       span.dataset.c = key;
       span.style.color = `var(--c-${key}, var(--missing))`;
-      // A solid block too, so colors close to the background still show.
-      span.textContent = `\u2588 ${prefix === "term_" ? name : `bright_${name}`}`;
+      const swatch = document.createElement("span");
+      swatch.className = "swatch";
+      span.append(swatch, ` ${prefix === "term_" ? name : `bright_${name}`}`);
       // The space goes between the spans, so the line can wrap there.
       line.append(span, "  ");
     }
@@ -578,7 +581,7 @@ function setStatus(message, kind = "") {
 
 function markDirty(value) {
   dirty = value;
-  document.title = (dirty ? "\u2022 " : "") + "Palette Creator";
+  document.title = (dirty ? "* " : "") + "Palette Creator";
 }
 
 // After each change, saves the draft (work-in-progress-palette.toml) once
