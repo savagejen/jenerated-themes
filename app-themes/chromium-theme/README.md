@@ -47,5 +47,5 @@ The browser keeps loading the theme from that folder, so leave the repository
 where it is. It also saves a cache of the theme there, `Cached Theme.pak` (git
 ignores it). After changing a palette, generate it again, delete that file
 (`./setup.sh` does this for you), and load the folder again. To go back to the
-browser's own look, open **Settings → Appearance** and click **Reset to
+browser's own look, open **Settings -> Appearance** and click **Reset to
 default** by the theme.

@@ -168,11 +168,13 @@ jenerate.write_vscode_package(["blue-purple"])
 }
 
 # --- Update the palette screenshots (for maintainers) ------------------------
-# ./setup.sh --update-screenshots retakes palettes/Screenshots/<slug>.png for
-# every palette, or --update-screenshots=candy,sunset for just those (from
-# the Palette Creator's preview, with Playwright), and updates
-# palettes/README.md: new palettes get a section, and existing ones get their
-# key colors refreshed. See palette-creator/screenshots.py. Needs
+# ./setup.sh --update-screenshots files each palette in palettes/Dark or
+# palettes/Light (moving any filed in the wrong place), retakes its
+# screenshot in palettes/Screenshots/Dark or Light for every palette, or
+# --update-screenshots=candy,sunset for just those (from the Palette
+# Creator's preview, with Playwright), and updates palettes/README.md: new
+# palettes get a section in the dark or light group, and existing ones get
+# their key colors refreshed. See palette-creator/screenshots.py. Needs
 # Python 3.11 or later, Node.js and npm. Left out of the usage and README,
 # which are for people installing themes; documented in CONTRIBUTING.md.
 
@@ -220,8 +222,9 @@ start_palette_creator() {
   say "   color's name. The preview updates as you go; hover a color to see"
   say "   where it's used, or click the preview to find a color."
   say "4. Your draft saves itself as you go. \"Save as palette...\" opens a save"
-  say "   dialog in palettes/; keep the suggested name, <slug>-palette.toml, so"
-  say "   jenerate.py and ./setup.sh can find it."
+  say "   dialog in palettes/Dark or palettes/Light, to match the palette; keep"
+  say "   the suggested name, <slug>-palette.toml, so jenerate.py and ./setup.sh"
+  say "   can find it."
   say "5. When you're done, press Ctrl+C here to stop it, then run ./setup.sh"
   say "   again and choose \"Install a theme\": your palette will be listed."
   say ""
@@ -478,28 +481,88 @@ $(printf 'Covers: %s\n' "${APP_COVERS[$i]}" | fold -s -w 70 | sed 's/ *$//; s/^/
 
 NAMES=()
 SLUGS=()
+SCHEMES=()
 load_palettes() {
   NAMES=()
   SLUGS=()
+  SCHEMES=()
+  local file scheme
   if [ -n "$PYTHON" ]; then
     # jenerate.py --list prints "* slug   Name" per palette (the * marks
-    # generated ones), and stops with a message if a palette is broken.
+    # generated ones) under "Dark palettes:" and "Light palettes:", and stops
+    # with a message if a palette is broken.
     LIST="$("$PYTHON" jenerate.py --list)" ||
       die "fix the palette named above, then run ./setup.sh again"
     TAB="$(printf '\t')"
-    while IFS="$TAB" read -r slug name; do
+    while IFS="$TAB" read -r scheme slug name; do
+      SCHEMES+=("$scheme")
       SLUGS+=("$slug")
       NAMES+=("$name")
-    done < <(printf '%s\n' "$LIST" |
-      sed -n "s/^[* ] \([a-z0-9-][a-z0-9-]*\)  *\(.*\)$/\1$TAB\2/p")
+    done < <(printf '%s\n' "$LIST" | awk -v tab="$TAB" '
+      /^Dark palettes:$/ { scheme = "dark"; next }
+      /^Light palettes:$/ { scheme = "light"; next }
+      /^[* ] [a-z0-9-]+ / {
+        slug = substr($0, 3)
+        sub(/ .*/, "", slug)
+        name = substr($0, 3 + length(slug))
+        sub(/^ +/, "", name)
+        print scheme tab slug tab name
+      }')
   else
-    for file in palettes/*-palette.toml; do
+    # Without Python, a palette's folder says whether it's dark or light (a
+    # palette not filed yet counts as dark unless it says `scheme = "light"`).
+    # In order of file name, as jenerate.py --list has them.
+    while IFS= read -r file; do
       [ -f "$file" ] || continue
+      case "$file" in
+        palettes/Dark/*) scheme=dark ;;
+        palettes/Light/*) scheme=light ;;
+        *) scheme="$(toml_value "$file" scheme)" ;;
+      esac
+      [ "$scheme" = light ] || scheme=dark
+      SCHEMES+=("$scheme")
       NAMES+=("$(toml_value "$file" name)")
       SLUGS+=("$(toml_value "$file" slug)")
-    done
+    done < <(printf '%s\n' palettes/Dark/*-palette.toml palettes/Light/*-palette.toml \
+      palettes/*-palette.toml | awk -F/ '{ print $NF "/" $0 }' | sort | cut -d/ -f2-)
   fi
-  [ "${#SLUGS[@]}" -gt 0 ] || die "no palettes found in palettes/"
+  [ "${#SLUGS[@]}" -gt 0 ] || die "no palettes found in palettes/Dark or palettes/Light"
+}
+
+# pick_palette -> asks whether you want a dark or light theme (when there are
+# palettes of both), then which palette of those. Sets CHOICE to the chosen
+# palette's index in SLUGS; returns 1 if you went back past the first
+# question. Back from the palette list goes back to dark or light.
+pick_palette() {
+  local scheme i has_dark="" has_light=""
+  local indexes labels
+  for scheme in "${SCHEMES[@]}"; do
+    [ "$scheme" = dark ] && has_dark=1
+    [ "$scheme" = light ] && has_light=1
+  done
+  while :; do
+    scheme=""
+    if [ -n "$has_dark" ] && [ -n "$has_light" ]; then
+      choose_or_back "Do you want a dark or light theme?" "" "Dark" "Light"
+      [ "$CHOICE" = back ] && return 1
+      scheme=dark
+      [ "$CHOICE" -eq 1 ] && scheme=light
+    fi
+    indexes=()
+    labels=()
+    for i in "${!SLUGS[@]}"; do
+      if [ -z "$scheme" ] || [ "${SCHEMES[$i]}" = "$scheme" ]; then
+        indexes+=("$i")
+        labels+=("${NAMES[$i]}")
+      fi
+    done
+    choose_or_back "Which theme do you want?" "" "${labels[@]}"
+    if [ "$CHOICE" != back ]; then
+      CHOICE="${indexes[$CHOICE]}"
+      return 0
+    fi
+    [ -n "$scheme" ] || return 1
+  done
 }
 
 # --- Choose what to do -------------------------------------------------------
@@ -519,8 +582,7 @@ while :; do
   chosen=""
   while pick_app; do
     load_palettes
-    choose_or_back "Which theme do you want?" "" "${NAMES[@]}"
-    if [ "$CHOICE" != back ]; then
+    if pick_palette; then
       chosen=1
       break
     fi
@@ -875,7 +937,7 @@ install_firefox() {
 
   step "Done! To try the theme (until Firefox restarts):"
   say "1. In Firefox, on about:debugging (\"This Firefox\"), click"
-  say "   \"Load Temporary Add-on…\"."
+  say "   \"Load Temporary Add-on...\"."
   say "2. Choose $folder/manifest.json"
   if [ -n "$xpi" ]; then
     say ""

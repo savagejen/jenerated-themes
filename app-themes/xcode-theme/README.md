@@ -35,7 +35,7 @@ ln -s "$PWD/jenerated-themes/app-themes/xcode-theme/jenerated-blue-purple.xccolo
 ```
 
 Then quit and reopen Xcode (it finds new themes when it starts), open
-**Xcode → Settings** (**Preferences** in older versions) **→ Themes**, and
+**Xcode -> Settings** (**Preferences** in older versions) **-> Themes**, and
 choose **Jenerated Blue Purple**.
 
 After changing the palette, run `./jenerate.py` and restart Xcode.

@@ -34,10 +34,10 @@ mkdir -p ~/.config/rstudio/themes
 ln -s "$PWD/jenerated-themes/app-themes/rstudio-theme/jenerated-blue-purple.rstheme" ~/.config/rstudio/themes/
 ```
 
-Or, in RStudio, open **Tools → Global Options → Appearance**, choose
-**Add…**, and pick the palette's `.rstheme` file (this copies it instead).
+Or, in RStudio, open **Tools -> Global Options -> Appearance**, choose
+**Add...**, and pick the palette's `.rstheme` file (this copies it instead).
 
-Then, in **Tools → Global Options → Appearance**, choose **Jenerated Blue
+Then, in **Tools -> Global Options -> Appearance**, choose **Jenerated Blue
 Purple** as the **Editor theme**, and **Apply**. Restart RStudio first if
 it doesn't appear in the list.
 

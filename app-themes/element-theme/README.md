@@ -50,7 +50,7 @@ else in the file, and backs the file up first (as
   `~/.var/app/im.riot.Riot/config/Element/`
 - macOS: `~/Library/Application Support/Element/`
 
-Then restart Element, open **Settings → Appearance**, and choose **Jenerated
+Then restart Element, open **Settings -> Appearance**, and choose **Jenerated
 Blue Purple**.
 
 To install by hand, add the theme's contents to that `config.json` (creating

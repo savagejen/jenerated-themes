@@ -53,7 +53,7 @@ it, so it won't pick up later changes).
 
 Then, in the Unreal Editor:
 
-1. Open **Edit → Editor Preferences → General → Appearance**.
+1. Open **Edit -> Editor Preferences -> General -> Appearance**.
 2. Under **Theme**, choose **Jenerated Blue Purple** as the **Active Theme**.
    Restart the editor first if it doesn't appear.
 

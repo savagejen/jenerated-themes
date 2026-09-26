@@ -8,8 +8,10 @@ Usage:
     ./jenerate.py --remove sunset             # remove a palette's themes
     ./jenerate.py --list                      # show palettes, mark generated
 
-A palette is named by its slug (palettes/<slug>-palette.toml) or given as a
-path to a .toml file. Each run adds to, or updates, the themes already
+A palette is named by its slug (palettes/Dark/<slug>-palette.toml or
+palettes/Light/<slug>-palette.toml) or given as a path to a .toml file. A
+palette straight in palettes/ works too, until the screenshot script files
+it. Each run adds to, or updates, the themes already
 generated; nothing else is touched. Each template's {{name}} placeholders are
 replaced with the palette's colors (plus its `name` and `slug`), and the result
 is written next to the template. Each color is also available as RGB and HSL
@@ -42,6 +44,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 PALETTES = ROOT / "palettes"
+# Palettes are filed by scheme, in palettes/Dark and palettes/Light.
+SCHEME_FOLDERS = {"dark": "Dark", "light": "Light"}
 
 # Generated VS Code theme files, relative to the repository root.
 VSCODE_THEME = "app-themes/vs-code-theme/themes/jenerated-{slug}-color-theme.json"
@@ -141,16 +145,70 @@ def check_slug(slug, source):
     return slug
 
 
+def palette_folder(scheme):
+    """Where palettes of a scheme ("dark" or "light") are filed."""
+    return PALETTES / SCHEME_FOLDERS[scheme]
+
+
+def palette_folders():
+    """Every folder palettes are found in: palettes/Dark, palettes/Light,
+    and palettes/ itself, for a palette not filed yet."""
+    return [palette_folder(scheme) for scheme in SCHEMES] + [PALETTES]
+
+
+def in_palettes(path):
+    """Whether a file is in one of the palette folders."""
+    return path.resolve().parent in palette_folders()
+
+
+def palette_files():
+    """Every palette file in the palette folders, in order of file name."""
+    return sorted((path for folder in palette_folders()
+                   for path in folder.glob("*-palette.toml")),
+                  key=lambda path: path.name)
+
+
 def palette_path(arg):
     """Turn a slug or a path into the palette file's path."""
     if is_path(arg):
         path = Path(arg)
-    else:
-        path = PALETTES / f"{check_slug(arg, 'palette')}-palette.toml"
-    if not path.is_file():
-        sys.exit(f"No palette named {arg!r} (looked for {path}). "
-                 f"Run ./jenerate.py --list to see the available palettes.")
-    return path
+        if not path.is_file():
+            sys.exit(f"No palette file at {path}.")
+        return path
+    name = f"{check_slug(arg, 'palette')}-palette.toml"
+    found = [folder / name for folder in palette_folders() if (folder / name).is_file()]
+    if len(found) > 1:
+        sys.exit(f"The palette {arg!r} is in more than one place: "
+                 f"{', '.join(str(p.relative_to(ROOT)) for p in found)}. "
+                 f"Keep one of them.")
+    if not found:
+        sys.exit(f"No palette named {arg!r} (looked for {name} in palettes/Dark "
+                 f"and palettes/Light). Run ./jenerate.py --list to see the "
+                 f"available palettes.")
+    return found[0]
+
+
+def palette_scheme(path):
+    """A palette's scheme, for listing it: as load_palette works it out, or,
+    for a palette with a color problem that load_palette would stop at, from
+    the folder it's filed in (dark if it isn't filed yet). A palette that
+    can't be read at all still stops, naming the problem."""
+    data = read_palette_file(path)
+    if data.get("scheme"):
+        return data["scheme"]
+    colors, value, seen = data["colors"], data["colors"].get("bg"), set()
+    while value in colors and value not in seen:
+        seen.add(value)
+        value = colors[value]
+    if isinstance(value, str) and HEX.fullmatch(value):
+        return scheme_of(value)
+    folder = {PALETTES / name: scheme for scheme, name in SCHEME_FOLDERS.items()}
+    return folder.get(path.resolve().parent, "dark")
+
+
+def filed_path(values):
+    """Where a palette belongs: its scheme's folder, named after its slug."""
+    return palette_folder(values["scheme"]) / f"{values['slug']}-palette.toml"
 
 
 def read_palette_file(path):
@@ -174,7 +232,7 @@ def read_palette_file(path):
     if not name.strip() or name != name.strip():
         sys.exit(f"{path}: `name` can't be empty or start or end with spaces")
     slug = check_slug(data["slug"], path)
-    if path.resolve().parent == PALETTES and path.name != f"{slug}-palette.toml":
+    if in_palettes(path) and path.name != f"{slug}-palette.toml":
         sys.exit(f"{path}: palettes in palettes/ must be named after their "
                  f"slug; rename it to {slug}-palette.toml")
 
@@ -388,14 +446,21 @@ def remove(names):
 
 
 def list_palettes():
-    """Print each palette in palettes/, starring those already generated."""
-    for path in sorted(PALETTES.glob("*-palette.toml")):
+    """Print the palettes, dark then light, starring those already
+    generated. Each palette is listed by its scheme, wherever it's filed."""
+    groups = {scheme: [] for scheme in SCHEMES}
+    for path in palette_files():
         data = read_palette_file(path)
         generated = any(output_path(output, data["slug"]).exists()
                         for _, output in TARGETS)
         mark = "*" if generated else " "
-        print(f"{mark} {data['slug']:<24} {data['name']}")
-    print("\n* = generated")
+        groups[palette_scheme(path)].append(f"{mark} {data['slug']:<24} {data['name']}")
+    for scheme, lines in groups.items():
+        if lines:
+            print(f"{SCHEME_FOLDERS[scheme]} palettes:")
+            print("\n".join(lines))
+            print()
+    print("* = generated")
 
 
 def main():

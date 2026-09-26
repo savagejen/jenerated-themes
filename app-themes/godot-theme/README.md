@@ -57,12 +57,12 @@ On a Mac the folder is `~/Library/Application Support/Godot/text_editor_themes`,
 and if Godot was installed through Flatpak it's
 `~/.var/app/org.godotengine.Godot/config/godot/text_editor_themes`.
 
-Then, in Godot, open **Editor → Editor Settings** and set:
+Then, in Godot, open **Editor -> Editor Settings** and set:
 
-- **Interface → Theme → Color Preset:** Custom
-- **Interface → Theme → Base Color**, **Accent Color** and **Contrast:** the
+- **Interface -> Theme -> Color Preset:** Custom
+- **Interface -> Theme -> Base Color**, **Accent Color** and **Contrast:** the
   values listed at the top of the palette's `editor-settings.cfg`
-- **Text Editor → Theme → Color Theme:** Jenerated-blue-purple
+- **Text Editor -> Theme -> Color Theme:** Jenerated-blue-purple
 
 The script editor theme is read each time Godot starts, so after changing
 the palette and running `./jenerate.py`, restart Godot to see new syntax

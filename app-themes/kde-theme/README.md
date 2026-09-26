@@ -62,10 +62,10 @@ ln -s "$theme/Jenerated-blue-purple.theme" ~/.local/share/org.kde.syntax-highlig
 
 Then turn each one on:
 
-- **Plasma and KDE apps:** **System Settings → Colors & Themes → Colors**,
+- **Plasma and KDE apps:** **System Settings -> Colors & Themes -> Colors**,
   and choose **Jenerated Blue Purple**, or run
   `plasma-apply-colorscheme Jenerated-blue-purple`.
-- **Konsole:** **Settings → Edit Current Profile → Appearance**, and choose
+- **Konsole:** **Settings -> Edit Current Profile -> Appearance**, and choose
   **Jenerated Blue Purple**.
-- **Kate and KWrite:** **Settings → Configure Kate → Color Themes**, and
+- **Kate and KWrite:** **Settings -> Configure Kate -> Color Themes**, and
   choose **Jenerated Blue Purple**. Restart Kate first if it was open.

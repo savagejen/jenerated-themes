@@ -1,36 +1,90 @@
 #!/bin/sh
-# Refuses a commit while any palette in palettes/ uses a color listed in
-# palettes/avoid-these.txt: exact colors too iconic to publish.
+# Refuses a commit while:
+# - any palette in palettes/ (filed in palettes/Dark or palettes/Light, or not
+#   filed yet) uses a color listed in palettes/avoid-these.txt: exact colors
+#   too iconic to publish;
+# - any text file being committed has a character outside ASCII that isn't
+#   a letter: a typographic dash, ellipsis, arrow, curly quote, emoji,
+#   invisible space and so on (see "Symbols stay ASCII" in CONTRIBUTING.md).
+#   Letters in any language, including the Scandinavian ones, are fine.
+#   Binary files, like the screenshots, are skipped.
+# Both are checked, so one commit attempt reports everything.
 #
 # Turn it on once per clone:  git config core.hooksPath .githooks
 
 cd "$(dirname "$0")/.." || exit 1
-list=palettes/avoid-these.txt
-[ -f "$list" ] || exit 0
+status=0
 
-# Every hex code in the palettes, as "file:line:#rrggbb", matched against the
-# list's entries (case doesn't matter).
-found="$(
-  for file in palettes/*.toml; do
-    [ -f "$file" ] || continue
-    grep -n -o -i -E '#[0-9a-f]{6}' "$file" | sed "s|^|$file:|"
-  done | awk '
-    FNR == NR {
-      if ($0 !~ /^#[0-9A-Fa-f]/) next
-      avoid[toupper(substr($1, 2))] = 1
-      next
-    }
-    {
-      n = split($0, part, ":")
-      hex = toupper(substr(part[n], 2))
-      if (hex in avoid) print "  " part[1] ":" part[2] "  " part[n]
-    }
-  ' "$list" -
-)"
+# --- Colors to avoid ---------------------------------------------------------
+
+list=palettes/avoid-these.txt
+if [ -f "$list" ]; then
+  # Every hex code in the palettes, as "file:line:#rrggbb", matched against
+  # the list's entries (case doesn't matter).
+  found="$(
+    for file in palettes/*.toml palettes/*/*.toml; do
+      [ -f "$file" ] || continue
+      grep -n -o -i -E '#[0-9a-f]{6}' "$file" | sed "s|^|$file:|"
+    done | awk '
+      FNR == NR {
+        if ($0 !~ /^#[0-9A-Fa-f]/) next
+        avoid[toupper(substr($1, 2))] = 1
+        next
+      }
+      {
+        n = split($0, part, ":")
+        hex = toupper(substr(part[n], 2))
+        if (hex in avoid) print "  " part[1] ":" part[2] "  " part[n]
+      }
+    ' "$list" -
+  )"
+
+  if [ -n "$found" ]; then
+    printf 'These palettes use colors listed in %s:\n\n%s\n\n' "$list" "$found" >&2
+    printf 'Those exact colors are too iconic to publish. Nudge each one to a\n' >&2
+    printf 'nearby shade (one digit off is enough) before committing.\n' >&2
+    status=1
+  fi
+fi
+
+# --- Prevent Gremlins --------------------------------------------------------
+
+# The staged version (what the commit will hold) of each text file being
+# added or changed, read as UTF-8: a line is flagged if it has a character
+# outside ASCII that isn't a letter or an accent mark (\p{L}, \p{M}), so
+# letters in any language pass and symbols, punctuation, emoji and invisible
+# spaces don't. Bytes that aren't valid UTF-8 become U+FFFD, a symbol, so
+# they're flagged too. Perl does the matching because it knows Unicode on
+# Linux and macOS alike (GNU grep -P lacks some properties, and macOS grep
+# has no -P).
+if command -v perl >/dev/null 2>&1; then
+  found="$(
+    # core.quotepath=off lists a file name with letters outside ASCII (like
+    # smorrebrod with its Danish o) as it is, not quoted and escaped.
+    git -c core.quotepath=off diff --cached --numstat --no-renames --diff-filter=ACM 2>/dev/null |
+      while IFS="$(printf '\t')" read -r added removed file; do
+        # Binary files show "-" for their line counts.
+        [ "$added" = "-" ] && continue
+        # The file name goes to Perl through the environment, so no character
+        # in it can change what the command does.
+        git show ":$file" 2>/dev/null | FILE="$file" perl -MEncode -ne '
+          $_ = decode("UTF-8", $_, sub { "\x{FFFD}" });
+          print "  $ENV{FILE}:$.\n" if /[^\x00-\x7F\p{L}\p{M}]/;
+        '
+      done
+  )"
+else
+  found="  (perl isn't installed, so this couldn't be checked)"
+fi
 
 if [ -n "$found" ]; then
-  printf 'These palettes use colors listed in %s:\n\n%s\n\n' "$list" "$found" >&2
-  printf 'Those exact colors are too iconic to publish. Nudge each one to a\n' >&2
-  printf 'nearby shade (one digit off is enough) before committing.\n' >&2
-  exit 1
+  [ "$status" -eq 0 ] || printf '\n' >&2
+  printf 'These lines have forbidden symbols or emojis (likely Claude clutter):\n\n%s\n\n' "$found" >&2
+  printf 'Letters in any language are fine, but keep symbols plain ASCII: "..." for\n' >&2
+  printf 'an ellipsis, "-" for a dash, "->" for an arrow, HTML entities in HTML\n' >&2
+  printf '(&middot;), and \\u escapes in JavaScript and Python strings. See\n' >&2
+  printf '"Symbols stay ASCII" in CONTRIBUTING.md.\n' >&2
+  status=1
 fi
+
+exit "$status"

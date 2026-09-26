@@ -31,12 +31,12 @@ by hand, link or copy the palette's `.xml` file into that folder.
 
 Then, in Qt Creator:
 
-1. Open **Edit → Preferences** (**Qt Creator → Settings** on a Mac, **Tools
-   → Options** in older versions) **→ Text Editor → Font & Colors**.
+1. Open **Edit -> Preferences** (**Qt Creator -> Settings** on a Mac, **Tools
+   -> Options** in older versions) **-> Text Editor -> Font & Colors**.
 2. Choose **Jenerated Blue Purple** as the **Color Scheme**. Restart Qt
    Creator first if it doesn't appear.
 3. For the rest of the window, choose **Dark** or **Light** under
-   **Environment → Interface → Theme**.
+   **Environment -> Interface -> Theme**.
 
 After changing the palette, run `./jenerate.py` and choose the scheme
 again, or restart Qt Creator.

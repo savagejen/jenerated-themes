@@ -9,9 +9,9 @@ Usage:
 Serves palette-creator.html on 127.0.0.1 (this computer only). The page edits
 work-in-progress-palette.toml, which is created from Blue Purple the first
 time. "Load from" copies a palette over it, and "Save as palette" saves it as
-a palette; both open this computer's file dialog in palettes/ (zenity or
-kdialog on Linux, AppleScript on macOS, or Tk), and without one the page asks
-for a file name. Palettes are checked with jenerate.py's own rules, and
+a palette; both open this computer's file dialog (zenity or kdialog on Linux,
+AppleScript on macOS, or Tk), saving in palettes/Dark or palettes/Light to
+match the palette. Without a dialog, the page asks for a file name. Palettes are checked with jenerate.py's own rules, and
 saving and loading keep the file's comments and layout.
 
 Set PALETTE_CREATOR_DIALOG=none to always name the file in the page instead
@@ -40,7 +40,7 @@ import jenerate  # noqa: E402  (needs the path above)
 
 PAGE = HERE / "palette-creator.html"
 WIP = HERE / "work-in-progress-palette.toml"
-STARTER = jenerate.PALETTES / "blue-purple-palette.toml"
+STARTER = jenerate.palette_folder("dark") / "blue-purple-palette.toml"
 
 # A color line: key = "value"  # note
 COLOR_LINE = re.compile(
@@ -213,8 +213,9 @@ def write_palette(palette):
 
 
 def check_palette(palette):
-    """Return the palette's file text, or raise PaletteError if jenerate.py
-    would reject it or a template needs a color it doesn't have."""
+    """Return the palette's file text and its template values, or raise
+    PaletteError if jenerate.py would reject it or a template needs a color
+    it doesn't have."""
     text = write_palette(palette)
     with tempfile.TemporaryDirectory() as folder:
         path = Path(folder) / "palette.toml"
@@ -222,7 +223,7 @@ def check_palette(palette):
         values = jenerate_check(jenerate.load_palette, path, path=path)
     for template, _ in jenerate.TARGETS:
         jenerate_check(jenerate.render, jenerate.template_path(template, values), values)
-    return text
+    return text, values
 
 
 # What ask_path returns when there's no dialog, or it was cancelled.
@@ -293,19 +294,37 @@ def ask_path(kind, default):
     return Path(name) if name else CANCELLED
 
 
-def typed_path(filename):
-    """A file name typed into the page, which can only name a file in
-    palettes/."""
-    if not isinstance(filename, str) or not filename or Path(filename).name != filename:
-        raise PaletteError("type just a file name, of a file in palettes/")
-    return jenerate.PALETTES / filename
+def typed_path(filename, folder=None):
+    """A file name typed into the page. Saving puts it in `folder` (the
+    palette's scheme folder), so it's just a name. Loading takes a name as
+    the page lists them (Dark/<name>, Light/<name>, or a palette not filed
+    yet), or just the name, found in whichever folder has it."""
+    folders = list(jenerate.SCHEME_FOLDERS.values())
+    parts = Path(filename).parts if isinstance(filename, str) and filename else ()
+    if folder is not None:
+        if len(parts) != 1 or parts[0] != filename:
+            raise PaletteError(f"type just a file name; it's saved in "
+                               f"{folder.relative_to(jenerate.ROOT)}/")
+        return folder / filename
+    if not (len(parts) == 1 or (len(parts) == 2 and parts[0] in folders)) \
+            or "/".join(parts) != filename:
+        raise PaletteError("type a file name from the list of palettes")
+    if len(parts) == 2:
+        return jenerate.PALETTES / filename
+    found = [f / filename for f in jenerate.palette_folders() if (f / filename).is_file()]
+    return found[0] if found else jenerate.PALETTES / filename
+
+
+def listed_name(path):
+    """A palette file's name as the page lists it: relative to palettes/."""
+    return path.relative_to(jenerate.PALETTES).as_posix()
 
 
 def check_save_path(path, slug):
     """Refuse a place jenerate.py couldn't use the palette from."""
     if path.suffix != ".toml":
         raise PaletteError(f"{path.name}: palette files need to end in .toml")
-    if path.resolve().parent == jenerate.PALETTES and path.name != f"{slug}-palette.toml":
+    if jenerate.in_palettes(path) and path.name != f"{slug}-palette.toml":
         # jenerate.py (and setup.sh's list) would stop at a misnamed palette.
         raise PaletteError(f"in palettes/, this palette has to be named "
                            f"{slug}-palette.toml, so jenerate.py can find it "
@@ -315,9 +334,10 @@ def check_save_path(path, slug):
 
 def save_palette(palette, target, filename=None, overwrite=False):
     """Save to the work-in-progress file, or as a palette file, and describe
-    it. A palette file's place comes from the save dialog; without one, from
-    `filename` (a name in palettes/) once the page has asked for it."""
-    text = check_palette(palette)
+    it. A palette file's place comes from the save dialog, starting in the
+    palette's scheme folder; without one, from `filename` (a name in that
+    folder) once the page has asked for it."""
+    text, values = check_palette(palette)
     if target == "wip":
         WIP.write_text(text)
         return {"message": f"Saved {WIP.relative_to(jenerate.ROOT)}"}
@@ -325,22 +345,24 @@ def save_palette(palette, target, filename=None, overwrite=False):
         raise PaletteError(f"can't save to {target!r}")
 
     slug = palette["slug"]
-    default = jenerate.PALETTES / f"{slug}-palette.toml"
+    default = jenerate.filed_path(values)
+    default.parent.mkdir(parents=True, exist_ok=True)
     if filename is None:
         path = ask_path("save", default)
         if path == CANCELLED:
             return {"cancelled": True, "message": "Not saved."}
         if path == NO_DIALOG:
-            return {"choose_name": True, "default": default.name}
+            return {"choose_name": True, "default": default.name,
+                    "folder": str(default.parent.relative_to(jenerate.ROOT))}
     else:
-        path = typed_path(filename)
+        path = typed_path(filename, default.parent)
         if path.exists() and not overwrite and path.read_text() != text:
             return {"exists": True,
                     "message": f"{path.relative_to(jenerate.ROOT)} already exists"}
 
     check_save_path(path, slug)
     path.write_text(text)
-    if path.resolve().parent == jenerate.PALETTES:
+    if jenerate.in_palettes(path):
         shown, generate = path.relative_to(jenerate.ROOT), slug
     else:
         shown = generate = path
@@ -351,15 +373,16 @@ def save_palette(palette, target, filename=None, overwrite=False):
 def load_palette(filename=None):
     """Replace the work-in-progress palette with a palette file, copied as
     written, and describe it. The file comes from the open dialog; without
-    one, from `filename` (a name in palettes/) once the page has asked for it.
-    A palette jenerate.py would reject leaves the work in progress alone."""
+    one, from `filename` (as the page lists them) once the page has asked
+    for it. A palette jenerate.py would reject leaves the work in progress
+    alone."""
     if filename is None:
         path = ask_path("open", jenerate.PALETTES)
         if path == CANCELLED:
             return {"cancelled": True, "message": "Nothing loaded."}
         if path == NO_DIALOG:
             return {"choose_name": True,
-                    "palettes": [p.name for p in sorted(jenerate.PALETTES.glob("*.toml"))]}
+                    "palettes": [listed_name(p) for p in jenerate.palette_files()]}
     else:
         path = typed_path(filename)
     if path.suffix != ".toml" or not path.is_file():

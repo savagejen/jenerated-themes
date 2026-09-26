@@ -22,9 +22,11 @@ using the themes, see the [README](README.md).
 
    It's a pre-commit hook that refuses a commit while a palette in
    `palettes/` uses a color from
-   [palettes/avoid-these.txt](palettes/avoid-these.txt); see
-   [Colors to avoid](#colors-to-avoid). The tests check the same thing, so
-   nothing slips through on a clone without it.
+   [palettes/avoid-these.txt](palettes/avoid-these.txt) (see
+   [Colors to avoid](#colors-to-avoid)), or while a text file being
+   committed has a symbol outside plain ASCII (see
+   [Symbols stay ASCII](#symbols-stay-ascii)). The tests check the same things, so nothing
+   slips through on a clone without it.
 
 What you need:
 
@@ -35,7 +37,8 @@ What you need:
 
 ## How it works
 
-- **Palettes** in [palettes/](palettes/) are TOML files with a `name`, a
+- **Palettes** in [palettes/Dark](palettes/Dark/) and
+  [palettes/Light](palettes/Light/) are TOML files with a `name`, a
   `slug`, an optional `scheme` (`"dark"` or `"light"`), and a list of colors
   named by role (`bg`, `text`, `accent`, `red`, `term_bright_cyan`, ...). A
   color is a `#rrggbb` value or the name of another color in the same file.
@@ -110,7 +113,9 @@ Don't edit generated files by hand; change the palette or template and run
 
 Design it in the [Palette Creator](palette-creator/)
 (`./palette-creator/serve.py`), or copy an existing palette to
-`palettes/<slug>-palette.toml` and edit it. Every color the templates use
+`palettes/Dark/<slug>-palette.toml` or `palettes/Light/<slug>-palette.toml`
+and edit it. (A palette saved straight in `palettes/`, or in the wrong one of
+the two, still works, and [updating the screenshots](#screenshots) files it.) Every color the templates use
 must be defined; `jenerate.py` names any that are missing, and checks the
 palette's other rules (see
 [Adding a palette](README.md#adding-a-palette) in the README).
@@ -216,11 +221,12 @@ tests check that they match.
    ```
 
 3. Commit. The pre-commit hook checks the palettes against the colors to
-   avoid.
+   avoid, and what you're committing for symbols outside plain ASCII.
 
 ## Screenshots
 
-Each palette has a screenshot in `palettes/Screenshots/` and a section in
+Each palette has a screenshot in `palettes/Screenshots/Dark` or
+`palettes/Screenshots/Light` and a section in the dark or light group of
 [palettes/README.md](palettes/README.md). To retake them all:
 
 ```bash
@@ -234,18 +240,46 @@ To retake just some, name them by slug, with commas between several:
 ./setup.sh --update-screenshots=candy,sunset
 ```
 
-It shows each palette in the Palette Creator's preview (running on a
+First it files every palette: `jenerate.py` works out whether each is dark
+or light (its `scheme`, or else its `bg`), and a palette or screenshot in the
+wrong folder, or straight in `palettes/`, is moved to the right one. A slug
+found in two places stops it, naming both, until you keep one.
+
+Then it shows each palette in the Palette Creator's preview (running on a
 throwaway copy of the repository, so your draft is never touched), saves a
 screenshot of it with [Playwright](https://playwright.dev), and updates
-`palettes/README.md`: a new palette gets a section, made from its
-description and key colors, and existing sections get their key colors
-refreshed. Text you've written in the README is left alone.
+`palettes/README.md`: a new palette gets a section in the dark or light
+group, made from its description and key colors, existing sections get their
+key colors refreshed, and a section moves groups if its palette changed
+scheme. The groups are `<details open>` blocks, so readers can collapse the
+one they don't want. Text you've written in the README is left alone.
+
+To file the palettes and update the README without taking screenshots:
+
+```bash
+./palette-creator/screenshots.py --readme-only
+```
 
 The first run installs Playwright and its browser into
 `~/.cache/jenerated-themes/playwright`, outside the repository, which needs a
 network connection. See
 [palette-creator/screenshots.py](palette-creator/screenshots.py) for the
 details.
+
+## Symbols stay ASCII
+
+Letters in any language are welcome anywhere: a palette named "Smørrebrød"
+or "Ночь", or a description in Japanese. Everything else outside plain ASCII
+isn't: typographic dashes, ellipses, arrows, middle dots, curly quotes,
+emoji, and invisible characters like non-breaking and zero-width spaces.
+That goes for code, comments, docs, palettes and the Palette Creator.
+
+Write symbols as HTML entities in HTML (`&middot;`, `&#9888;`), as `\u`
+escapes in JavaScript and Python strings (`"\u2022"`), and as plain text
+everywhere else (`...`, `-`, `->`, straight quotes). The pre-commit hook
+refuses a commit that adds anything else, naming each file and line, and a
+test in `tests/repo/` checks the whole repository. Both use Perl, which
+comes with Linux and macOS.
 
 ## Running the tests
 
@@ -262,6 +296,7 @@ Tests live in [tests/](tests/), with one folder per script:
 | `tests/palette-creator/` | the Palette Creator's `serve.py` |
 | `tests/screenshots/` | the screenshot script, and its updates to `palettes/README.md` |
 | `tests/hooks/` | the git hooks in `.githooks/` |
+| `tests/repo/` | the repository as a whole, such as symbols staying plain ASCII |
 
 Each test runs against a temporary copy of the repository, so the tests
 don't touch your generated or installed themes. Tests that need Python 3.11

@@ -56,12 +56,12 @@ for GNOME Text Editor, and `~/.var/app/org.gnome.gedit/data` for gedit.
 Then choose **Jenerated Blue Purple** in each editor, and reopen editors
 that were open:
 
-- **gedit:** Preferences → Font & Colors.
-- **GNOME Text Editor:** the menu → Preferences → Style. It only lists
+- **gedit:** Preferences -> Font & Colors.
+- **GNOME Text Editor:** the menu -> Preferences -> Style. It only lists
   schemes that match its own light or dark style, so switch it to the dark
   style (the moon at the top of the menu) for a dark palette, or the light
   style for a light one.
-- **Xed:** Edit → Preferences → Theme.
+- **Xed:** Edit -> Preferences -> Theme.
 - **Pluma, Meld and others:** in their preferences, usually under fonts and
   colors.
 

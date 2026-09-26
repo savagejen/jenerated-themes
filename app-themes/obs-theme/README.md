@@ -44,7 +44,7 @@ To install by hand, link or copy the palette's `.ovt` file into that folder.
 
 Then restart OBS Studio, and:
 
-1. Open **Settings → Appearance**.
+1. Open **Settings -> Appearance**.
 2. Choose **Yami** as the **Theme** and **Jenerated Blue Purple** as the
    **Style**.
 

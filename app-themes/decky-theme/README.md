@@ -56,7 +56,7 @@ ln -s "$PWD/jenerated-themes/app-themes/decky-theme/blue-purple" ~/homebrew/them
 
 Then, in Gaming Mode:
 
-1. Open the Quick Access menu (the **•••** button on a Steam Deck), then
+1. Open the Quick Access menu (the **triple dot** button on a Steam Deck), then
    Decky's plug icon, and choose **CSS Loader**.
 2. If CSS Loader was already running, scroll to the bottom and press
    **Refresh** so it finds the new theme.

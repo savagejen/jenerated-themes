@@ -81,10 +81,10 @@ zip -r ../jenerated-blue-purple.jar .
 
 Then, in the app:
 
-1. Open **Settings → Plugins**, click the gear icon, and choose
-   **Install Plugin from Disk…**.
+1. Open **Settings -> Plugins**, click the gear icon, and choose
+   **Install Plugin from Disk...**.
 2. Choose the `.jar`, and restart the app if it asks.
-3. Open **Settings → Appearance & Behavior → Appearance**, and choose
+3. Open **Settings -> Appearance & Behavior -> Appearance**, and choose
    **Jenerated Blue Purple** as the theme. Its editor colors come with it.
 Note: You may need to select the theme after installing it.
 

@@ -26,7 +26,7 @@ steps below.
 ### Try it (until Firefox restarts)
 
 1. In Firefox, go to `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on…** and choose the palette's
+2. Click **Load Temporary Add-on...** and choose the palette's
    `manifest.json`, for example `app-themes/firefox-theme/blue-purple/manifest.json`.
 
 ### Keep it
@@ -44,7 +44,7 @@ free, and it stays private (it isn't listed on the add-ons site):
    sign in with a Mozilla account, choose **On your own**, and upload the
    `.xpi`.
 3. Download the signed file it gives you, and open it in Firefox
-   (**File → Open File**, or drag it onto a Firefox window).
+   (**File -> Open File**, or drag it onto a Firefox window).
 
 Firefox Developer Edition, Nightly and ESR can also install unsigned themes
 permanently, after setting `xpinstall.signatures.required` to `false` in

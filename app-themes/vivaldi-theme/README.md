@@ -38,7 +38,7 @@ zip ../jenerated-blue-purple.zip settings.json
 
 Then, in Vivaldi:
 
-1. Open **Settings → Themes**, and click **Import Theme…** at the bottom.
+1. Open **Settings -> Themes**, and click **Import Theme...** at the bottom.
 2. Choose the `.zip`.
 3. Vivaldi shows a preview of the theme and asks whether to install and apply
    it. Accept within 30 seconds; after that the preview expires and nothing is

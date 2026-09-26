@@ -31,13 +31,14 @@ computer.
   palette is and where its colors come from. Blank lines separate
   paragraphs. It's wrapped to fit the file when saved, and the file's usual
   note about how colors are written stays after it.
-- **Load from…:** replaces your draft with a palette you choose in
+- **Load from...:** replaces your draft with a palette you choose in
   your computer's file dialog, which opens in `palettes/` (you can also pick
   a palette kept elsewhere). It warns you first, since anything in the work
   in progress that you haven't saved as a palette is lost. The palette is
   copied exactly, comments and all, and one `jenerate.py` would reject is
   refused, leaving your work in progress alone. Without a file dialog, the
-  page asks for a file name in `palettes/` instead.
+  page lists the palettes in `palettes/Dark` and `palettes/Light` and asks
+  which one.
 - **Colors:** each color has a color picker, and a text field that takes a
   `#rrggbb` value or another color's name (like `red`), just as in a palette
   file. A color that refers to another shows what it resolves to.
@@ -51,13 +52,14 @@ computer.
 
 ## Save it
 
-- **Save as palette…** opens your computer's save dialog in `palettes/`,
-  suggesting `<slug>-palette.toml` (for example `sunset-palette.toml`). Keep
-  that name: `jenerate.py` finds palettes in `palettes/` by their slug, so it
-  won't accept another name there. You can also save somewhere else and pass
-  the file's path to `jenerate.py`. The dialog is `zenity` or `kdialog` on
-  Linux, or the standard one on macOS; without one, the page asks for a file
-  name in `palettes/` instead. Then generate its themes:
+- **Save as palette...** opens your computer's save dialog in `palettes/Dark`
+  or `palettes/Light`, whichever the palette is, suggesting
+  `<slug>-palette.toml` (for example `sunset-palette.toml`). Keep that name:
+  `jenerate.py` finds palettes there by their slug, so it won't accept
+  another name. You can also save somewhere else and pass the file's path to
+  `jenerate.py`. The dialog is `zenity` or `kdialog` on Linux, or the
+  standard one on macOS; without one, the page asks for a file name
+  instead. Then generate its themes:
 
   ```bash
   ./jenerate.py <slug>

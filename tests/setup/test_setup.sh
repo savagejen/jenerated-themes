@@ -320,12 +320,12 @@ test_back_from_the_theme_menu_returns_to_the_category() {
   assert_not_contains "about:debugging"
 }
 
-# GIVEN the palettes in palettes/
+# GIVEN the palettes in palettes/Dark
 # WHEN choosing an app
 # THEN the theme menu lists every palette by name
 test_theme_menu_lists_every_palette() {
   run_setup "1\nslack\n1\n1\n"
-  for file in "$SANDBOX"/repo/palettes/*-palette.toml; do
+  for file in "$SANDBOX"/repo/palettes/Dark/*-palette.toml; do
     assert_contains ") $(palette_name "$file")"
   done
 }
@@ -335,7 +335,7 @@ test_theme_menu_lists_every_palette() {
 # THEN the theme menu lists Forest
 test_theme_menu_lists_a_new_palette() {
   sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
-    "$SANDBOX/repo/palettes/sunset-palette.toml" \
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/forest-palette.toml"
   run_setup "1\nslack\n1\n1\n"
   assert_contains ") Forest"
@@ -346,11 +346,93 @@ test_theme_menu_lists_a_new_palette() {
 # THEN Forest is listed by name and generated
 test_theme_menu_reads_single_quoted_names() {
   sed -e "s/^name = .*/name = 'Forest'/" -e "s/^slug = .*/slug = 'forest'/" \
-    "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
   run_setup "1\nslack\n1\n2\n"
   assert_status 0
   assert_contains "2) Forest"
   assert_contains "Generated Forest (forest)"
+}
+
+# dawn_palette [folder] -> adds Dawn, a light copy of Sunset, to palettes/ (or
+# a folder in it).
+dawn_palette() {
+  sed -e 's/^name = .*/name = "Dawn"/' -e 's/^slug = .*/slug = "dawn"/' \
+    -e 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
+    >"$SANDBOX/repo/palettes/${1:+$1/}dawn-palette.toml"
+}
+
+# GIVEN dark palettes and a light one, Dawn
+# WHEN choosing Slack, then Light
+# THEN it asks for dark or light before the palettes, lists only Dawn, and
+#      generates it
+test_theme_menu_asks_dark_or_light() {
+  dawn_palette Light
+  run_setup "1\nslack\n1\n2\n1\n"
+  assert_status 0
+  assert_contains "Do you want a dark or light theme?
+  1) Dark
+  2) Light
+  0) Back"
+  assert_contains "Which theme do you want?
+  1) Dawn
+  0) Back"
+  assert_contains "Generated Dawn (dawn)"
+}
+
+# GIVEN dark palettes and a light one
+# WHEN choosing Light, going back, then choosing Dark and Sunset
+# THEN Back from the palettes asks dark or light again, and the dark list has
+#      only the dark palettes
+test_theme_menu_back_goes_to_dark_or_light() {
+  dawn_palette Light
+  run_setup "1\nslack\n1\n2\n0\n1\n2\n"
+  assert_status 0
+  [ "$(printf '%s\n' "$OUTPUT" | grep -c 'Do you want a dark or light theme?')" = "2" ] ||
+    fail "expected the dark or light question twice"
+  assert_contains "Which theme do you want?
+  1) Blue Purple
+  2) Sunset
+  0) Back"
+  assert_contains "Generated Sunset (sunset)"
+}
+
+# GIVEN dark palettes and a light one
+# WHEN searching for Slack, choosing it, then going back from the dark or
+#      light question
+# THEN the search results are shown again
+test_dark_or_light_back_goes_to_the_app_menu() {
+  dawn_palette Light
+  run_setup "1\nslack\n1\n0\n1\n1\n1\n"
+  assert_status 0
+  [ "$(printf '%s\n' "$OUTPUT" | grep -c 'Apps matching "slack":')" = "2" ] ||
+    fail "expected the search results twice"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN only dark palettes
+# WHEN choosing an app
+# THEN the palettes are listed without asking dark or light
+test_theme_menu_skips_dark_or_light_with_one_kind() {
+  run_setup "1\nslack\n1\n1\n"
+  assert_status 0
+  assert_not_contains "Do you want a dark or light theme?"
+  assert_contains "Which theme do you want?
+  1) Blue Purple
+  2) Sunset
+  0) Back"
+}
+
+# GIVEN no Python 3.11 or later, and a palette in palettes/Light
+# WHEN choosing Slack, then Light
+# THEN its folder says it's light, so it's listed there
+test_theme_menu_without_python_uses_the_folders() {
+  fake_no_python
+  dawn_palette Light
+  run_setup "1\nslack\n1\n2\n1\n"
+  assert_contains "Do you want a dark or light theme?"
+  assert_contains "Which theme do you want?
+  1) Dawn
+  0) Back"
 }
 
 # GIVEN no Python 3.11 or later, and a palette whose name uses single quotes
@@ -359,7 +441,7 @@ test_theme_menu_reads_single_quoted_names() {
 test_theme_menu_without_python_reads_single_quoted_names() {
   fake_no_python
   sed -e "s/^name = .*/name = 'Forest'/" -e "s/^slug = .*/slug = 'forest'/" \
-    "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
   run_setup "1\nslack\n1\n1\n"
   assert_contains "2) Forest"
 }
@@ -505,7 +587,7 @@ test_other_palettes_need_python() {
 test_choosing_a_broken_palette_stops_with_its_error() {
   fake_os Linux
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
-    "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blue-purple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
   run_setup "1\ntilix\n1\n1\ny\n1\n"
   assert_status 1
@@ -1578,9 +1660,9 @@ test_gtksourceview_links_each_version() {
 test_gtksourceview_light_palette_says_light_style() {
   fake_os Linux
   sed -e 's/^name = .*/name = "Dawn"/' -e 's/^slug = .*/slug = "dawn"/' \
-    -e 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/' "$SANDBOX/repo/palettes/sunset-palette.toml" \
+    -e 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/dawn-palette.toml"
-  run_setup "1\ngnome text editors\n1\n2\ny\n1\n"
+  run_setup "1\ngnome text editors\n1\n2\n1\ny\n1\n"
   assert_status 0
   assert_contains "Jenerated Dawn"
   assert_contains "choose the light style first"
@@ -2273,7 +2355,7 @@ test_prep_commit_on_a_clean_repository() {
 # THEN the hint lists both, ready to paste into jenerate.py
 test_prep_commit_lists_every_other_generated_theme() {
   sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
-    "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
   sandbox_jenerate forest,sunset
   run_setup "" --prep-commit
   assert_status 0
@@ -2403,13 +2485,13 @@ test_update_screenshots_needs_node() {
   for tool in bash dirname uname "$python"; do
     ln -s "$(command -v "$tool")" "$SANDBOX/minbin/$tool"
   done
-  cp "$SANDBOX/repo/palettes/Screenshots/blue-purple.png" "$SANDBOX/before.png"
+  cp "$SANDBOX/repo/palettes/Screenshots/Dark/blue-purple.png" "$SANDBOX/before.png"
   OUTPUT="$(cd "$SANDBOX" && HOME="$SANDBOX/home" PATH="$SANDBOX/minbin" XDG_CACHE_HOME= \
     "$SANDBOX/minbin/bash" "$SANDBOX/repo/setup.sh" --update-screenshots 2>&1)"
   STATUS=$?
   assert_status 1
   assert_contains "--update-screenshots needs Node.js and npm (for Playwright)"
-  assert_same_file "$SANDBOX/repo/palettes/Screenshots/blue-purple.png" "$SANDBOX/before.png"
+  assert_same_file "$SANDBOX/repo/palettes/Screenshots/Dark/blue-purple.png" "$SANDBOX/before.png"
 }
 
 # GIVEN fake node and npm (node writes a placeholder screenshot per palette)
@@ -2423,12 +2505,14 @@ mkdir -p \"\$prefix/node_modules/playwright\" \"\$prefix/node_modules/.bin\"
 printf '#!/bin/sh\nexit 0\n' >\"\$prefix/node_modules/.bin/playwright\"
 chmod +x \"\$prefix/node_modules/.bin/playwright\""
   fake_command node "out=\"\$3\"; shift 3
-for f in \"\$@\"; do printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
+for f in \"\$@\"; do f=\"\${f##*/}\"; printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
   run_setup "" --update-screenshots
   assert_status 0
   assert_contains "Updating the palette screenshots"
-  for file in "$SANDBOX"/repo/palettes/*-palette.toml; do
-    assert_file_equals "$SANDBOX/repo/palettes/Screenshots/$(basename "$file" -palette.toml).png" "new png"
+  for file in "$SANDBOX"/repo/palettes/{Dark,Light}/*-palette.toml; do
+    [ -f "$file" ] || continue
+    folder="$(basename "$(dirname "$file")")"
+    assert_file_equals "$SANDBOX/repo/palettes/Screenshots/$folder/$(basename "$file" -palette.toml).png" "new png"
   done
   assert_contains "palettes/README.md"
   assert_not_contains "Which app"
@@ -2446,13 +2530,13 @@ printf '#!/bin/sh\nexit 0\n' >\"\$prefix/node_modules/.bin/playwright\"
 chmod +x \"\$prefix/node_modules/.bin/playwright\""
   fake_command node "out=\"\$3\"; shift 3
 printf '%s\n' \"\$@\" >\"$SANDBOX/node-palettes\"
-for f in \"\$@\"; do printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
+for f in \"\$@\"; do f=\"\${f##*/}\"; printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
   run_setup "" --update-screenshots=sunset
   assert_status 0
-  assert_file_equals "$SANDBOX/node-palettes" "sunset-palette.toml"
+  assert_file_equals "$SANDBOX/node-palettes" "Dark/sunset-palette.toml"
   run_setup "" --update-screenshot=sunset,blue-purple
   assert_status 0
-  assert_file_equals "$SANDBOX/node-palettes" "$(printf 'sunset-palette.toml\nblue-purple-palette.toml')"
+  assert_file_equals "$SANDBOX/node-palettes" "$(printf 'Dark/sunset-palette.toml\nDark/blue-purple-palette.toml')"
   assert_not_contains "Which app"
 }
 
@@ -2973,7 +3057,7 @@ test_slack_without_a_clipboard_tool_still_prints_the_string() {
   rm -f "$SANDBOX"/bin/pbcopy "$SANDBOX"/bin/wl-copy "$SANDBOX"/bin/xclip "$SANDBOX"/bin/xsel
   # Hide any real clipboard tools by giving setup.sh a PATH without them.
   mkdir -p "$SANDBOX/minbin"
-  for tool in bash sh sed head tr grep readlink rm ln mkdir mv cat dirname basename uname; do
+  for tool in bash sh sed head tr grep readlink rm ln mkdir mv cat dirname basename uname awk sort cut; do
     [ -e "$SANDBOX/bin/$tool" ] && continue
     ln -s "$(command -v "$tool")" "$SANDBOX/minbin/$tool"
   done

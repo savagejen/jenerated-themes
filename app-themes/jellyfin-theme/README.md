@@ -42,13 +42,13 @@ where the file is). To do it by hand, open the palette's `.css` file and copy ev
 Then paste it into Jellyfin, in one of two places:
 
 - **For everyone on your server** (as an administrator): open
-  **Dashboard → Branding** (**Dashboard → General** in older versions),
+  **Dashboard -> Branding** (**Dashboard -> General** in older versions),
   paste the CSS into **Custom CSS code**, replacing anything already there,
   and save.
-- **Just for one device:** open **Settings → Display**, paste it into the
+- **Just for one device:** open **Settings -> Display**, paste it into the
   **Custom CSS code** box, and save.
 
-Choose Jellyfin's **Dark** theme (under **Settings → Display**) for a dark
+Choose Jellyfin's **Dark** theme (under **Settings -> Display**) for a dark
 palette, or **Light** for a light one. The colors come from the palette
 either way, but Jellyfin shades a few things, like raised panels,
 differently for dark and light themes.

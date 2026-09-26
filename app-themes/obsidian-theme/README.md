@@ -41,7 +41,7 @@ it lists the vaults Obsidian knows about. To install by hand:
    cp -r ./jenerated-themes/app-themes/obsidian-theme/blue-purple "$HOME/Notes/.obsidian/themes/Jenerated Blue Purple"
    ```
 
-3. In Obsidian, open **Settings** → **Appearance**, and under **Themes**
+3. In Obsidian, open **Settings** -> **Appearance**, and under **Themes**
    choose **Jenerated Blue Purple**. If it isn't listed, click the reload
    button next to **Themes**, or restart Obsidian.
 

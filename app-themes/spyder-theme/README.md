@@ -15,7 +15,7 @@ see [Getting started](../../README.md#getting-started).
 
 Spyder's interface follows its own dark or light UI theme, which it picks
 to match the syntax theme when **Interface theme** is set to **Automatic**
-(Tools → Preferences → Appearance).
+(Tools -> Preferences -> Appearance).
 
 The files are generated from `scheme.ini.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see
@@ -42,7 +42,7 @@ offers to make it the current theme. It backs the file up first (as
 Open Spyder once before running it, so the file exists.
 
 If you didn't make it the current theme, choose **Jenerated Blue Purple**
-under **Tools → Preferences → Appearance → Syntax highlighting theme**.
+under **Tools -> Preferences -> Appearance -> Syntax highlighting theme**.
 
 The theme is copied into Spyder's settings, so after changing the palette,
 run `./setup.sh` again (with Spyder closed); it updates the same custom

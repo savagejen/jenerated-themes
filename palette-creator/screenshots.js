@@ -3,7 +3,8 @@
 // (on a copy of the repository) and provides Playwright.
 //
 // Usage: node screenshots.js <page-url> <out-dir> <palette-file>...
-// Writes <out-dir>/<slug>.png for each palette file (<slug>-palette.toml).
+// Writes <out-dir>/<slug>.png for each palette file, named as the Palette
+// Creator lists them (like Dark/<slug>-palette.toml).
 
 const { chromium } = require("playwright");
 const path = require("path");
@@ -18,7 +19,7 @@ const [, , base, outDir, ...files] = process.argv;
 
   for (const file of files) {
     const slug = path.basename(file).replace(/-palette\.toml$/, "");
-    // Load the palette the way the page's "Load from…" does.
+    // Load the palette the way the page's "Load from..." does.
     const response = await page.request.post(`${base}/api/load`, { data: { filename: file } });
     const result = await response.json();
     if (!result.ok) throw new Error(`${file}: ${result.error || "not loaded"}`);

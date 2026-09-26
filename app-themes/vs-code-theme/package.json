@@ -14,9 +14,39 @@
   "contributes": {
     "themes": [
       {
+        "label": "Jenerated Anodized",
+        "uiTheme": "vs-dark",
+        "path": "./themes/jenerated-anodized-color-theme.json"
+      },
+      {
         "label": "Jenerated Blue Purple",
         "uiTheme": "vs-dark",
         "path": "./themes/jenerated-blue-purple-color-theme.json"
+      },
+      {
+        "label": "Jenerated Candy",
+        "uiTheme": "vs",
+        "path": "./themes/jenerated-candy-color-theme.json"
+      },
+      {
+        "label": "Jenerated Cobalted",
+        "uiTheme": "vs-dark",
+        "path": "./themes/jenerated-cobalted-color-theme.json"
+      },
+      {
+        "label": "Jenerated Neon Dev",
+        "uiTheme": "vs-dark",
+        "path": "./themes/jenerated-neon-dev-color-theme.json"
+      },
+      {
+        "label": "Jenerated Pop",
+        "uiTheme": "vs-dark",
+        "path": "./themes/jenerated-pop-color-theme.json"
+      },
+      {
+        "label": "Jenerated Sunset",
+        "uiTheme": "vs-dark",
+        "path": "./themes/jenerated-sunset-color-theme.json"
       }
     ]
   }

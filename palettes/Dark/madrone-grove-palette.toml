@@ -36,7 +36,7 @@ text_strong = "#fff4e8"        # emphasized text: active tabs, selected items
 # Accent
 accent = "#d63d38"             # crimson: cursor, focus, buttons, badges
 accent_hover = "#b8302c"       # hovered buttons: deeper crimson
-accent_soft = "#e2b650"        # café amber: keywords, links
+accent_soft = "#e2b650"        # cafe amber: keywords, links
 accent_light = "#78a2ec"       # lamp blue: functions
 accent_pale = "#f0c9a8"        # peach cream: properties
 

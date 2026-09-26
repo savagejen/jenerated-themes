@@ -43,7 +43,7 @@ The easiest way is `./setup.sh` from the repository root: choose Mattermost
 Or copy the contents of the palette's `.json` file yourself. Then, in
 Mattermost:
 
-1. Open **Settings → Display → Theme**, and choose **Edit**.
+1. Open **Settings -> Display -> Theme**, and choose **Edit**.
 2. Choose **Custom Theme**, and paste the theme into the box under **Copy
    and paste to share theme colors**.
 3. Choose **Save**.

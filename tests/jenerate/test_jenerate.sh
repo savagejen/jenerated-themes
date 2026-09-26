@@ -33,7 +33,7 @@ write_palette() {
   # & and | mean something in a sed replacement, so escape them.
   name="$(printf '%s' "$name" | sed 's/[&|]/\\&/g')"
   sed -e "s|^name = .*|name = \"$name\"|" -e "s|^slug = .*|slug = \"$slug\"|" \
-    "$SANDBOX/repo/palettes/sunset-palette.toml" >"$path"
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$path"
   for line in "$@"; do
     printf '%s\n' "$line" >>"$path"
   done
@@ -82,7 +82,7 @@ libreoffice_theme() { printf '%s' "$SANDBOX/repo/app-themes/libreoffice-theme/$1
 #   color key [palette]     -> the color's #rrggbb, following references
 #   color_rgb key [palette] -> its "r, g, b"
 #   color_hsl key [palette] -> its "h|s|l" (whole degrees and percents)
-# The palette defaults to palettes/sunset-palette.toml in the sandbox.
+# The palette defaults to palettes/Dark/sunset-palette.toml in the sandbox.
 color_forms() {
   "$PYTHON" -c '
 import colorsys, sys, tomllib
@@ -95,7 +95,7 @@ r, g, b = (int(value[i:i + 2], 16) for i in (1, 3, 5))
 h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 print({"hex": value, "rgb": f"{r}, {g}, {b}",
        "hsl": f"{round(h * 360) % 360}|{round(s * 100)}|{round(l * 100)}"}[form])
-' "$1" "$2" "${3:-$SANDBOX/repo/palettes/sunset-palette.toml}"
+' "$1" "$2" "${3:-$SANDBOX/repo/palettes/Dark/sunset-palette.toml}"
 }
 color() { color_forms hex "$@"; }
 color_rgb() { color_forms rgb "$@"; }
@@ -144,6 +144,56 @@ test_list_shows_palettes_and_marks_generated() {
   assert_contains "  sunset"
   assert_contains "Sunset"
   assert_contains "* = generated"
+}
+
+# GIVEN dark palettes, Candy in palettes/Light, and a light palette and a
+#       dark one not filed yet
+# WHEN running --list
+# THEN the palettes are grouped under "Dark palettes:" and "Light
+#      palettes:", each by its scheme, wherever it's filed
+test_list_groups_dark_and_light() {
+  write_palette "$SANDBOX/repo/palettes/dusk-palette.toml" "Dusk" "dusk"
+  write_palette "$SANDBOX/repo/palettes/dawn-palette.toml" "Dawn" "dawn"
+  sed -i 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/' "$SANDBOX/repo/palettes/dawn-palette.toml"
+  run_jenerate --list
+  assert_status 0
+  groups="$(printf '%s\n' "$OUTPUT" | awk '/^Dark palettes:$/{g="dark"} /^Light palettes:$/{g="light"} /^[* ] [a-z]/{print $NF "=" g}')"
+  for expected in Sunset=dark Dusk=dark Candy=light Dawn=light; do
+    printf '%s\n' "$groups" | grep -qx "$expected" || fail "expected $expected in: $groups"
+  done
+}
+
+# GIVEN a palette in palettes/Light with a color that isn't valid
+# WHEN running --list
+# THEN it's still listed, under Light (going by its folder), so one broken
+#      palette doesn't hide the others
+test_list_files_a_palette_with_a_bad_color_by_its_folder() {
+  write_palette "$SANDBOX/repo/palettes/Light/odd-palette.toml" "Odd" "odd" 'bg = "nowhere"'
+  sed -i '0,/^bg = "#/{/^bg = "#/d}' "$SANDBOX/repo/palettes/Light/odd-palette.toml"
+  run_jenerate --list
+  assert_status 0
+  [ "$(printf '%s\n' "$OUTPUT" | awk '/^Dark palettes:$/{g="dark"} /^Light palettes:$/{g="light"} / odd /{print g}')" = "light" ] ||
+    fail "expected Odd under Light palettes"
+}
+
+# GIVEN Candy, filed in palettes/Light
+# WHEN generating it by its slug
+# THEN it's found there and generated
+test_a_light_palette_is_found_by_its_slug() {
+  run_jenerate candy
+  assert_status 0
+  assert_contains "Generated Candy (candy)"
+}
+
+# GIVEN the slug sunset in both palettes/Dark and palettes/Light
+# WHEN generating sunset
+# THEN it stops, naming both, and writes nothing
+test_a_slug_in_two_places_is_refused() {
+  cp "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" "$SANDBOX/repo/palettes/Light/sunset-palette.toml"
+  run_jenerate sunset
+  assert_status 1
+  assert_contains "The palette 'sunset' is in more than one place: palettes/Dark/sunset-palette.toml, palettes/Light/sunset-palette.toml. Keep one of them."
+  assert_missing "$(slack_theme sunset)"
 }
 
 # GIVEN Sunset has just been generated
@@ -469,7 +519,7 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
-    "$repo/palettes/sunset-palette.toml" >"$SANDBOX/My Palettes/forest.toml"
+    "$repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/My Palettes/forest.toml"
   OUTPUT="$(cd "$SANDBOX" && "$PYTHON" "$repo/jenerate.py" "$SANDBOX/My Palettes/forest.toml" 2>&1)"
   STATUS=$?
   assert_status 0
@@ -557,7 +607,7 @@ test_colors_are_available_in_linear_light() {
 # THEN black is 0, white is 1, and #808080 is 0.215861 (it's darker in linear
 #      light than its 0.5 in sRGB)
 test_linear_light_matches_known_values() {
-  palette="$SANDBOX/repo/palettes/sunset-palette.toml"
+  palette="$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
   grep -v -e '^term_black = ' -e '^term_white = ' -e '^term_bright_white = ' "$palette" >"$palette.tmp"
   printf '%s\n' 'term_black = "#000000"' 'term_white = "#808080"' 'term_bright_white = "#ffffff"' >>"$palette.tmp"
   mv "$palette.tmp" "$palette"
@@ -2724,10 +2774,10 @@ write_light_palette() {
   local slug="$1" name="$2"
   shift 2
   {
-    sed -n '1,/^\[colors\]/{/^\[colors\]/!p}' "$SANDBOX/repo/palettes/sunset-palette.toml" |
+    sed -n '1,/^\[colors\]/{/^\[colors\]/!p}' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" |
       sed -e "s|^name = .*|name = \"$name\"|" -e "s|^slug = .*|slug = \"$slug\"|"
     for line in "$@"; do printf '%s\n' "$line"; done
-    sed -n '/^\[colors\]/,$p' "$SANDBOX/repo/palettes/sunset-palette.toml" |
+    sed -n '/^\[colors\]/,$p' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" |
       sed 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/'
   } >"$SANDBOX/repo/palettes/$slug-palette.toml"
 }
@@ -2853,7 +2903,7 @@ test_text_strong_and_text_bright_have_separate_roles() {
   assert_file_contains "$gtk" "@define-color theme_selected_fg_color #ffffff;"
 }
 
-# GIVEN every palette in palettes/
+# GIVEN every palette in palettes/Dark and palettes/Light
 # WHEN measuring the contrast of text_strong against the editor background
 #      (bg) and inactive selections (bg_selected)
 # THEN both are at least 4.5:1, so active tabs and selected items are
@@ -2865,7 +2915,11 @@ def luminance(value):
     channels = [int(value[i:i + 2], 16) / 255 for i in (1, 3, 5)]
     r, g, b = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
-for path in sorted(glob.glob(sys.argv[1] + "/palettes/*-palette.toml")):
+paths = sorted(glob.glob(sys.argv[1] + "/palettes/*-palette.toml")
+               + glob.glob(sys.argv[1] + "/palettes/*/*-palette.toml"))
+if not paths:
+    print("no palettes found")
+for path in paths:
     colors = tomllib.load(open(path, "rb"))["colors"]
     def resolve(key):
         value = colors[key]
@@ -3060,7 +3114,7 @@ test_remove_deletes_the_themes() {
   assert_missing "$(vscode_theme sunset)"
   assert_missing "$(ptyxis_palette sunset)"
   assert_missing "$(slack_theme sunset)"
-  assert_exists "$SANDBOX/repo/palettes/sunset-palette.toml"
+  assert_exists "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
 }
 
 # GIVEN Sunset has been generated
@@ -3117,6 +3171,17 @@ test_palette_file_name_must_match_its_slug() {
   assert_status 1
   assert_contains "twilight-palette.toml: palettes in palettes/ must be named after their slug; rename it to dusk-palette.toml"
   assert_missing "$(slack_theme dusk)"
+}
+
+# GIVEN twilight-palette.toml in palettes/Dark with the slug dusk
+# WHEN generating twilight
+# THEN it exits with status 1, asking for it to be renamed: the rule holds in
+#      the scheme folders too
+test_filed_palette_name_must_match_its_slug() {
+  write_palette "$SANDBOX/repo/palettes/Dark/twilight-palette.toml" "Twilight" "dusk"
+  run_jenerate twilight
+  assert_status 1
+  assert_contains "rename it to dusk-palette.toml"
 }
 
 # GIVEN twilight-palette.toml in palettes/ with the slug dusk
@@ -3178,7 +3243,7 @@ test_list_with_a_broken_palette() {
 # WHEN generating it
 # THEN it exits with status 1, saying the name is missing
 test_palette_without_a_name() {
-  grep -v '^name = ' "$SANDBOX/repo/palettes/sunset-palette.toml" \
+  grep -v '^name = ' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/broken-palette.toml"
   run_jenerate broken
   assert_status 1
@@ -3189,7 +3254,7 @@ test_palette_without_a_name() {
 # WHEN generating it
 # THEN it exits with status 1, saying the slug is missing
 test_palette_without_a_slug() {
-  grep -v '^slug = ' "$SANDBOX/repo/palettes/sunset-palette.toml" \
+  grep -v '^slug = ' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/broken-palette.toml"
   run_jenerate broken
   assert_status 1
@@ -3241,7 +3306,7 @@ test_short_hex_is_rejected() {
 # WHEN generating it
 # THEN it exits with status 1, naming accent, and writes none of its files
 test_missing_color_is_named_and_nothing_is_written() {
-  grep -v '^accent = ' "$SANDBOX/repo/palettes/sunset-palette.toml" |
+  grep -v '^accent = ' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" |
     sed -e 's/^name = .*/name = "Holey"/' -e 's/^slug = .*/slug = "holey"/' \
       >"$SANDBOX/repo/palettes/holey-palette.toml"
   run_jenerate holey
@@ -3436,16 +3501,19 @@ test_name_cannot_be_empty_or_padded() {
   done
 }
 
-# GIVEN a palette named Café d'Or (Night)
+# GIVEN a palette named Cafe d'Or (Night), with an accented e (written as its
+#       UTF-8 bytes, so this file stays plain ASCII)
 # WHEN generating it
 # THEN it succeeds, the VS Code theme is valid JSON and Ptyxis shows the name as
 #      is
 test_name_may_use_other_characters() {
-  write_palette "$SANDBOX/repo/palettes/cafe-palette.toml" "Café d'Or (Night)" "cafe"
+  local name
+  name="$(printf 'Caf\303\251 d'"'"'Or (Night)')"
+  write_palette "$SANDBOX/repo/palettes/cafe-palette.toml" "$name" "cafe"
   run_jenerate cafe
   assert_status 0
   assert_valid_json "$(vscode_theme cafe)"
-  assert_file_contains "$(ptyxis_palette cafe)" "Name=Café d'Or (Night)"
+  assert_file_contains "$(ptyxis_palette cafe)" "Name=$name"
 }
 
 run_tests

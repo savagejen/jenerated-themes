@@ -106,7 +106,7 @@ assert_json() {
 # THEN it creates one from Blue Purple and says so
 test_first_start_creates_the_work_in_progress_palette() {
   start_server
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
   OUTPUT="$(cat "$SANDBOX/server.log")"
   assert_contains "Created $WIP_REL from Blue Purple"
   assert_contains "Palette Creator is running at http://127.0.0.1:$PORT/"
@@ -116,9 +116,9 @@ test_first_start_creates_the_work_in_progress_palette() {
 # WHEN serve.py starts
 # THEN it keeps that palette and serves it
 test_start_keeps_an_existing_work_in_progress_palette() {
-  cp "$SANDBOX/repo/palettes/sunset-palette.toml" "$SANDBOX/repo/$WIP_REL"
+  cp "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" "$SANDBOX/repo/$WIP_REL"
   start_server
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/sunset-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
   get /api/palette
   assert_json 'd["palette"]["name"]' "Sunset"
 }
@@ -199,7 +199,7 @@ test_saving_unchanged_keeps_the_file_exactly() {
   start_server
   post /api/save "$(palette_body)"
   assert_json 'd["ok"]' "True"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
 }
 
 # GIVEN Sunset has been loaded into the work in progress
@@ -210,7 +210,7 @@ test_saving_a_palette_started_from_sunset() {
   post /api/save "$(palette_body sunset)"
   assert_json 'd["ok"]' "True"
   assert_json 'd["message"]' "Saved $WIP_REL"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/sunset-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
 }
 
 # GIVEN the accent is changed to #123456
@@ -221,7 +221,7 @@ test_saving_a_change_keeps_the_layout() {
   post /api/save "$(palette_body "" 'colors["accent"]["value"] = "#123456"')"
   assert_json 'd["ok"]' "True"
   assert_file_contains "$SANDBOX/repo/$WIP_REL" 'accent = "#123456"             # cursor, focus, buttons, badges'
-  changed="$(diff "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml" | grep -c '^[<>]')"
+  changed="$(diff "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml" | grep -c '^[<>]')"
   [ "$changed" = "2" ] || fail "expected one line to change, got $changed changed lines"
 }
 
@@ -233,7 +233,7 @@ test_saving_an_invalid_palette_changes_nothing() {
   post /api/save "$(palette_body "" 'colors["accent"]["value"] = "blue-purple"')"
   assert_json 'd["ok"]' "False"
   assert_json 'd["error"]' "color \`accent\` = 'blue-purple' is not a #rrggbb value or the name of another color"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
 }
 
 # --- Tests: the description --------------------------------------------------
@@ -262,7 +262,7 @@ $COLOR_NOTE"
   [ "$(header_of "$SANDBOX/repo/$WIP_REL")" = "$expected" ] ||
     fail "unexpected header: $(header_of "$SANDBOX/repo/$WIP_REL")"
   diff <(sed -n '/^name = /,$p' "$SANDBOX/repo/$WIP_REL") \
-    <(sed -n '/^name = /,$p' "$SANDBOX/repo/palettes/blue-purple-palette.toml") >/dev/null ||
+    <(sed -n '/^name = /,$p' "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml") >/dev/null ||
     fail "expected everything after the header to be unchanged"
 }
 
@@ -319,16 +319,16 @@ test_save_as_palette_keeps_the_description() {
   start_server
   post /api/save "$(palette_body sunset 'p["description"] = "Sunset, described again."; b["target"] = "palette"; b["filename"] = "sunset-palette.toml"; b["overwrite"] = True')"
   assert_json 'd["ok"]' "True"
-  assert_file_contains "$SANDBOX/repo/palettes/sunset-palette.toml" "# Sunset, described again."
+  assert_file_contains "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" "# Sunset, described again."
 }
 
 # GIVEN a palette that says scheme = "light"
 # WHEN loading it and saving it unchanged
 # THEN the scheme line is kept, and the file is byte for byte the same
 test_the_scheme_setting_is_kept() {
-  { sed -n '1,/^slug = /p' "$SANDBOX/repo/palettes/sunset-palette.toml"
+  { sed -n '1,/^slug = /p' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
     echo 'scheme = "light"'
-    sed '1,/^slug = /d' "$SANDBOX/repo/palettes/sunset-palette.toml"; } >"$SANDBOX/repo/palettes/lit-palette.toml"
+    sed '1,/^slug = /d' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"; } >"$SANDBOX/repo/palettes/lit-palette.toml"
   sed -i 's/^slug = .*/slug = "lit"/' "$SANDBOX/repo/palettes/lit-palette.toml"
   start_server
   post /api/load '{"filename": "lit-palette.toml"}'
@@ -440,21 +440,36 @@ test_save_as_palette_without_a_dialog_asks_for_a_name() {
   assert_json 'd["ok"]' "False"
   assert_json 'd["choose_name"]' "True"
   assert_json 'd["default"]' "forest-palette.toml"
-  assert_missing "$SANDBOX/repo/palettes/forest-palette.toml"
+  assert_json 'd["folder"]' "palettes/Dark"
+  assert_missing "$SANDBOX/repo/palettes/Dark/forest-palette.toml"
 }
 
 # GIVEN no save dialog, and the page has asked for a name
-# WHEN saving as forest-palette.toml
-# THEN palettes/forest-palette.toml is written, the message says how to
+# WHEN saving a dark palette as forest-palette.toml
+# THEN palettes/Dark/forest-palette.toml is written, the message says how to
 #      generate it, and jenerate.py can generate it
 test_save_as_palette_with_a_typed_name() {
   start_server
   post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'forest-palette.toml'")"
   assert_json 'd["ok"]' "True"
-  assert_json 'd["message"]' "Saved palettes/forest-palette.toml. Generate its themes with: ./jenerate.py forest"
-  assert_file_contains "$SANDBOX/repo/palettes/forest-palette.toml" 'name = "Forest"'
+  assert_json 'd["message"]' "Saved palettes/Dark/forest-palette.toml. Generate its themes with: ./jenerate.py forest"
+  assert_file_contains "$SANDBOX/repo/palettes/Dark/forest-palette.toml" 'name = "Forest"'
   OUTPUT="$(cd "$SANDBOX/repo" && "$PYTHON" jenerate.py forest 2>&1)"
   assert_contains "Generated Forest (forest)"
+}
+
+# GIVEN no save dialog
+# WHEN saving a light palette (Candy, renamed Meringue), first to see the
+#      suggested place, then with its typed name
+# THEN it's suggested for palettes/Light, and saved there
+test_save_as_palette_files_a_light_palette_in_light() {
+  start_server
+  meringue='p["name"] = "Meringue"; p["slug"] = "meringue"; b["target"] = "palette"'
+  post /api/save "$(palette_body candy "$meringue")"
+  assert_json 'd["folder"]' "palettes/Light"
+  post /api/save "$(palette_body candy "$meringue; b['filename'] = 'meringue-palette.toml'")"
+  assert_json 'd["message"]' "Saved palettes/Light/meringue-palette.toml. Generate its themes with: ./jenerate.py meringue"
+  assert_exists "$SANDBOX/repo/palettes/Light/meringue-palette.toml"
 }
 
 # GIVEN Sunset's palette exists, and no save dialog
@@ -463,16 +478,16 @@ test_save_as_palette_with_a_typed_name() {
 # THEN the first save asks, leaving the file alone, and the second replaces it
 test_save_as_palette_asks_before_replacing() {
   start_server
-  cp "$SANDBOX/repo/palettes/sunset-palette.toml" "$SANDBOX/sunset-before.toml"
+  cp "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" "$SANDBOX/sunset-before.toml"
   changed='colors["accent"]["value"] = "#123456"; b["target"] = "palette"; b["filename"] = "sunset-palette.toml"'
   post /api/save "$(palette_body sunset "$changed")"
   assert_json 'd["ok"]' "False"
   assert_json 'd["exists"]' "True"
-  assert_json 'd["message"]' "palettes/sunset-palette.toml already exists"
-  assert_same_file "$SANDBOX/repo/palettes/sunset-palette.toml" "$SANDBOX/sunset-before.toml"
+  assert_json 'd["message"]' "palettes/Dark/sunset-palette.toml already exists"
+  assert_same_file "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" "$SANDBOX/sunset-before.toml"
   post /api/save "$(palette_body sunset "$changed; b['overwrite'] = True")"
   assert_json 'd["ok"]' "True"
-  assert_file_contains "$SANDBOX/repo/palettes/sunset-palette.toml" 'accent = "#123456"'
+  assert_file_contains "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" 'accent = "#123456"'
 }
 
 # GIVEN Sunset's palette exists, and no save dialog
@@ -482,7 +497,7 @@ test_save_as_palette_unchanged_doesnt_ask() {
   start_server
   post /api/save "$(palette_body sunset 'b["target"] = "palette"; b["filename"] = "sunset-palette.toml"')"
   assert_json 'd["ok"]' "True"
-  assert_same_file "$SANDBOX/repo/palettes/sunset-palette.toml" "$REPO/palettes/sunset-palette.toml"
+  assert_same_file "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" "$REPO/palettes/Dark/sunset-palette.toml"
 }
 
 # GIVEN no save dialog
@@ -492,27 +507,29 @@ test_save_as_palette_unchanged_doesnt_ask() {
 test_save_as_palette_refuses_unusable_typed_names() {
   start_server
   post /api/save "$(palette_body "" "$FOREST; b['filename'] = '../forest-palette.toml'")"
-  assert_json 'd["error"]' "type just a file name, of a file in palettes/"
-  assert_missing "$SANDBOX/repo/forest-palette.toml"
+  assert_json 'd["error"]' "type just a file name; it's saved in palettes/Dark/"
+  assert_missing "$SANDBOX/repo/palettes/forest-palette.toml"
+  post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'Light/forest-palette.toml'")"
+  assert_json 'd["error"]' "type just a file name; it's saved in palettes/Dark/"
+  assert_missing "$SANDBOX/repo/palettes/Light/forest-palette.toml"
   post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'woods.toml'")"
   assert_contains "has to be named forest-palette.toml"
-  assert_missing "$SANDBOX/repo/palettes/woods.toml"
+  assert_missing "$SANDBOX/repo/palettes/Dark/woods.toml"
   post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'forest-palette.txt'")"
   assert_json 'd["error"]' "forest-palette.txt: palette files need to end in .toml"
 }
 
 # GIVEN a save dialog
 # WHEN saving a palette with the slug forest as a palette
-# THEN the dialog opens in palettes/ suggesting forest-palette.toml, and the
-#      file it returns is written
+# THEN the dialog opens in palettes/Dark suggesting forest-palette.toml, and
+#      the file it returns is written
 test_save_as_palette_opens_the_dialog_in_palettes() {
   fake_dialog 0 "$SANDBOX/repo/palettes/forest-palette.toml"
   start_server
   post /api/save "$(palette_body "" "$FOREST")"
   assert_json 'd["ok"]' "True"
   assert_json 'd["message"]' "Saved palettes/forest-palette.toml. Generate its themes with: ./jenerate.py forest"
-  assert_file_contains "$SANDBOX/dialog-args" "$SANDBOX/repo/palettes"
-  assert_file_contains "$SANDBOX/dialog-args" "forest-palette.toml"
+  assert_file_contains "$SANDBOX/dialog-args" "$SANDBOX/repo/palettes/Dark/forest-palette.toml"
   assert_file_contains "$SANDBOX/repo/palettes/forest-palette.toml" 'slug = "forest"'
 }
 
@@ -559,15 +576,15 @@ test_save_as_palette_dialog_refuses_a_misnamed_palette() {
 
 # GIVEN no file dialog
 # WHEN the page asks to load a palette
-# THEN it's asked to pick a name from the palettes in palettes/, and the work
-#      in progress is left alone
+# THEN it's asked to pick a name from the palettes in palettes/Dark and
+#      palettes/Light, and the work in progress is left alone
 test_load_without_a_dialog_asks_for_a_name() {
   start_server
   post /api/load '{}'
   assert_json 'd["ok"]' "False"
   assert_json 'd["choose_name"]' "True"
-  assert_json '"blue-purple-palette.toml" in d["palettes"] and "sunset-palette.toml" in d["palettes"]' "True"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_json '"Dark/blue-purple-palette.toml" in d["palettes"] and "Light/candy-palette.toml" in d["palettes"]' "True"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
 }
 
 # GIVEN no file dialog, and the page has asked for a name
@@ -579,11 +596,22 @@ test_load_a_typed_name_replaces_the_work_in_progress() {
   start_server
   post /api/load '{"filename": "sunset-palette.toml"}'
   assert_json 'd["ok"]' "True"
-  assert_json 'd["message"]' "Loaded palettes/sunset-palette.toml into the work-in-progress palette."
+  assert_json 'd["message"]' "Loaded palettes/Dark/sunset-palette.toml into the work-in-progress palette."
   assert_json 'd["palette"]["name"]' "Sunset"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/sunset-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
   get /api/palette
   assert_json 'd["palette"]["name"]' "Sunset"
+}
+
+# GIVEN no file dialog, and the page has listed the palettes
+# WHEN loading Light/candy-palette.toml, as the list names it
+# THEN Candy is loaded
+test_load_a_listed_name() {
+  start_server
+  post /api/load '{"filename": "Light/candy-palette.toml"}'
+  assert_json 'd["ok"]' "True"
+  assert_json 'd["message"]' "Loaded palettes/Light/candy-palette.toml into the work-in-progress palette."
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Light/candy-palette.toml"
 }
 
 # GIVEN a file dialog
@@ -591,13 +619,13 @@ test_load_a_typed_name_replaces_the_work_in_progress() {
 # THEN an open dialog (not a save dialog) starts in palettes/, and the file it
 #      returns is loaded
 test_load_opens_the_dialog_in_palettes() {
-  fake_dialog 0 "$SANDBOX/repo/palettes/sunset-palette.toml"
+  fake_dialog 0 "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
   start_server
   post /api/load '{}'
   assert_json 'd["ok"]' "True"
   assert_file_contains "$SANDBOX/dialog-args" "$SANDBOX/repo/palettes"
   assert_file_not_contains "$SANDBOX/dialog-args" "--save"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/sunset-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
 }
 
 # GIVEN a file dialog, where a palette outside palettes/ is chosen
@@ -606,7 +634,7 @@ test_load_opens_the_dialog_in_palettes() {
 test_load_from_somewhere_else() {
   mkdir -p "$SANDBOX/My Palettes"
   sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
-    "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/My Palettes/woods.toml"
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/My Palettes/woods.toml"
   fake_dialog 0 "$SANDBOX/My Palettes/woods.toml"
   start_server
   post /api/load '{}'
@@ -624,7 +652,7 @@ test_load_dialog_cancelled() {
   post /api/load '{}'
   assert_json 'd["ok"]' "False"
   assert_json 'd["cancelled"]' "True"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
 }
 
 # GIVEN a palette with a syntax error, and one missing a color the templates
@@ -634,7 +662,7 @@ test_load_dialog_cancelled() {
 #      left alone
 test_load_refuses_a_palette_jenerate_would_reject() {
   printf 'name = "Broken\n' >"$SANDBOX/repo/palettes/broken-palette.toml"
-  grep -v '^accent = ' "$SANDBOX/repo/palettes/sunset-palette.toml" |
+  grep -v '^accent = ' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" |
     sed -e 's/^name = .*/name = "Holey"/' -e 's/^slug = .*/slug = "holey"/' \
       >"$SANDBOX/repo/palettes/holey-palette.toml"
   start_server
@@ -644,7 +672,7 @@ test_load_refuses_a_palette_jenerate_would_reject() {
   post /api/load '{"filename": "holey-palette.toml"}'
   assert_json 'd["ok"]' "False"
   assert_contains "the palette has no color named accent"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
 }
 
 # GIVEN no file dialog
@@ -653,13 +681,15 @@ test_load_refuses_a_palette_jenerate_would_reject() {
 # THEN each is refused, saying why, and the work in progress is left alone
 test_load_refuses_unusable_typed_names() {
   start_server
-  post /api/load '{"filename": "../palettes/sunset-palette.toml"}'
-  assert_json 'd["error"]' "type just a file name, of a file in palettes/"
+  post /api/load '{"filename": "../palettes/Dark/sunset-palette.toml"}'
+  assert_json 'd["error"]' "type a file name from the list of palettes"
+  post /api/load '{"filename": "Screenshots/sunset-palette.toml"}'
+  assert_json 'd["error"]' "type a file name from the list of palettes"
   post /api/load '{"filename": "notes.txt"}'
   assert_json 'd["error"]' "notes.txt: not a palette file (.toml)"
   post /api/load '{"filename": "nope-palette.toml"}'
   assert_json 'd["error"]' "nope-palette.toml: not a palette file (.toml)"
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
 }
 
 # GIVEN a load request from a page on another origin
@@ -669,7 +699,7 @@ test_refuses_loads_from_other_origins() {
   start_server
   post /api/load '{"filename": "sunset-palette.toml"}' -H "Origin: http://evil.example"
   assert_code 403
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
 }
 
 # GIVEN serve.py is running
@@ -693,7 +723,7 @@ test_refuses_saves_that_arent_json() {
   get /api/save -X POST -H "Content-Type: text/plain" \
     --data-binary "$(palette_body "" 'colors["accent"]["value"] = "#123456"')"
   assert_code 415
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
 }
 
 # GIVEN a request with another site's Host (as in DNS rebinding)
@@ -714,7 +744,7 @@ test_refuses_other_origins() {
   body="$(palette_body "" 'colors["accent"]["value"] = "#123456"')"
   post /api/save "$body" -H "Origin: http://evil.example"
   assert_code 403
-  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/Dark/blue-purple-palette.toml"
   post /api/save "$body" -H "Origin: http://127.0.0.1:$PORT"
   assert_code 200
   assert_file_contains "$SANDBOX/repo/$WIP_REL" 'accent = "#123456"'

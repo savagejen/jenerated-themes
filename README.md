@@ -71,13 +71,13 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 
 ## Themes
 
-A few premade palettes are included and can be previewed in
+A few premade palettes are included, dark and light, and can be previewed in
 [palettes/README.md](palettes/README.md).
 
 ## Getting started
 
 The quickest way is the setup script. Clone the repository and run it; it
-asks which app and which theme you want, then does the rest (on Linux or
+asks which app and which theme you want (dark or light, then which one), then does the rest (on Linux or
 macOS). For most apps it first shows the commands that install the theme,
 then offers to run them for you, linking the files (so they follow palette
 changes) or copying them. It can also start the [Palette Creator](palette-creator/), for
@@ -122,7 +122,8 @@ To remove a palette's themes again, run `./jenerate.py --remove sunset`.
 
 ## How it works
 
-A palette is a small file in [palettes/](palettes/) that names each color by
+A palette is a small file in [palettes/Dark](palettes/Dark/) or
+[palettes/Light](palettes/Light/) that names each color by
 its role: the editor background, text, the accent, error red, the terminal's
 colors and so on. `jenerate.py` fills those colors into a template for each
 app, and writes the themes next to the templates, named after the palette.
@@ -153,7 +154,7 @@ on a light palette `text_bright` stays light for the accent, and
 
 ## Changing colors
 
-Edit a palette, for example `palettes/sunset-palette.toml`, then run
+Edit a palette, for example `palettes/Dark/sunset-palette.toml`, then run
 `./jenerate.py sunset` to regenerate its themes. Reload the apps that use it
 to see the change.
 
@@ -165,11 +166,13 @@ You can also keep a palette outside this repository and pass its path:
 The easiest way is the [Palette Creator](palette-creator/): run
 `./setup.sh` and choose **Design a new palette**, or run
 `./palette-creator/serve.py`. It shows a preview in your browser that
-recolors as you edit. Save the palette to `palettes/`, then generate its
-themes with `./jenerate.py <slug>`.
+recolors as you edit. Save the palette (it goes in `palettes/Dark` or
+`palettes/Light`, to match it), then generate its themes with
+`./jenerate.py <slug>`.
 
 To write one by hand, copy an existing palette to
-`palettes/<slug>-palette.toml`, change its `name`, `slug` and colors, and run
+`palettes/Dark/<slug>-palette.toml` or `palettes/Light/<slug>-palette.toml`,
+change its `name`, `slug` and colors, and run
 `./jenerate.py <slug>`. Every color the templates use must be defined; if one
 is missing, `jenerate.py` stops and names it.
 
@@ -178,8 +181,9 @@ explains any that a palette breaks:
 
 - The `slug` is used in file names, so it's lowercase letters, numbers and
   single dashes, like `deep-blue-sea`.
-- A palette in `palettes/` must be named `<slug>-palette.toml`. (A palette
-  kept elsewhere and passed by path can be named anything.)
+- A palette in `palettes/Dark` or `palettes/Light` must be named
+  `<slug>-palette.toml`, and a slug can only be used once. (A palette kept
+  elsewhere and passed by path can be named anything.)
 - The `name` can't be empty, start or end with spaces, or contain double
   quotes, slashes, backslashes, `<`, `>`, `&` or line breaks. (It's written
   into JSON and XML files, and also names the Obsidian theme's folder.)

@@ -49,9 +49,9 @@ folder into that folder.
 
 Then, in Insomnia:
 
-1. Restart it, or open **Settings** (**Preferences** in older versions) →
+1. Restart it, or open **Settings** (**Preferences** in older versions) ->
    **Plugins** and choose **Reload**.
-2. Open **Settings → Themes**, and choose **Jenerated Blue Purple**.
+2. Open **Settings -> Themes**, and choose **Jenerated Blue Purple**.
 
 The plugin is a copy, so after changing the palette, run `./setup.sh` again
 (it replaces the old copy) and reload the plugins.

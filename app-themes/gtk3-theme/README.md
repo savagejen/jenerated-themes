@@ -54,7 +54,7 @@ Then choose **Jenerated-blue-purple**:
   `gsettings set org.gnome.desktop.interface gtk-theme Jenerated-blue-purple`.
   To go back, set it to your previous theme again (Ubuntu's are called
   `Yaru-dark`, `Yaru-blue-dark` and so on).
-- **Xfce:** **Settings → Appearance → Style**.
+- **Xfce:** **Settings -> Appearance -> Style**.
 - **One app at a time:** start it with the `GTK_THEME` variable, for example
   `GTK_THEME=Jenerated-blue-purple gimp`.
 
