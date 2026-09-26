@@ -1,0 +1,69 @@
+# Every color made of FF, AA and 00: hot pink, amber, violet, lime, sky blue
+# and mint, as flat color bars around the neutral greys of TV static. Violet
+# frames the window, mint fills the minimap, and lime and amber draw the
+# indent guides and whitespace.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Pop"
+slug = "pop"
+
+[colors]
+# Backgrounds: color bars around neutral static greys
+bg_chrome = "#aa00ff"          # activity bar, title bar, status bar: violet bar
+bg_minimap = "#00ffaa"         # mint bar
+bg = "#1f1f1f"                 # editor and terminal: dark static
+bg_sidebar = "#2b2b2b"         # static grey
+bg_widget = "#333333"          # popups, hovers, notifications
+bg_line_highlight = "#292929"
+bg_hover = "#3a3a3a"           # hovered items, inputs
+bg_selected = "#dd0093"        # inactive selection in lists: hot pink at 87%, for white text
+bg_secondary_hover = "#555555" # hovered secondary buttons
+selection = "#454545"          # selected text: lighter static
+
+# Lines
+guide = "#aaff00"              # indent guides, rulers: lime
+whitespace = "#ffaa00"         # rendered whitespace: amber
+border = "#006ea5"             # borders, secondary buttons: sky blue at 65%, for white text
+
+# Text: static greys, dimmest to brightest
+text_faint = "#8a8a8a"         # line numbers, ignored files
+text_muted = "#b0b0b0"         # comments, inactive tabs
+text_subtle = "#d8d8d8"        # sidebar text, punctuation
+text = "#f2f2f2"
+text_bright = "#000000"        # text on the accent color
+text_strong = "#ffffff"        # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#ff00aa"             # hot pink: cursor, focus, buttons, badges
+accent_hover = "#ffaa00"       # hovered buttons: amber
+accent_soft = "#ffff33"        # test-bar yellow: keywords, links
+accent_light = "#00aaff"       # sky blue: functions
+accent_pale = "#99ddff"        # pale sky: properties
+
+# Syntax and status colors
+red = "#ff3f4f"                # test-bar red: errors, deleted
+orange = "#ffaa00"             # amber: numbers, parameters, attributes
+yellow = "#ffff33"             # test-bar yellow: warnings, regex
+green = "#aaff00"              # lime: strings, added
+cyan = "#00ffee"               # test-bar cyan: classes, types
+magenta = "#ff66ff"            # test-bar magenta: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#3d3d3d"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_light"
+term_magenta = "#ff00aa"
+term_cyan = "cyan"
+term_white = "text_subtle"
+term_bright_black = "text_muted"
+term_bright_red = "#ff7788"
+term_bright_green = "#ccff66"
+term_bright_yellow = "#ffff99"
+term_bright_blue = "#66ccff"
+term_bright_magenta = "#ff80d4"
+term_bright_cyan = "#88fff5"
+term_bright_white = "text_strong"

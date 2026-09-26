@@ -1,0 +1,68 @@
+# Neon over TV static: a violet color bar frames the neutral greys of
+# broadcast static, with the test pattern's darkest black behind the minimap.
+# Hot pink, lime, amber and sky blue join test-bar yellow, cyan and magenta.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Neon Dev"
+slug = "neon-dev"
+
+[colors]
+# Backgrounds: a violet color bar around neutral static greys
+bg_chrome = "#7f00bf"          # activity bar, title bar, status bar: violet at 75%, like broadcast bars
+bg_minimap = "#0a0a0a"         # the test pattern's darkest black
+bg = "#1f1f1f"                 # editor and terminal: dark static
+bg_sidebar = "#2b2b2b"         # static grey
+bg_widget = "#333333"          # popups, hovers, notifications
+bg_line_highlight = "#292929"
+bg_hover = "#3a3a3a"           # hovered items, inputs
+bg_selected = "#aa00ff"        # inactive selection in lists: full violet bar
+bg_secondary_hover = "#555555" # hovered secondary buttons
+selection = "#454545"          # selected text: lighter static
+
+# Lines
+guide = "#333333"              # indent guides, rulers
+whitespace = "#444444"         # rendered whitespace
+border = "#474747"
+
+# Text: greyscale steps, dimmest to brightest
+text_faint = "#6b6b6b"         # line numbers, ignored files
+text_muted = "#a3a3a3"         # comments, inactive tabs
+text_subtle = "#d0d0d0"        # sidebar text, punctuation
+text = "#f2f2f2"
+text_bright = "#000000"        # text on the accent color
+text_strong = "#ffffff"        # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#ff00aa"             # hot pink: cursor, focus, buttons, badges
+accent_hover = "#ff4dc4"       # hovered buttons
+accent_soft = "#ffff33"        # test-bar yellow: keywords, links
+accent_light = "#00aaff"       # sky blue: functions
+accent_pale = "#99ddff"        # pale sky: properties
+
+# Syntax and status colors
+red = "#ff3344"                # test-bar red: errors, deleted
+orange = "#ffaa00"             # amber: numbers, parameters, attributes
+yellow = "#ffff33"             # test-bar yellow: warnings, regex
+green = "#aaff00"              # lime: strings, added
+cyan = "#00ffee"               # test-bar cyan: classes, types
+magenta = "#ff66ff"            # test-bar magenta: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#3d3d3d"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_light"
+term_magenta = "accent"
+term_cyan = "cyan"
+term_white = "text_subtle"
+term_bright_black = "text_muted"
+term_bright_red = "#ff7788"
+term_bright_green = "#ccff66"
+term_bright_yellow = "#ffff99"
+term_bright_blue = "#66ccff"
+term_bright_magenta = "#ff80d4"
+term_bright_cyan = "#88fff5"
+term_bright_white = "text_strong"

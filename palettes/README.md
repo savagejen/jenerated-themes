@@ -164,3 +164,16 @@ and whitespace.
 ![The Pop palette in the Palette Creator's preview](Screenshots/pop.png)
 
 Editor `#1f1f1f` · Sidebar `#2b2b2b` · Accent `#ff00aa` · Text `#f2f2f2`
+
+## Blue Sky
+
+`blue-sky`
+
+A light palette of a breezy afternoon: cloud-white and pale sky-blue
+backgrounds, storm-cloud navy text, a sky-blue accent, and syntax colors in
+the deep shades of kites against the sky: red, orange, yellow, violet and
+teal, with a pink tail and a patch of grass green below.
+
+![The Blue Sky palette in the Palette Creator's preview](Screenshots/blue-sky.png)
+
+Editor `#f9fbfd` · Sidebar `#eaf2fa` · Accent `#1f6fbf` · Text `#1f2d3f`

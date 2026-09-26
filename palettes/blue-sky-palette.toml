@@ -1,0 +1,69 @@
+# A light palette of a breezy afternoon: cloud-white and pale sky-blue
+# backgrounds, storm-cloud navy text, a sky-blue accent, and syntax colors in
+# the deep shades of kites against the sky: red, orange, yellow, violet and
+# teal, with a pink tail and a patch of grass green below.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Blue Sky"
+slug = "blue-sky"
+
+[colors]
+# Backgrounds: cloud white and pale sky, from the editor to the chrome
+bg_chrome = "#d4e6f6"          # activity bar, title bar, status bar: pale sky
+bg_minimap = "#f1f5f9"
+bg = "#f9fbfd"                 # editor and terminal: cloud white
+bg_sidebar = "#eaf2fa"         # high thin cloud
+bg_widget = "#ffffff"          # popups, hovers, notifications
+bg_line_highlight = "#eef3f8"
+bg_hover = "#dde9f5"           # hovered items, inputs
+bg_selected = "#cfe0f1"        # inactive selection in lists
+bg_secondary_hover = "#bcd3ea" # hovered secondary buttons
+selection = "#bfdcf7"          # selected text: clear sky
+
+# Lines
+guide = "#e1e8ef"              # indent guides, rulers
+whitespace = "#cfd8e2"         # rendered whitespace
+border = "#d3dde8"
+
+# Text: storm cloud, faintest to darkest
+text_faint = "#7f90a4"         # line numbers, ignored files
+text_muted = "#5e6f84"         # comments, inactive tabs
+text_subtle = "#44546a"        # sidebar text, punctuation
+text = "#1f2d3f"               # storm-cloud navy
+text_bright = "#ffffff"        # text on the accent color
+text_strong = "text"           # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#1f6fbf"             # sky blue: cursor, focus, buttons, badges
+accent_hover = "#185fa6"       # hovered buttons
+accent_soft = "#7040b0"        # violet kite: keywords, links
+accent_light = "#2f55c8"       # high-altitude blue: functions
+accent_pale = "#4f5f99"        # cloud shadow: properties
+
+# Syntax and status colors: kite shades
+red = "#c8332f"                # red kite: errors, deleted
+orange = "#b04e0c"             # orange kite: numbers, parameters, attributes
+yellow = "#876300"             # yellow kite: warnings, regex
+green = "#2e7a2e"              # grass: strings, added
+cyan = "#0b7480"               # teal kite: classes, types
+magenta = "#f500ff"            # kite tail: constants, search matches
+
+# Terminal (ANSI) colors, for a light background
+term_black = "text"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_light"
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "#b9c6d4"
+term_bright_black = "text_muted"
+term_bright_red = "#e0504a"
+term_bright_green = "#3b9a3b"
+term_bright_yellow = "#a87c00"
+term_bright_blue = "#4a78e0"
+term_bright_magenta = "#d24e98"
+term_bright_cyan = "#1592a0"
+term_bright_white = "#dde6ef"
