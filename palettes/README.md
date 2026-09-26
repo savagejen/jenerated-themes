@@ -139,3 +139,28 @@ berries, orange and brown bark
 ![The Madrone Grove palette in the Palette Creator's preview](Screenshots/madrone-grove.png)
 
 Editor `#17110f` · Sidebar `#14221a` · Accent `#d63d38` · Text `#f3e3d3`
+
+## Neon Dev
+
+`neon-dev`
+
+Neon over TV static: a violet color bar frames the neutral greys of broadcast
+static, with the test pattern's darkest black behind the minimap. Hot pink,
+lime, amber and sky blue join test-bar yellow, cyan and magenta.
+
+![The Neon Dev palette in the Palette Creator's preview](Screenshots/neon-dev.png)
+
+Editor `#1f1f1f` · Sidebar `#2b2b2b` · Accent `#ff00aa` · Text `#f2f2f2`
+
+## Pop
+
+`pop`
+
+Every color made of FF, AA and 00: hot pink, amber, violet, lime, sky blue and
+mint, as flat color bars around the neutral greys of TV static. Violet frames
+the window, mint fills the minimap, and lime and amber draw the indent guides
+and whitespace.
+
+![The Pop palette in the Palette Creator's preview](Screenshots/pop.png)
+
+Editor `#1f1f1f` · Sidebar `#2b2b2b` · Accent `#ff00aa` · Text `#f2f2f2`
