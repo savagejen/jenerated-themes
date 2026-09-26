@@ -73,6 +73,18 @@ choose() {
   done
 }
 
+# open_url url -> opens the URL in the default browser without waiting for
+# it, or returns 1 if there's no way to (no `open` or `xdg-open`, as over SSH).
+open_url() {
+  if [ "$OS" = "Darwin" ]; then
+    open "$1" >/dev/null 2>&1
+  elif command -v xdg-open >/dev/null 2>&1; then
+    (xdg-open "$1" >/dev/null 2>&1 &)
+  else
+    return 1
+  fi
+}
+
 # toml_value file key -> prints the top-level string value of `key = "..."`
 # or `key = '...'`. Only used without Python; jenerate.py reads palettes
 # properly otherwise.
@@ -529,10 +541,14 @@ load_palettes() {
   [ "${#SLUGS[@]}" -gt 0 ] || die "no palettes found in palettes/Dark or palettes/Light"
 }
 
+# Where the palettes' previews are, for the Preview option.
+PREVIEW_URL="https://github.com/savagejen/jenerated-themes/blob/main/palettes/README.md"
+
 # pick_palette -> asks whether you want a dark or light theme (when there are
 # palettes of both), then which palette of those. Sets CHOICE to the chosen
 # palette's index in SLUGS; returns 1 if you went back past the first
-# question. Back from the palette list goes back to dark or light.
+# question. Back from the palette list goes back to dark or light. Preview
+# opens the palettes' previews in the browser and asks again.
 pick_palette() {
   local scheme i has_dark="" has_light=""
   local indexes labels
@@ -543,8 +559,18 @@ pick_palette() {
   while :; do
     scheme=""
     if [ -n "$has_dark" ] && [ -n "$has_light" ]; then
-      choose_or_back "Do you want a dark or light theme?" "" "Dark" "Light"
+      choose_or_back "Do you want a dark or light theme?" "" "Dark" "Light" \
+        "Preview the palettes (opens in your browser)"
       [ "$CHOICE" = back ] && return 1
+      if [ "$CHOICE" -eq 2 ]; then
+        if open_url "$PREVIEW_URL"; then
+          say "Opening the palette previews in your browser:"
+        else
+          say "Open the palette previews in your browser:"
+        fi
+        say "  $PREVIEW_URL"
+        continue
+      fi
       scheme=dark
       [ "$CHOICE" -eq 1 ] && scheme=light
     fi

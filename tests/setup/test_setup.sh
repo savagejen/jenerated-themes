@@ -372,6 +372,7 @@ test_theme_menu_asks_dark_or_light() {
   assert_contains "Do you want a dark or light theme?
   1) Dark
   2) Light
+  3) Preview the palettes (opens in your browser)
   0) Back"
   assert_contains "Which theme do you want?
   1) Dawn
@@ -406,6 +407,55 @@ test_dark_or_light_back_goes_to_the_app_menu() {
   assert_status 0
   [ "$(printf '%s\n' "$OUTPUT" | grep -c 'Apps matching "slack":')" = "2" ] ||
     fail "expected the search results twice"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN dark palettes and a light one, on Linux with xdg-open (faked, so no
+#       real browser opens)
+# WHEN choosing Preview, then Light and Dawn
+# THEN xdg-open is given the palettes README on GitHub, the address is
+#      printed, and the same question is asked again, where Light still works
+test_preview_opens_the_palettes_readme_and_asks_again() {
+  fake_os Linux
+  fake_command xdg-open "printf '%s' \"\$*\" >\"$SANDBOX/xdg-open-ran\""
+  dawn_palette Light
+  run_setup "1\nslack\n1\n3\n2\n1\n"
+  assert_status 0
+  wait_for "$SANDBOX/xdg-open-ran"
+  assert_file_equals "$SANDBOX/xdg-open-ran" \
+    "https://github.com/savagejen/jenerated-themes/blob/main/palettes/README.md"
+  assert_contains "Opening the palette previews in your browser:
+  https://github.com/savagejen/jenerated-themes/blob/main/palettes/README.md"
+  [ "$(printf '%s\n' "$OUTPUT" | grep -c 'Do you want a dark or light theme?')" = "2" ] ||
+    fail "expected the dark or light question again after Preview"
+  assert_contains "Generated Dawn (dawn)"
+}
+
+# GIVEN dark palettes and a light one, on a Mac
+# WHEN choosing Preview, then Dark and Blue Purple
+# THEN it opens the palettes README with `open`
+test_preview_on_macos_uses_open() {
+  fake_os Darwin
+  fake_command open "printf '%s' \"\$*\" >\"$SANDBOX/open-ran\""
+  dawn_palette Light
+  run_setup "1\nslack\n1\n3\n1\n1\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/open-ran" \
+    "https://github.com/savagejen/jenerated-themes/blob/main/palettes/README.md"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN dark palettes and a light one, where the browser can't be opened
+# WHEN choosing Preview, then Dark and Blue Purple
+# THEN it prints the address to open instead, and asks again
+test_preview_without_a_browser_prints_the_address() {
+  fake_os Darwin
+  fake_command open "exit 1"
+  dawn_palette Light
+  run_setup "1\nslack\n1\n3\n1\n1\n"
+  assert_status 0
+  assert_contains "Open the palette previews in your browser:
+  https://github.com/savagejen/jenerated-themes/blob/main/palettes/README.md"
   assert_contains "Your Slack theme string"
 }
 
