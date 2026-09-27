@@ -65,9 +65,14 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 - [mpv (media player)](app-themes/mpv-theme/)
 - [OBS Studio (streaming and recording)](app-themes/obs-theme/)
 
-### Other apps
+### Art and design
+
+- [Krita (painting)](app-themes/krita-theme/)
+
+### Hacking and testing tools
 
 - [Insomnia (API client)](app-themes/insomnia-theme/)
+- [Wireshark (network analyzer)](app-themes/wireshark-theme/)
 
 ## Themes
 
@@ -89,6 +94,15 @@ git clone https://github.com/savagejen/jenerated-themes jenerated-themes
 cd jenerated-themes
 ./setup.sh
 ```
+
+To theme everything at once, choose **ALL THE APPS** in the app menu: it
+installs one palette into every app it finds on your computer that it can
+install into by itself, without asking anything else once you've said yes.
+Apps it doesn't find are left out, and listed. (Apps whose
+themes are installed by hand, like the browsers and Slack, are left out and
+listed.) Or, for one app that keeps several themes to choose from (VS Code,
+Vim, the terminals and most editors), choose **ALL THE PALETTES** at the dark
+or light question, to install every palette into it.
 
 ### Setting up by hand
 

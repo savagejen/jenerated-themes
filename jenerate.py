@@ -11,19 +11,21 @@ Usage:
 A palette is named by its slug (palettes/Dark/<slug>-palette.toml or
 palettes/Light/<slug>-palette.toml) or given as a path to a .toml file. A
 palette straight in palettes/ works too, until the screenshot script files
-it. Each run adds to, or updates, the themes already
-generated; nothing else is touched. Each template's {{name}} placeholders are
-replaced with the palette's colors (plus its `name` and `slug`), and the result
-is written next to the template. Each color is also available as RGB and HSL
-numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 243",
+it. Each run adds to, or updates, the themes already generated; nothing else
+is touched. Each template's {{name}} placeholders are replaced with the
+palette's colors (plus its `name` and `slug`), and the result is written
+next to the template. Each color is also available as RGB and HSL numbers,
+for apps whose themes need them: {{accent_rgb}} is "88, 101, 243",
 {{accent_rgb_csv}} is "88,101,243", {{accent_rgb_spaced}} is "88 101 243",
-{{accent_float}} is "0.3451, 0.3961, 0.9529" (each channel from 0 to 1;
-{{accent_float_spaced}} is the same with spaces instead of commas), {{accent_linear_r}}, {{accent_linear_g}} and
-{{accent_linear_b}} are its channels in linear light (for apps that store
-colors that way, such as Unreal Engine), {{accent_h}}, {{accent_s}} and
-{{accent_l}} are "235", "87" and "65", {{accent_hex}} is "5865F3"
-(without the #), and {{accent_int}} is "5793267" (0xrrggbb as a decimal
-number, as LibreOffice stores colors).
+{{accent_rgb16}} is "22616,25957,62451" (each channel from 0 to 65535, as
+Wireshark stores colors), {{accent_float}} is "0.3451, 0.3961, 0.9529" (each
+channel from 0 to 1; {{accent_float_spaced}} is the same with spaces instead
+of commas), {{accent_linear_r}}, {{accent_linear_g}} and {{accent_linear_b}}
+are its channels in linear light (for apps that store colors that way, such
+as Unreal Engine), {{accent_h}}, {{accent_s}} and {{accent_l}} are "235",
+"87" and "65", {{accent_hex}} is "5865F3" (without the #), and
+{{accent_int}} is "5793267" (0xrrggbb as a decimal number, as LibreOffice
+stores colors).
 {{uuid}} is an ID made from the slug, the same every time, for apps that
 identify themes by UUID.
 
@@ -106,6 +108,7 @@ TARGETS = [
     ("app-themes/libreoffice-theme/description.xml.tmpl", "app-themes/libreoffice-theme/{slug}/description.xml"),
     ("app-themes/libreoffice-theme/description.txt.tmpl", "app-themes/libreoffice-theme/{slug}/description.txt"),
     ("app-themes/libreoffice-theme/manifest.xml.tmpl", "app-themes/libreoffice-theme/{slug}/META-INF/manifest.xml"),
+    ("app-themes/wireshark-theme/colorfilters.tmpl", "app-themes/wireshark-theme/{slug}/colorfilters"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
@@ -265,6 +268,7 @@ def color_formats(key, value):
         f"{key}_rgb": f"{r}, {g}, {b}",
         f"{key}_rgb_csv": f"{r},{g},{b}",
         f"{key}_rgb_spaced": f"{r} {g} {b}",
+        f"{key}_rgb16": f"{r * 257},{g * 257},{b * 257}",
         f"{key}_int": str((r << 16) | (g << 8) | b),
         f"{key}_float": f"{r / 255:.4f}, {g / 255:.4f}, {b / 255:.4f}",
         f"{key}_float_spaced": f"{r / 255:.4f} {g / 255:.4f} {b / 255:.4f}",

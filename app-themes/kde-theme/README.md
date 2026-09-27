@@ -6,7 +6,8 @@ VS Code themes:
 - a **Plasma color scheme** (`Jenerated-<slug>.colors`), which colors Plasma
   itself (the panel, menus and widgets, with the Breeze Plasma style), window
   title bars (with Breeze window decorations), and every KDE and Qt app, such
-  as Dolphin, Kate, Okular and System Settings. KDE's GTK integration applies
+  as Dolphin, Kate, Okular and System Settings. (The [Krita theme](../krita-theme/)
+  uses this same file.) KDE's GTK integration applies
   it to GTK apps too;
 - a **Konsole color scheme** (`Jenerated-<slug>.colorscheme`), with the same
   16 terminal colors as the Ptyxis and Tilix themes; and

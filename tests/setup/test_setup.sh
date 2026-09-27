@@ -73,8 +73,8 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 
 # GIVEN a Linux system
 # WHEN setup.sh shows the app menu
-# THEN it lists the categories with how many apps each has, then the apps
-#      that don't fit one, then search, and a way back
+# THEN it lists the categories with how many apps each has ("1 app" for
+#      one), then ALL THE APPS, then search, and a way back
 test_app_menu_on_linux_groups_the_apps() {
   fake_os Linux
   run_setup "1\n2\n3\n1\n"
@@ -86,8 +86,10 @@ test_app_menu_on_linux_groups_the_apps() {
   4) Terminals and command-line tools (5 apps)
   5) Linux desktops (3 apps)
   6) Entertainment (3 apps)
-  7) Insomnia (API client)
-  8) Search for an app by name
+  7) Art and design (1 app)
+  8) Hacking and testing tools (2 apps)
+  9) ALL THE APPS
+  10) Search for an app by name
   0) Back"
   assert_contains "Your Slack theme string"
 }
@@ -106,8 +108,10 @@ test_app_menu_on_macos_leaves_out_linux_apps() {
   3) Editors: code, text and notes (13 apps)
   4) Terminals and command-line tools (3 apps)
   5) Entertainment (3 apps)
-  6) Insomnia (API client)
-  7) Search for an app by name
+  6) Art and design (1 app)
+  7) Hacking and testing tools (2 apps)
+  8) ALL THE APPS
+  9) Search for an app by name
   0) Back"
   assert_contains "Your Slack theme string"
   assert_not_contains "Linux desktops"
@@ -119,7 +123,7 @@ test_app_menu_on_macos_leaves_out_linux_apps() {
 #      returns to the app menu each time
 test_each_category_lists_its_apps() {
   fake_os Linux
-  run_setup "1\n1\n0\n2\n0\n3\n0\n4\n0\n5\n0\n6\n0\n7\n1\n"
+  run_setup "1\n1\n0\n2\n0\n3\n0\n4\n0\n5\n0\n6\n0\n7\n0\n8\n1\n1\n"
   assert_status 0
   assert_contains "Communication:
   1) Element (Matrix chat)
@@ -164,8 +168,15 @@ test_each_category_lists_its_apps() {
   2) mpv (media player)
   3) OBS Studio (streaming and recording)
   0) Back"
+  assert_contains "Art and design:
+  1) Krita (painting)
+  0) Back"
+  assert_contains "Hacking and testing tools:
+  1) Insomnia (API client)
+  2) Wireshark (network analyzer)
+  0) Back"
   count="$(printf '%s\n' "$OUTPUT" | grep -c '^Which app do you want to theme?$')"
-  [ "$count" -eq 7 ] || fail "expected the app menu 7 times (once, then after each Back), got $count"
+  [ "$count" -eq 8 ] || fail "expected the app menu 8 times (once, then after each Back), got $count"
 }
 
 # GIVEN a category open
@@ -275,7 +286,7 @@ test_search_lists_every_theme_for_an_app() {
 # THEN it lists the matching apps
 test_search_option_asks_for_a_name() {
   fake_os Linux
-  run_setup "1\n8\nfire\n1\n1\n"
+  run_setup "1\n10\nfire\n1\n1\n"
   assert_status 0
   assert_contains "Type part of an app's name (or press Enter to go back): "
   assert_contains 'Apps matching "fire":
@@ -457,6 +468,177 @@ test_preview_without_a_browser_prints_the_address() {
   assert_contains "Open the palette previews in your browser:
   https://github.com/savagejen/jenerated-themes/blob/main/palettes/README.md"
   assert_contains "Your Slack theme string"
+}
+
+# fake_outside_commands -> fakes the commands an install uses outside the
+# sandbox's home folder (tmux's running server, LibreOffice's unopkg), so an
+# ALL THE APPS run can't touch the real ones.
+fake_outside_commands() {
+  fake_command tmux "exit 1"
+  fake_command unopkg "exit 1"
+}
+
+# GIVEN Linux, with Tilix, tmux and VS Code found on this computer
+# WHEN choosing ALL THE APPS and Blue Purple, then saying no
+# THEN it lists the three found, the automated apps not found, and the
+#      manual ones it leaves out, asks with no as the default, installs
+#      nothing, and goes back to the first menu, where installing one app
+#      still works
+test_all_the_apps_lists_the_apps_and_asks_first() {
+  fake_os Linux
+  fake_outside_commands
+  export SETUP_FOUND_APPS="tilix tmux vscode"
+  run_setup "1\n9\n1\nn\n1\nslack\n1\n1\n"
+  assert_status 0
+  assert_contains "==> ALL THE APPS
+This installs Jenerated Blue Purple into all 3 of these apps, with no"
+  assert_contains "  - VS Code
+  - Tilix (terminal)
+  - tmux
+
+These weren't found on this computer, so they're left out:"
+  assert_contains "  - Sublime Text"
+  assert_contains "Manual installs aren't included."
+  assert_contains "  - Slack"
+  assert_contains "  - Firefox"
+  assert_contains "Install into all 3 apps? [y/N]"
+  assert_not_contains "ALL THE APPS: Tilix"
+  assert_missing "$SANDBOX/home/.config/tilix/schemes/jenerated-blue-purple.json"
+  [ "$(printf '%s\n' "$OUTPUT" | grep -c 'What would you like to do?')" = "2" ] ||
+    fail "expected the first menu again after saying no"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN Linux, with Obsidian (but no vault), VS Code and Tilix found
+# WHEN choosing ALL THE APPS and Blue Purple, and saying yes
+# THEN the found apps are installed without another question, each question
+#      showing its automatic answer, and nothing is installed for apps that
+#      weren't found; the summary lists the 2 installed, then as not
+#      installed Obsidian (which needs a vault typed in; status 1) and the
+#      manual apps, which may need doing by hand, then the apps not found
+test_all_the_apps_installs_into_every_automated_app() {
+  fake_os Linux
+  fake_outside_commands
+  export SETUP_FOUND_APPS="obsidian vscode tilix"
+  run_setup "1\n9\n1\ny\n"
+  assert_status 1
+  assert_contains "==> ALL THE APPS: Tilix (terminal) (3 of 3)"
+  assert_contains "Run these for you? [Y/n] y (automatic)"
+  assert_contains "Enter a number (1-2): 1 (automatic)"
+  assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-blue-purple.json" \
+    "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
+  assert_contains "==> ALL THE APPS: done
+Installed Jenerated Blue Purple into:
+  - VS Code
+  - Tilix (terminal)
+
+Not installed:
+  - Obsidian
+  - Chromium browsers (Chrome, Brave, Edge, Opera and more)"
+  assert_contains "  - Jellyfin (media server)
+
+These may need to be done by hand. Run ./setup.sh again and choose each"
+  assert_contains "Not found on this computer, so left out:"
+  assert_contains "  - Sublime Text"
+  assert_missing "$SANDBOX/home/.config/sublime-text"
+  assert_missing "$SANDBOX/home/.config/tmux"
+  assert_not_contains "Your Slack theme string"
+}
+
+# GIVEN a Mac
+# WHEN choosing ALL THE APPS
+# THEN only the apps that run on macOS are included
+test_all_the_apps_on_macos_leaves_out_linux_apps() {
+  fake_os Darwin
+  fake_outside_commands
+  export SETUP_FOUND_APPS="xcode vscode"
+  run_setup "1\n8\n1\nn\n1\nslack\n1\n1\n"
+  assert_contains "==> ALL THE APPS"
+  assert_contains "  - Xcode"
+  assert_not_contains "Tilix"
+  assert_not_contains "KDE Plasma"
+}
+
+# GIVEN none of the automated apps found on this computer
+# WHEN choosing ALL THE APPS and Blue Purple
+# THEN it says so without asking anything, and goes back to the first menu
+test_all_the_apps_with_none_found_goes_back() {
+  fake_os Linux
+  export SETUP_FOUND_APPS=""
+  run_setup "1\n9\n1\n1\nslack\n1\n1\n"
+  assert_status 0
+  assert_contains "None of the apps it can install into by itself were found on this"
+  assert_not_contains "Install into all"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN dark palettes and a light one
+# WHEN choosing Tilix, which keeps palettes side by side
+# THEN the dark or light question offers ALL THE PALETTES above Preview
+test_all_the_palettes_is_offered_for_side_by_side_apps() {
+  fake_os Linux
+  dawn_palette Light
+  run_setup "1\ntilix\n1\n1\n1\ny\n1\n"
+  assert_contains "Do you want a dark or light theme?
+  1) Dark
+  2) Light
+  3) ALL THE PALETTES
+  4) Preview the palettes (opens in your browser)
+  0) Back"
+}
+
+# GIVEN dark palettes and a light one
+# WHEN choosing tmux (one palette at a time), Slack (a manual install), and
+#      ALL THE APPS
+# THEN ALL THE PALETTES isn't offered for any of them
+test_all_the_palettes_is_not_offered_for_the_others() {
+  fake_os Linux
+  fake_outside_commands
+  dawn_palette Light
+  run_setup "1\ntmux\n1\n1\n1\n"
+  assert_not_contains "ALL THE PALETTES"
+  run_setup "1\nslack\n1\n1\n1\n"
+  assert_not_contains "ALL THE PALETTES"
+  export SETUP_FOUND_APPS="tilix"
+  run_setup "1\n9\n1\n1\nn\n1\nslack\n1\n1\n1\n"
+  assert_not_contains "ALL THE PALETTES"
+}
+
+# GIVEN dark palettes and a light one, Dawn
+# WHEN choosing Tilix, ALL THE PALETTES, and saying yes
+# THEN it says what it will do, asking with no as the default, then installs
+#      every palette's scheme without another question
+test_all_the_palettes_installs_every_palette() {
+  fake_os Linux
+  dawn_palette Light
+  run_setup "1\ntilix\n1\n3\ny\n"
+  assert_status 0
+  assert_contains "==> ALL THE PALETTES
+This installs all 3 palettes into Tilix (terminal), with no more"
+  assert_contains "Install all 3 palettes? [y/N]"
+  assert_contains "Generating all 3 themes"
+  for slug in blue-purple dawn sunset; do
+    assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-$slug.json" \
+      "$SANDBOX/repo/app-themes/tilix-theme/$slug.json"
+  done
+  assert_contains "==> ALL THE PALETTES: done
+Installed into Tilix (terminal):
+  - Blue Purple"
+  assert_not_contains "Not installed:"
+}
+
+# GIVEN dark palettes and a light one
+# WHEN choosing Tilix and ALL THE PALETTES, then saying no
+# THEN nothing is installed, and the first menu is shown again
+test_all_the_palettes_can_be_declined() {
+  fake_os Linux
+  dawn_palette Light
+  run_setup "1\ntilix\n1\n3\nn\n1\nslack\n1\n1\n1\n"
+  assert_status 0
+  assert_missing "$SANDBOX/home/.config/tilix/schemes/jenerated-dawn.json"
+  [ "$(printf '%s\n' "$OUTPUT" | grep -c 'What would you like to do?')" = "2" ] ||
+    fail "expected the first menu again after saying no"
 }
 
 # GIVEN only dark palettes
@@ -2647,6 +2829,78 @@ test_slack_prints_and_copies_the_theme_string() {
   assert_contains "    $theme"
   assert_contains "(Copied to your clipboard.)"
   assert_file_equals "$SANDBOX/clipboard" "$theme"
+}
+
+# --- Tests: Krita -------------------------------------------------------------
+
+# GIVEN Linux
+# WHEN choosing Krita and Blue Purple
+# THEN the KDE theme's color scheme is linked into Krita's color-schemes
+#      folder, and it says where to choose it
+test_krita_links_the_kde_color_scheme() {
+  fake_os Linux
+  run_setup "1\nkrita\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.local/share/krita/color-schemes/Jenerated-blue-purple.colors" \
+    "$SANDBOX/repo/app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colors"
+  assert_contains 'Settings -> Themes -> "Jenerated Blue Purple"'
+}
+
+# GIVEN the Krita Flatpak
+# WHEN choosing Krita and Blue Purple
+# THEN the Flatpak's color-schemes folder gets the scheme too
+test_krita_flatpak_gets_the_scheme_too() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/org.kde.krita"
+  run_setup "1\nkrita\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.var/app/org.kde.krita/data/krita/color-schemes/Jenerated-blue-purple.colors" \
+    "$SANDBOX/repo/app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colors"
+}
+
+# GIVEN a Mac
+# WHEN choosing Krita and Blue Purple
+# THEN the scheme goes in Krita's folder in Application Support
+test_krita_on_macos_uses_application_support() {
+  fake_os Darwin
+  run_setup "1\nkrita\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/Application Support/krita/color-schemes/Jenerated-blue-purple.colors" \
+    "$SANDBOX/repo/app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colors"
+}
+
+# --- Tests: Wireshark ---------------------------------------------------------
+
+# GIVEN Linux
+# WHEN choosing Wireshark and Blue Purple
+# THEN the coloring rules are linked into a "Jenerated Blue Purple" profile in
+#      Wireshark's config folder, leaving the Default profile alone, and it
+#      says how to switch to the profile
+test_wireshark_makes_a_profile() {
+  fake_os Linux
+  run_setup "1\nwireshark\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/wireshark/profiles/Jenerated Blue Purple/colorfilters" \
+    "$SANDBOX/repo/app-themes/wireshark-theme/blue-purple/colorfilters"
+  assert_missing "$SANDBOX/home/.config/wireshark/colorfilters"
+  assert_contains 'choose "Jenerated Blue Purple"'
+  assert_contains "View -> Colorize Packet List"
+}
+
+# GIVEN a ~/.wireshark folder from an older Wireshark, and the Flatpak
+# WHEN choosing Wireshark and Blue Purple
+# THEN the profile goes in ~/.wireshark (which Wireshark still uses then),
+#      and in the Flatpak's config folder, not in ~/.config/wireshark
+test_wireshark_uses_an_old_folder_and_the_flatpak() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.wireshark" "$SANDBOX/home/.var/app/org.wireshark.Wireshark"
+  run_setup "1\nwireshark\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.wireshark/profiles/Jenerated Blue Purple/colorfilters" \
+    "$SANDBOX/repo/app-themes/wireshark-theme/blue-purple/colorfilters"
+  assert_link "$SANDBOX/home/.var/app/org.wireshark.Wireshark/config/wireshark/profiles/Jenerated Blue Purple/colorfilters" \
+    "$SANDBOX/repo/app-themes/wireshark-theme/blue-purple/colorfilters"
+  assert_missing "$SANDBOX/home/.config/wireshark"
 }
 
 # GIVEN Insomnia without plugins

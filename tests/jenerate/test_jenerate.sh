@@ -76,6 +76,7 @@ unreal_theme() { printf '%s' "$SANDBOX/repo/app-themes/unreal-theme/jenerated-$1
 obs_style() { printf '%s' "$SANDBOX/repo/app-themes/obs-theme/jenerated-$1.ovt"; }
 jellyfin_css() { printf '%s' "$SANDBOX/repo/app-themes/jellyfin-theme/jenerated-$1.css"; }
 libreoffice_theme() { printf '%s' "$SANDBOX/repo/app-themes/libreoffice-theme/$1"; }
+wireshark_rules() { printf '%s' "$SANDBOX/repo/app-themes/wireshark-theme/$1/colorfilters"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -292,6 +293,7 @@ test_generates_every_app_theme() {
   assert_exists "$(libreoffice_theme sunset)/description.xml"
   assert_exists "$(libreoffice_theme sunset)/description.txt"
   assert_exists "$(libreoffice_theme sunset)/META-INF/manifest.xml"
+  assert_exists "$(wireshark_rules sunset)"
 }
 
 # GIVEN the Sunset palette
@@ -319,7 +321,8 @@ test_fills_in_every_placeholder() {
     "$(emacs_theme sunset)" "$(qtcreator_scheme sunset)" "$(spyder_theme sunset)" \
     "$(unreal_theme sunset)" "$(obs_style sunset)" "$(jellyfin_css sunset)" \
     "$(libreoffice_theme sunset)/theme.xcu" "$(libreoffice_theme sunset)/description.xml" \
-    "$(libreoffice_theme sunset)/description.txt" "$(libreoffice_theme sunset)/META-INF/manifest.xml"; do
+    "$(libreoffice_theme sunset)/description.txt" "$(libreoffice_theme sunset)/META-INF/manifest.xml" \
+    "$(wireshark_rules sunset)"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -445,7 +448,8 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/libreoffice-theme/blue-purple/theme.xcu \
     app-themes/libreoffice-theme/blue-purple/description.xml \
     app-themes/libreoffice-theme/blue-purple/description.txt \
-    app-themes/libreoffice-theme/blue-purple/META-INF/manifest.xml; do
+    app-themes/libreoffice-theme/blue-purple/META-INF/manifest.xml \
+    app-themes/wireshark-theme/blue-purple/colorfilters; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -663,6 +667,16 @@ test_colors_are_available_as_rgb_with_spaces() {
   render_colors accent_rgb_spaced
   expected="$(color_rgb accent | tr -d ',')"
   [ "$RENDERED" = "$expected" ] || fail "expected accent_rgb_spaced '$expected', got '$RENDERED'"
+}
+
+# GIVEN a template using {{accent_rgb16}}
+# WHEN generating Sunset
+# THEN it's Sunset's accent as "r,g,b" with each channel from 0 to 65535
+#      (each 0-255 channel times 257, so ff becomes 65535)
+test_colors_are_available_as_16_bit_rgb() {
+  render_colors accent_rgb16
+  expected="$(color_rgb accent | tr -d ' ' | awk -F, '{ print $1 * 257 "," $2 * 257 "," $3 * 257 }')"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent_rgb16 '$expected', got '$RENDERED'"
 }
 
 # GIVEN a template using {{uuid}}
@@ -2955,6 +2969,38 @@ except GLib.Error as e:
 print("\n".join(errors) or "no errors")
 ' "$(gtk3_theme daylight)/gtk-3.0/gtk.css" 2>&1)"
   assert_contains "no errors"
+}
+
+# --- Tests: Wireshark ----------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Wireshark coloring rules
+# THEN every rule line is @name@filter@[r,g,b][r,g,b] with channels from 0 to
+#      65535, bad TCP is Sunset's red behind its background color, TCP is its
+#      function color on its background, and the last rule matches every
+#      packet ("frame") in its text and background colors
+test_wireshark_rules_use_the_palette() {
+  run_jenerate sunset
+  rules="$(wireshark_rules sunset)"
+  OUTPUT="$(grep '^@' "$rules" | grep -vE '^@[^@]+@[^@]+@\[[0-9]{1,5},[0-9]{1,5},[0-9]{1,5}\]\[[0-9]{1,5},[0-9]{1,5},[0-9]{1,5}\]$')"
+  [ -z "$OUTPUT" ] || fail "these rules aren't in Wireshark's format: $OUTPUT"
+  rgb16() { color_rgb "$1" | tr -d ' ' | awk -F, '{ print $1 * 257 "," $2 * 257 "," $3 * 257 }'; }
+  assert_file_contains "$rules" "@Bad TCP@tcp.analysis.flags && !tcp.analysis.window_update && !tcp.analysis.keep_alive && !tcp.analysis.keep_alive_ack@[$(rgb16 red)][$(rgb16 bg)]"
+  assert_file_contains "$rules" "@TCP@tcp@[$(rgb16 bg)][$(rgb16 accent_light)]"
+  [ "$(grep '^@' "$rules" | tail -n 1)" = "@Everything else@frame@[$(rgb16 bg)][$(rgb16 text)]" ] ||
+    fail "expected the catch-all rule last"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its Wireshark rules have Wireshark's default rules' names and filters,
+#      in the same order (the template's rules, minus the catch-all at the end)
+test_wireshark_rules_keep_the_default_filters() {
+  run_jenerate sunset
+  count="$(grep -c '^@' "$(wireshark_rules sunset)")"
+  [ "$count" = "21" ] || fail "expected Wireshark's 20 default rules plus the catch-all, got $count"
+  assert_file_contains "$(wireshark_rules sunset)" "@Checksum Errors@eth.fcs.status==\"Bad\" || ip.checksum.status==\"Bad\""
+  assert_file_contains "$(wireshark_rules sunset)" "@HTTP@http || tcp.port == 80 || http2 || http3@"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------

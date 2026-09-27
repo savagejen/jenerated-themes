@@ -35,14 +35,35 @@ step() {
 }
 die() { printf '\nError: %s\n' "$*" >&2; exit 1; }
 
+# In ALL THE APPS and ALL THE PALETTES, installs run without questions:
+# ask_yes answers yes and choose picks the first choice (each still shows the
+# question, and says what was chosen). See install_all.
+AUTO_ANSWER=""
+
 # ask_yes "Question?" -> returns 0 for yes (the default), 1 for no.
 ask_yes() {
   local reply
   printf '%s [Y/n] ' "$1"
+  if [ -n "$AUTO_ANSWER" ]; then
+    say "y (automatic)"
+    return 0
+  fi
   read -r reply || reply=n
   case "$reply" in
     [nN]*) return 1 ;;
     *) return 0 ;;
+  esac
+}
+
+# confirm "Question?" -> returns 0 only for yes; no is the default, for
+# questions where saying yes by accident would do a lot.
+confirm() {
+  local reply
+  printf '%s [y/N] ' "$1"
+  read -r reply || reply=n
+  case "$reply" in
+    [yY]*) return 0 ;;
+    *) return 1 ;;
   esac
 }
 
@@ -57,6 +78,11 @@ choose() {
     printf '  %d) %s\n' "$i" "$option"
     i=$((i + 1))
   done
+  if [ -n "$AUTO_ANSWER" ]; then
+    printf 'Enter a number (1-%d): 1 (automatic)\n' "$#"
+    CHOICE=0
+    return
+  fi
   while :; do
     printf 'Enter a number (1-%d): ' "$#"
     read -r reply || die "no choice made"
@@ -317,9 +343,108 @@ add_app() {
   APP_WORDS+=("${5:-}")
 }
 
-CATEGORY_IDS=("browsers" "communication" "editors" "terminal" "desktop" "entertainment")
+# Apps setup.sh can't install a theme into: it makes the theme and explains
+# what to do in the app. ALL THE APPS leaves them out.
+MANUAL_APPS=" firefox vivaldi chromium jetbrains slack mattermost jellyfin "
+# Apps that use one palette at a time: installing one switches the app to it.
+# ALL THE PALETTES isn't offered for them (or for the manual apps). Every
+# other app keeps each palette's theme side by side, to choose in the app.
+ONE_PALETTE_APPS=" fzf tmux zsh mpv zen godot gtk3 kde "
+
+is_manual() { case "$MANUAL_APPS" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+is_one_palette() { case "$ONE_PALETTE_APPS" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+
+# Prints the vaults Obsidian knows about, one per line, from its vault list
+# (obsidian.json), wherever this system's Obsidian keeps it.
+known_obsidian_vaults() {
+  local config
+  for config in \
+    "$HOME/.config/obsidian/obsidian.json" \
+    "$HOME/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" \
+    "$HOME/snap/obsidian/current/.config/obsidian/obsidian.json" \
+    "$HOME/Library/Application Support/obsidian/obsidian.json"; do
+    [ -f "$config" ] || continue
+    grep -o '"path":"[^"]*"' "$config" | sed -e 's/^"path":"//' -e 's/"$//'
+  done | sort -u | while IFS= read -r vault; do
+    [ -d "$vault" ] && printf '%s\n' "$vault"
+  done
+}
+
+# app_present id -> returns 0 if the app looks installed on this computer: one
+# of its commands is on PATH, its Flatpak is installed, or (on macOS) its app
+# is in Applications. ALL THE APPS only installs into apps it finds. The
+# tests set SETUP_FOUND_APPS to the ids to count as found, so they don't
+# depend on what's installed where they run.
+app_present() {
+  local found lib
+  if [ -n "${SETUP_FOUND_APPS+set}" ]; then
+    case " $SETUP_FOUND_APPS " in *" $1 "*) return 0 ;; *) return 1 ;; esac
+  fi
+  case "$1" in
+    vscode) found="cmd:code cmd:codium flatpak:com.visualstudio.code flatpak:com.vscodium.codium mac:Visual_Studio_Code" ;;
+    ptyxis) found="cmd:ptyxis flatpak:app.devsuite.Ptyxis" ;;
+    obsidian)
+      # An AppImage may not be on PATH, but its vaults are listed.
+      [ -n "$(known_obsidian_vaults)" ] && return 0
+      found="cmd:obsidian flatpak:md.obsidian.Obsidian mac:Obsidian" ;;
+    vim) found="cmd:vim cmd:nvim" ;;
+    tilix) found="cmd:tilix flatpak:com.gexperts.Tilix" ;;
+    gtk3) found="lib:libgtk-3.so.0" ;;
+    kde) found="cmd:plasmashell" ;;
+    decky) [ -d "$HOME/homebrew/plugins" ] && return 0; return 1 ;;
+    godot) found="cmd:godot cmd:godot4 cmd:godot3 flatpak:org.godotengine.Godot mac:Godot" ;;
+    zen) found="cmd:zen cmd:zen-browser flatpak:app.zen_browser.zen mac:Zen mac:Zen_Browser" ;;
+    gtksourceview) found="cmd:gedit cmd:gnome-text-editor cmd:xed cmd:pluma cmd:meld flatpak:org.gnome.TextEditor flatpak:org.gnome.gedit" ;;
+    fzf) found="cmd:fzf" ;;
+    mpv) found="cmd:mpv flatpak:io.mpv.Mpv mac:mpv" ;;
+    obs) found="cmd:obs flatpak:com.obsproject.Studio mac:OBS" ;;
+    tmux) found="cmd:tmux" ;;
+    zsh) found="cmd:zsh" ;;
+    element) found="cmd:element-desktop flatpak:im.riot.Riot mac:Element" ;;
+    insomnia) found="cmd:insomnia flatpak:rest.insomnia.Insomnia mac:Insomnia" ;;
+    sublime) found="cmd:subl cmd:sublime_text flatpak:com.sublimetext.three mac:Sublime_Text" ;;
+    xcode) found="mac:Xcode" ;;
+    rstudio) found="cmd:rstudio mac:RStudio" ;;
+    emacs) found="cmd:emacs flatpak:org.gnu.emacs mac:Emacs" ;;
+    qtcreator) found="cmd:qtcreator flatpak:io.qt.QtCreator mac:Qt_Creator" ;;
+    spyder) found="cmd:spyder flatpak:org.spyder_ide.spyder mac:Spyder" ;;
+    unreal) found="cmd:UnrealEditor cmd:UE4Editor mac:Epic_Games_Launcher" ;;
+    libreoffice) found="cmd:soffice cmd:libreoffice flatpak:org.libreoffice.LibreOffice mac:LibreOffice" ;;
+    krita) found="cmd:krita flatpak:org.kde.krita mac:krita" ;;
+    wireshark) found="cmd:wireshark flatpak:org.wireshark.Wireshark mac:Wireshark" ;;
+    *) return 0 ;;
+  esac
+  for found in $found; do
+    case "$found" in
+      cmd:*) command -v "${found#cmd:}" >/dev/null 2>&1 && return 0 ;;
+      flatpak:*)
+        command -v flatpak >/dev/null 2>&1 && flatpak info "${found#flatpak:}" >/dev/null 2>&1 && return 0 ;;
+      # App names with spaces are written with _ above, to keep the list simple.
+      mac:*)
+        [ "$OS" = "Darwin" ] || continue
+        found="$(printf '%s' "${found#mac:}" | tr _ ' ')"
+        [ -d "/Applications/$found.app" ] || [ -d "$HOME/Applications/$found.app" ] && return 0 ;;
+      lib:*)
+        for lib in /usr/lib/*/"${found#lib:}" /usr/lib64/"${found#lib:}" /usr/lib/"${found#lib:}"; do
+          [ -e "$lib" ] && return 0
+        done ;;
+    esac
+  done
+  return 1
+}
+
+# app_label id -> prints the app's name in the menus.
+app_label() {
+  local i
+  for i in "${!APP_IDS[@]}"; do
+    if [ "${APP_IDS[$i]}" = "$1" ]; then printf '%s' "${APP_LABELS[$i]}"; fi
+  done
+}
+
+CATEGORY_IDS=("browsers" "communication" "editors" "terminal" "desktop" "entertainment" "art" "hacking")
 CATEGORY_NAMES=("Web browsers" "Communication" "Editors: code, text and notes"
-  "Terminals and command-line tools" "Linux desktops" "Entertainment")
+  "Terminals and command-line tools" "Linux desktops" "Entertainment"
+  "Art and design" "Hacking and testing tools")
 
 # Each category lists its apps in the order they're added: alphabetical.
 add_app chromium "Chromium browsers (Chrome, Brave, Edge, Opera and more)" browsers \
@@ -385,8 +510,9 @@ fi
 add_app jellyfin "Jellyfin (media server)" entertainment "" "media server movies tv streaming plex emby"
 add_app mpv "mpv (media player)" entertainment "" "video music"
 add_app obs "OBS Studio (streaming and recording)" entertainment "" "obs streaming recording screen capture twitch youtube"
-# Apps that don't fit a category.
-add_app insomnia "Insomnia (API client)" "" "" "rest http graphql api kong"
+add_app krita "Krita (painting)" art "" "paint painting drawing illustration art"
+add_app insomnia "Insomnia (API client)" hacking "" "rest http graphql api kong testing"
+add_app wireshark "Wireshark (network analyzer)" hacking "" "packets packet capture pcap network sniffer"
 
 # lowercase text -> prints text in lowercase (macOS's bash 3.2 has no ${x,,}).
 lowercase() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
@@ -400,9 +526,9 @@ category_name() {
 }
 
 # pick_app -> shows the app menus, starting from APP_MENU ("" for the main
-# one, a category's id, or "search"), until an app is chosen: sets APP and
-# returns 0, leaving APP_MENU on the menu it was chosen from. Returns 1 for
-# Back from the main menu.
+# one, a category's id, or "search"), until an app is chosen: sets APP (to
+# "all" for ALL THE APPS) and returns 0, leaving APP_MENU on the menu it was
+# chosen from. Returns 1 for Back from the main menu.
 APP_MENU=""
 pick_app() {
   local labels=() targets=() i category count query
@@ -418,7 +544,11 @@ pick_app() {
           [ "$category" = "${CATEGORY_IDS[$i]}" ] && count=$((count + 1))
         done
         if [ "$count" -gt 0 ]; then
-          labels+=("${CATEGORY_NAMES[$i]} ($count apps)")
+          if [ "$count" -eq 1 ]; then
+            labels+=("${CATEGORY_NAMES[$i]} (1 app)")
+          else
+            labels+=("${CATEGORY_NAMES[$i]} ($count apps)")
+          fi
           targets+=("menu:${CATEGORY_IDS[$i]}")
         fi
       done
@@ -428,6 +558,8 @@ pick_app() {
           targets+=("app:${APP_IDS[$i]}")
         fi
       done
+      labels+=("ALL THE APPS")
+      targets+=("all")
       labels+=("Search for an app by name")
       targets+=("ask-search")
       choose_or_back "Which app do you want to theme?" search "${labels[@]}"
@@ -487,6 +619,10 @@ $(printf 'Covers: %s\n' "${APP_COVERS[$i]}" | fold -s -w 70 | sed 's/ *$//; s/^/
             ;;
           app:*)
             APP="${targets[$CHOICE]#app:}"
+            return 0
+            ;;
+          all)
+            APP=all
             return 0
             ;;
         esac
@@ -552,12 +688,14 @@ PREVIEW_URL="https://github.com/savagejen/jenerated-themes/blob/main/palettes/RE
 
 # pick_palette -> asks whether you want a dark or light theme (when there are
 # palettes of both), then which palette of those. Sets CHOICE to the chosen
-# palette's index in SLUGS; returns 1 if you went back past the first
-# question. Back from the palette list goes back to dark or light. Preview
-# opens the palettes' previews in the browser and asks again.
+# palette's index in SLUGS, or to "all" for ALL THE PALETTES (offered with
+# the dark or light question, for an app that keeps palettes side by side);
+# returns 1 if you went back past the first question. Back from the palette
+# list goes back to dark or light. Preview opens the palettes' previews in
+# the browser and asks again.
 pick_palette() {
   local scheme i has_dark="" has_light=""
-  local indexes labels
+  local indexes labels options
   for scheme in "${SCHEMES[@]}"; do
     [ "$scheme" = dark ] && has_dark=1
     [ "$scheme" = light ] && has_light=1
@@ -565,20 +703,30 @@ pick_palette() {
   while :; do
     scheme=""
     if [ -n "$has_dark" ] && [ -n "$has_light" ]; then
-      choose_or_back "Do you want a dark or light theme?" "" "Dark" "Light" \
-        "Preview the palettes (opens in your browser)"
-      [ "$CHOICE" = back ] && return 1
-      if [ "$CHOICE" -eq 2 ]; then
-        if open_url "$PREVIEW_URL"; then
-          say "Opening the palette previews in your browser:"
-        else
-          say "Open the palette previews in your browser:"
-        fi
-        say "  $PREVIEW_URL"
-        continue
+      options=("Dark" "Light")
+      if [ "$APP" != all ] && ! is_manual "$APP" && ! is_one_palette "$APP"; then
+        options+=("ALL THE PALETTES")
       fi
-      scheme=dark
-      [ "$CHOICE" -eq 1 ] && scheme=light
+      options+=("Preview the palettes (opens in your browser)")
+      choose_or_back "Do you want a dark or light theme?" "" "${options[@]}"
+      [ "$CHOICE" = back ] && return 1
+      case "${options[$CHOICE]}" in
+        "ALL THE PALETTES")
+          CHOICE=all
+          return 0
+          ;;
+        Preview*)
+          if open_url "$PREVIEW_URL"; then
+            say "Opening the palette previews in your browser:"
+          else
+            say "Open the palette previews in your browser:"
+          fi
+          say "  $PREVIEW_URL"
+          continue
+          ;;
+        Light) scheme=light ;;
+        *) scheme=dark ;;
+      esac
     fi
     indexes=()
     labels=()
@@ -595,6 +743,64 @@ pick_palette() {
     fi
     [ -n "$scheme" ] || return 1
   done
+}
+
+# confirm_all -> for ALL THE APPS or ALL THE PALETTES, says what will be
+# installed, with no more questions, and asks to go ahead (no by default).
+# Returns 0 to go ahead, and for a single app and palette.
+confirm_all() {
+  local i automated=() missing=() manual=()
+  if [ "$APP" = all ]; then
+    FOUND_APPS=()
+    for i in "${!APP_IDS[@]}"; do
+      if is_manual "${APP_IDS[$i]}"; then
+        manual+=("${APP_LABELS[$i]}")
+      elif app_present "${APP_IDS[$i]}"; then
+        automated+=("${APP_LABELS[$i]}")
+        FOUND_APPS+=("${APP_IDS[$i]}")
+      else
+        missing+=("${APP_LABELS[$i]}")
+      fi
+    done
+    if [ "${#automated[@]}" -eq 0 ]; then
+      step "ALL THE APPS"
+      say "None of the apps it can install into by itself were found on this"
+      say "computer. Run ./setup.sh again and choose an app on its own."
+      return 1
+    fi
+    step "ALL THE APPS"
+    say "This installs Jenerated ${NAMES[$PALETTE]} into all ${#automated[@]} of these apps, with no"
+    say "more questions: each question an install would ask gets its first answer."
+    say "Files are linked to this folder, older installs of these themes are"
+    say "replaced, settings files (like ~/.bashrc, ~/.tmux.conf and ~/.zshrc) get a"
+    say "line that loads the colors, and apps that can switch to the theme right"
+    say "away do."
+    say ""
+    for i in "${automated[@]}"; do say "  - $i"; done
+    if [ "${#missing[@]}" -gt 0 ]; then
+      say ""
+      say "These weren't found on this computer, so they're left out:"
+      say ""
+      for i in "${missing[@]}"; do say "  - $i"; done
+    fi
+    if [ "${#manual[@]}" -gt 0 ]; then
+      say ""
+      say "Manual installs aren't included. Run ./setup.sh again and choose each"
+      say "of these on its own:"
+      say ""
+      for i in "${manual[@]}"; do say "  - $i"; done
+    fi
+    say ""
+    confirm "Install into all ${#automated[@]} apps?"
+  elif [ "$PALETTE" = all ]; then
+    step "ALL THE PALETTES"
+    say "This installs all ${#SLUGS[@]} palettes into $(app_label "$APP"), with no more"
+    say "questions: each question the install would ask gets its first answer."
+    say "Files are linked to this folder, and older installs of these themes are"
+    say "replaced. Then choose among the themes in the app."
+    say ""
+    confirm "Install all ${#SLUGS[@]} palettes?"
+  fi
 }
 
 # --- Choose what to do -------------------------------------------------------
@@ -622,19 +828,37 @@ while :; do
       break
     fi
   done
-  [ -n "$chosen" ] && break
+  PALETTE="${CHOICE:-}"
+  # Saying no to ALL THE APPS or ALL THE PALETTES goes back to this menu.
+  if [ -n "$chosen" ] && confirm_all; then break; fi
 done
-NAME="${NAMES[$CHOICE]}"
-SLUG="${SLUGS[$CHOICE]}"
+
+# The palettes to install: one, or every one for ALL THE PALETTES.
+if [ "$PALETTE" = all ]; then
+  INSTALL_SLUGS=("${SLUGS[@]}")
+  INSTALL_NAMES=("${NAMES[@]}")
+else
+  INSTALL_SLUGS=("${SLUGS[$PALETTE]}")
+  INSTALL_NAMES=("${NAMES[$PALETTE]}")
+fi
+NAME="${INSTALL_NAMES[0]}"
+SLUG="${INSTALL_SLUGS[0]}"
 
 # --- Generate the theme ------------------------------------------------------
 
-step "Generating the $NAME theme"
+if [ "${#INSTALL_SLUGS[@]}" -gt 1 ]; then
+  step "Generating all ${#INSTALL_SLUGS[@]} themes"
+else
+  step "Generating the $NAME theme"
+fi
 if [ -n "$PYTHON" ]; then
-  "$PYTHON" jenerate.py "$SLUG"
-elif [ "$SLUG" = "blue-purple" ]; then
+  "$PYTHON" jenerate.py "${INSTALL_SLUGS[@]}"
+elif [ "${#INSTALL_SLUGS[@]}" -eq 1 ] && [ "$SLUG" = "blue-purple" ]; then
   # Blue Purple is committed already generated, so it works without Python.
   say "Python 3.11+ not found; using the Blue Purple files that come with the repository."
+elif [ "${#INSTALL_SLUGS[@]}" -gt 1 ]; then
+  die "ALL THE PALETTES needs Python 3.11 or later, to generate them (python3
+--version to check)."
 else
   die "generating $NAME needs Python 3.11 or later (python3 --version to check).
 Install it, or choose Blue Purple, which works without Python."
@@ -787,6 +1011,8 @@ install_vscode() {
   if [ "$INSTALL_MODE" != manual ] && [ -f "$obsolete" ] && grep -q 'local\.jenerated-themes' "$obsolete"; then
     say ""
     say "VS Code has this extension marked as uninstalled, which hides the theme."
+    # Fixing that waits for VS Code to be closed, so it can't happen by itself.
+    [ -z "$AUTO_ANSWER" ] || die "run ./setup.sh again and choose VS Code on its own, to fix that"
     say "Quit VS Code completely (all windows), then press Enter to fix it."
     read -r _ || die "stopped before changing VS Code's files; run ./setup.sh again"
     sed -e 's/"local\.jenerated-themes[^"]*":[a-z]*//g' \
@@ -817,22 +1043,6 @@ install_ptyxis() {
   say "   It applies to the current profile; repeat for other profiles."
 }
 
-# Prints the vaults Obsidian knows about, one per line, from its vault list
-# (obsidian.json), wherever this system's Obsidian keeps it.
-known_obsidian_vaults() {
-  local config
-  for config in \
-    "$HOME/.config/obsidian/obsidian.json" \
-    "$HOME/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" \
-    "$HOME/snap/obsidian/current/.config/obsidian/obsidian.json" \
-    "$HOME/Library/Application Support/obsidian/obsidian.json"; do
-    [ -f "$config" ] || continue
-    grep -o '"path":"[^"]*"' "$config" | sed -e 's/^"path":"//' -e 's/"$//'
-  done | sort -u | while IFS= read -r vault; do
-    [ -d "$vault" ] && printf '%s\n' "$vault"
-  done
-}
-
 # Asks which vault to theme and sets VAULT.
 choose_obsidian_vault() {
   local vaults=() vault
@@ -847,6 +1057,9 @@ choose_obsidian_vault() {
     [ "$CHOICE" -lt "${#vaults[@]}" ] && VAULT="${vaults[$CHOICE]}"
   fi
   if [ -z "$VAULT" ]; then
+    # Typing a path can't happen by itself.
+    [ -z "$AUTO_ANSWER" ] ||
+      die "no Obsidian vault found; run ./setup.sh again and choose Obsidian on its own, to type its path"
     say ""
     printf 'Path to your vault folder: '
     read -r VAULT || die "no vault given"
@@ -2175,41 +2388,205 @@ install_slack() {
   say "Slack themes are per workspace, so repeat this in each workspace."
 }
 
-case "$APP" in
-  vscode) install_vscode ;;
-  ptyxis) install_ptyxis ;;
-  slack) install_slack ;;
-  obsidian) install_obsidian ;;
-  vim) install_vim ;;
-  firefox) install_firefox ;;
-  vivaldi) install_vivaldi ;;
-  jetbrains) install_jetbrains ;;
-  chromium) install_chromium ;;
-  tilix) install_tilix ;;
-  gtk3) install_gtk3 ;;
-  kde) install_kde ;;
-  decky) install_decky ;;
-  godot) install_godot ;;
-  zen) install_zen ;;
-  gtksourceview) install_gtksourceview ;;
-  fzf) install_fzf ;;
-  mpv) install_mpv ;;
-  obs) install_obs ;;
-  jellyfin) install_jellyfin ;;
-  tmux) install_tmux ;;
-  zsh) install_zsh ;;
-  element) install_element ;;
-  mattermost) install_mattermost ;;
-  insomnia) install_insomnia ;;
-  sublime) install_sublime ;;
-  xcode) install_xcode ;;
-  rstudio) install_rstudio ;;
-  emacs) install_emacs ;;
-  qtcreator) install_qtcreator ;;
-  spyder) install_spyder ;;
-  unreal) install_unreal ;;
-  libreoffice) install_libreoffice ;;
-esac
+# Where Krita looks for color themes: the color-schemes folder in its
+# resources folder, for a regular install and for the Flatpak.
+krita_scheme_dirs() {
+  if [ "$OS" = "Darwin" ]; then
+    printf '%s\n' "$HOME/Library/Application Support/krita/color-schemes"
+  else
+    printf '%s\n' "${XDG_DATA_HOME:-$HOME/.local/share}/krita/color-schemes"
+  fi
+  if [ -d "$HOME/.var/app/org.kde.krita" ]; then
+    printf '%s\n' "$HOME/.var/app/org.kde.krita/data/krita/color-schemes"
+  fi
+  return 0
+}
+
+# Krita reads KDE color schemes, so it uses the KDE theme's .colors file.
+install_krita() {
+  local file="Jenerated-$SLUG.colors"
+  local dir dirs=()
+
+  # Collect the folders first: install_link may ask a question, which reads
+  # your answer from standard input, which a "while read" loop would take over.
+  while IFS= read -r dir; do dirs+=("$dir"); done < <(krita_scheme_dirs)
+
+  for dir in "${dirs[@]}"; do
+    plan_link "$dir/$file" "$ROOT/app-themes/kde-theme/$SLUG/$file"
+  done
+  run_install_plan "the Krita color theme"
+
+  step "Done! To turn the theme on:"
+  say "1. Restart Krita if it's open; it reads its themes when it starts."
+  say "2. Choose Settings -> Themes -> \"Jenerated $NAME\"."
+  say "After changing the palette, run ./jenerate.py $SLUG and restart Krita."
+}
+
+# Wireshark's personal settings folders: ~/.wireshark if there is one (an
+# older Wireshark made it, and Wireshark still uses it then), otherwise its
+# config folder; and the Flatpak's.
+wireshark_config_dirs() {
+  if [ -d "$HOME/.wireshark" ]; then
+    printf '%s\n' "$HOME/.wireshark"
+  else
+    printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/wireshark"
+  fi
+  if [ -d "$HOME/.var/app/org.wireshark.Wireshark" ]; then
+    printf '%s\n' "$HOME/.var/app/org.wireshark.Wireshark/config/wireshark"
+  fi
+  return 0
+}
+
+# The coloring rules go in a Wireshark profile of their own, "Jenerated
+# <name>", so your own rules (in the Default profile) are left alone, and
+# each palette is a profile to switch to.
+install_wireshark() {
+  local profile="Jenerated $NAME"
+  local dir dirs=()
+
+  while IFS= read -r dir; do dirs+=("$dir"); done < <(wireshark_config_dirs)
+
+  for dir in "${dirs[@]}"; do
+    plan_link "$dir/profiles/$profile/colorfilters" "$ROOT/app-themes/wireshark-theme/$SLUG/colorfilters"
+  done
+  run_install_plan "the Wireshark coloring rules"
+
+  step "Done! To turn the colors on:"
+  say "1. In Wireshark, right-click the profile name at the right end of the"
+  say "   status bar (\"Default\" at first) and choose \"Jenerated $NAME\", or use"
+  say "   Edit -> Configuration Profiles."
+  say "2. Check that View -> Colorize Packet List is on."
+  say "The profile holds just the coloring rules; Wireshark's other settings"
+  say "start from their defaults in it."
+  say "After changing the palette, run ./jenerate.py $SLUG and switch to the"
+  say "profile again (or restart Wireshark)."
+}
+
+# install_app id -> installs the theme (NAME, SLUG) for one app.
+install_app() {
+  case "$1" in
+    vscode) install_vscode ;;
+    ptyxis) install_ptyxis ;;
+    slack) install_slack ;;
+    obsidian) install_obsidian ;;
+    vim) install_vim ;;
+    firefox) install_firefox ;;
+    vivaldi) install_vivaldi ;;
+    jetbrains) install_jetbrains ;;
+    chromium) install_chromium ;;
+    tilix) install_tilix ;;
+    gtk3) install_gtk3 ;;
+    kde) install_kde ;;
+    decky) install_decky ;;
+    godot) install_godot ;;
+    zen) install_zen ;;
+    gtksourceview) install_gtksourceview ;;
+    fzf) install_fzf ;;
+    mpv) install_mpv ;;
+    obs) install_obs ;;
+    jellyfin) install_jellyfin ;;
+    tmux) install_tmux ;;
+    zsh) install_zsh ;;
+    element) install_element ;;
+    mattermost) install_mattermost ;;
+    insomnia) install_insomnia ;;
+    sublime) install_sublime ;;
+    xcode) install_xcode ;;
+    rstudio) install_rstudio ;;
+    emacs) install_emacs ;;
+    qtcreator) install_qtcreator ;;
+    spyder) install_spyder ;;
+    unreal) install_unreal ;;
+    libreoffice) install_libreoffice ;;
+    krita) install_krita ;;
+    wireshark) install_wireshark ;;
+  esac
+}
+
+# install_all what item... -> runs install_app for each item: app ids with
+# the palette set (for ALL THE APPS, what "apps"), or palette indexes with
+# APP set (ALL THE PALETTES, what "palettes"). Questions answer themselves.
+# Each install runs on its own, so one that stops with an error doesn't stop
+# the rest; the summary lists what finished and what didn't, and the exit
+# status is 1 if anything didn't.
+install_all() {
+  local what="$1" item label n=0 status finished=() failed=()
+  shift
+  AUTO_ANSWER=1
+  for item in "$@"; do
+    n=$((n + 1))
+    if [ "$what" = apps ]; then
+      label="$(app_label "$item")"
+      step "ALL THE APPS: $label ($n of $#)"
+      set +e
+      (set -e; install_app "$item")
+      status=$?
+      set -e
+    else
+      NAME="${INSTALL_NAMES[$item]}"
+      SLUG="${INSTALL_SLUGS[$item]}"
+      label="$NAME"
+      step "ALL THE PALETTES: $label ($n of $#)"
+      set +e
+      (set -e; install_app "$APP")
+      status=$?
+      set -e
+    fi
+    if [ "$status" -eq 0 ]; then finished+=("$label"); else failed+=("$label"); fi
+  done
+  AUTO_ANSWER=""
+
+  # Not installed: any that stopped with an error, then (for apps) the
+  # manual installs, which were left out. Apps not found on this computer
+  # are listed apart, since there's nothing to do for them.
+  local skipped=() missing=()
+  if [ "${#failed[@]}" -gt 0 ]; then skipped+=("${failed[@]}"); fi
+  if [ "$what" = apps ]; then
+    for item in "${APP_IDS[@]}"; do
+      if is_manual "$item"; then
+        skipped+=("$(app_label "$item")")
+      else
+        case " ${FOUND_APPS[*]} " in *" $item "*) ;; *) missing+=("$(app_label "$item")") ;; esac
+      fi
+    done
+  fi
+
+  if [ "$what" = apps ]; then
+    step "ALL THE APPS: done"
+    say "Installed Jenerated $NAME into:"
+  else
+    step "ALL THE PALETTES: done"
+    say "Installed into $(app_label "$APP"):"
+  fi
+  # (Empty arrays trip set -u in macOS's bash 3.2, so check first.)
+  if [ "${#finished[@]}" -gt 0 ]; then
+    for label in "${finished[@]}"; do say "  - $label"; done
+  else
+    say "  (none)"
+  fi
+  if [ "${#skipped[@]}" -gt 0 ]; then
+    say ""
+    say "Not installed:"
+    for label in "${skipped[@]}"; do say "  - $label"; done
+    say ""
+    say "These may need to be done by hand. Run ./setup.sh again and choose each"
+    say "one on its own; it explains what to do (any errors are above, too)."
+  fi
+  if [ "${#missing[@]}" -gt 0 ]; then
+    say ""
+    say "Not found on this computer, so left out:"
+    for label in "${missing[@]}"; do say "  - $label"; done
+  fi
+  [ "${#failed[@]}" -eq 0 ] || exit 1
+}
+
+if [ "$APP" = all ]; then
+  install_all apps "${FOUND_APPS[@]}"
+elif [ "$PALETTE" = all ]; then
+  install_all palettes "${!INSTALL_SLUGS[@]}"
+else
+  install_app "$APP"
+fi
 
 if [ "$INSTALL_MODE" = copy ]; then
   say ""

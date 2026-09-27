@@ -59,6 +59,8 @@ What you need:
 - For apps that need them, each color is also available as numbers:
   `{{accent_rgb}}` gives `88, 101, 243`, `{{accent_rgb_csv}}` gives
   `88,101,243`, `{{accent_rgb_spaced}}` gives `88 101 243`,
+  `{{accent_rgb16}}` gives `22616,25957,62451` (each channel from 0 to 65535,
+  as Wireshark stores colors),
   `{{accent_float}}` gives `0.3451, 0.3961, 0.9529` (each channel from 0 to
   1; `{{accent_float_spaced}}` gives the same with spaces instead of
   commas), `{{accent_linear_r}}`, `{{accent_linear_g}}` and
@@ -163,10 +165,29 @@ takes.
    only runs on one). Add it to `setup.sh` too: an `add_app` line (its id, its
    name in the menu, its category, and optionally the apps it covers and
    other search words), an `install_<app>` function, and a line in the
-   `case` at the end.
+   `case` in `install_app`.
+
+   If the theme can't be installed from `setup.sh` (you install it in the
+   app yourself, like the browsers and Slack), add the app's id to
+   `MANUAL_APPS`, so that when a user setup selection of ALL THE APPS occurs, 
+   it leaves it out. If the app uses one palette at a time 
+   (installing one switches the app to it, like tmux), add it to
+   `ONE_PALETTE_APPS`, so a user setup selection of ALL THE PALETTES isn't 
+   offered for it. Add the app's commands, Flatpak id and macOS app name to 
+   `app_present`, so ALL THE APPS only installs into it when it's there 
+   (the tests set `SETUP_FOUND_APPS` to decide which apps count as found). 
+   In either ALL option, `ask_yes` answers yes and `choose` picks the first 
+   choice, so keep the first choice the safe, usual one, and don't make the 
+   install wait for anything else (check `AUTO_ANSWER` and stop with `die` 
+   instead, saying how to finish, like Obsidian's vault path).
 
    `setup.sh` groups apps into categories (`CATEGORY_IDS` and
    `CATEGORY_NAMES`), so the menu stays short however many apps there are.
+   Categories are named for what you do in the apps (browsing, editing,
+   hacking and testing, art and design), and an app goes where its theme
+   shows up: a tool with a command line and a desktop app files its theme
+   by which of the two it colors, and one that can theme both gets an
+   entry in each.
    Put the new app's `add_app` line with the others in its category, in
    alphabetical order; Linux-only apps go inside an `if [ "$OS" = "Linux" ]`,
    and macOS-only ones inside an `if [ "$OS" = "Darwin" ]`.
