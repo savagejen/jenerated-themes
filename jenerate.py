@@ -119,6 +119,8 @@ TARGETS = [
     ("app-themes/rizin-theme/theme.rz.tmpl", "app-themes/rizin-theme/jenerated-{slug}"),
     ("app-themes/gemini-theme/theme.json.tmpl", "app-themes/gemini-theme/jenerated-{slug}.json"),
     ("app-themes/pwsh-theme/colors.ps1.tmpl", "app-themes/pwsh-theme/jenerated-{slug}.ps1"),
+    # Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
+    # ("app-themes/veilamp-theme/theme.json.tmpl", "app-themes/veilamp-theme/jenerated-{slug}.json"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code

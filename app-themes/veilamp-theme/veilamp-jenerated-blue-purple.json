@@ -1,0 +1,27 @@
+{
+  "name": "Jenerated Blue Purple",
+  "author": "Jenerated Themes",
+  "vars": {
+    "--bg-0": "#0a0b13",
+    "--bg-1": "#12131c",
+    "--bg-2": "#191b28",
+    "--glass": "#191b288c",
+    "--glass-strong": "#191b28b8",
+    "--glass-border": "#5865F329",
+    "--glass-border-bright": "#8593f561",
+    "--cyan": "#5865F3",
+    "--cyan-dim": "#3c449d",
+    "--magenta": "#7289DA",
+    "--magenta-dim": "#4c5a8e",
+    "--amber": "#8593f5",
+    "--amber-bright": "#9cb2fa",
+    "--text": "#DBDEE1",
+    "--text-dim": "#6b6f8a",
+    "--text-faint": "#4b4d63",
+    "--accent-grad": "linear-gradient(135deg, #5865F3 0%, #7289DA 100%)",
+    "--accent-grad-h": "linear-gradient(90deg, #5865F3 0%, #7289DA 100%)",
+    "--glow-cyan": "0 0 18px #5865F359",
+    "--glow-magenta": "0 0 18px #7289DA59",
+    "--app-bg": "radial-gradient(1100px 700px at 12% -10%, #5865F31a, transparent 60%), linear-gradient(160deg, #12131c 0%, #0a0b13 100%)"
+  }
+}

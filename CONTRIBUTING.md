@@ -23,10 +23,11 @@ using the themes, see the [README](README.md).
    It's a pre-commit hook that refuses a commit while a palette in
    `palettes/` uses a color from
    [palettes/avoid-these.txt](palettes/avoid-these.txt) (see
-   [Colors to avoid](#colors-to-avoid)), or while a text file being
-   committed has a symbol outside plain ASCII (see
-   [Symbols stay ASCII](#symbols-stay-ascii)). The tests check the same things, so nothing
-   slips through on a clone without it.
+   [Colors to avoid](#colors-to-avoid)), or while a file being committed
+   has a symbol outside plain ASCII in its name or, for a text file, its
+   contents (see [Symbols stay ASCII](#symbols-stay-ascii)). It checks what's
+   staged, the version the commit will hold. The tests check the same
+   things, so nothing slips through on a clone without it.
 
 What you need:
 
@@ -304,8 +305,8 @@ of an icon (`1 error`, not a symbol before the `1`). Don't bring a symbol
 back in disguise, as an HTML entity (like `&middot;`) or an escape code
 (like `\u2022`): the page would still show the symbol. The pre-commit hook
 refuses a commit that adds anything else, naming each file and line, and a
-test in `tests/repo/` checks the whole repository. Both use Perl, which
-comes with Linux and macOS.
+test in `tests/repo/` checks the whole repository. File names follow the
+same rule. Both use Perl, which comes with Linux and macOS.
 
 ## Running the tests
 

@@ -45,6 +45,7 @@ app-themes/radare2-theme/jenerated-*
 app-themes/rizin-theme/jenerated-*
 app-themes/gemini-theme/*.json
 app-themes/pwsh-theme/*.ps1
+app-themes/veilamp-theme/*.json
 *.vsix
 
 # Your palette draft in the Palette Creator.
@@ -101,6 +102,8 @@ app-themes/decky-theme/*/config_*.json
 !app-themes/rizin-theme/jenerated-blue-purple
 !app-themes/gemini-theme/jenerated-blue-purple.json
 !app-themes/pwsh-theme/jenerated-blue-purple.ps1
+!app-themes/veilamp-theme/jenerated-blue-purple.json
+!app-themes/veilamp-theme/veilamp-jenerated-blue-purple.json
 
 # Python bytecode (from importing jenerate.py)
 __pycache__/

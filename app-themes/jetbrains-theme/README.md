@@ -67,12 +67,20 @@ theme, and the same 16 console colors as the terminal themes.
 
 ## Install
 
+The easiest way is `./setup.sh` from the repository root: choose JetBrains
+Apps. It packages the plugin as `app-themes/jetbrains-theme/jenerated-<slug>.jar`
+and links it into the plugins folder of every JetBrains IDE and version that
+has run on this computer (each makes its folders the first time it runs):
+`~/.local/share/JetBrains/<IDE><version>` on Linux, and
+`~/Library/Application Support/JetBrains/<IDE><version>/plugins` on macOS
+(Android Studio's are under `Google` instead of `JetBrains`). Restart each IDE,
+then choose the theme as in step 3 below. With no IDE run yet, it explains
+installing the `.jar` by hand instead.
+
 Blue Purple's plugin is included, ready to install:
-[jenerated-blue-purple.jar](jenerated-blue-purple.jar). For other palettes,
-the easiest way is `./setup.sh` from the repository root: choose
-JetBrains Apps, and it packages the plugin as
-`app-themes/jetbrains-theme/jenerated-<slug>.jar`. To package it by hand, zip
-the contents of the palette's folder (not the folder itself):
+[jenerated-blue-purple.jar](jenerated-blue-purple.jar). To package another
+palette's by hand, zip the contents of the palette's folder (not the folder
+itself):
 
 ```bash
 cd app-themes/jetbrains-theme/blue-purple
@@ -88,5 +96,5 @@ Then, in the app:
    **Jenerated Blue Purple** as the theme. Its editor colors come with it.
 Note: You may need to select the theme after installing it.
 
-After changing a palette, package and install the `.jar` again; it replaces
-the version you installed.
+After changing a palette, run `./setup.sh` again (or package and install the
+`.jar` again); it replaces the version you installed.

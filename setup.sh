@@ -345,7 +345,7 @@ add_app() {
 
 # Apps setup.sh can't install a theme into: it makes the theme and explains
 # what to do in the app. ALL THE APPS leaves them out.
-MANUAL_APPS=" firefox vivaldi chromium jetbrains slack mattermost jellyfin caido "
+MANUAL_APPS=" firefox vivaldi chromium slack mattermost jellyfin caido veilamp "
 # Apps that use one palette at a time: installing one switches the app to it.
 # ALL THE PALETTES isn't offered for them (or for the manual apps). Every
 # other app keeps each palette's theme side by side, to choose in the app.
@@ -380,6 +380,33 @@ ghidra_settings_dirs() {
     "$HOME/.var/app/org.ghidra_sre.Ghidra/config/ghidra"/ghidra_* "$HOME/.ghidra"/.ghidra_*; do
     if [ -d "$dir" ]; then printf '%s\n' "$dir"; fi
   done
+  return 0
+}
+
+# Prints the plugins folders of the JetBrains IDEs that have run, one for each
+# IDE and version, from its settings folder (named like IntelliJIdea2026.2 or
+# PyCharm2026.2; Android Studio's are under Google instead of JetBrains). On
+# Linux the plugins folder is the same name under ~/.local/share; on macOS,
+# a plugins folder inside the settings folder.
+jetbrains_plugin_dirs() {
+  local dir name vendor
+  if [ "$OS" = "Darwin" ]; then
+    for dir in "$HOME/Library/Application Support/JetBrains"/* "$HOME/Library/Application Support/Google"/AndroidStudio*; do
+      name="$(basename "$dir")"
+      case "$name" in
+        *[0-9][0-9][0-9][0-9].[0-9]*) if [ -d "$dir" ]; then printf '%s\n' "$dir/plugins"; fi ;;
+      esac
+    done
+  else
+    for dir in "${XDG_CONFIG_HOME:-$HOME/.config}/JetBrains"/* "${XDG_CONFIG_HOME:-$HOME/.config}/Google"/AndroidStudio*; do
+      name="$(basename "$dir")"
+      vendor="$(basename "$(dirname "$dir")")"
+      case "$name" in
+        *[0-9][0-9][0-9][0-9].[0-9]*)
+          if [ -d "$dir" ]; then printf '%s\n' "${XDG_DATA_HOME:-$HOME/.local/share}/$vendor/$name"; fi ;;
+      esac
+    done
+  fi
   return 0
 }
 
@@ -424,6 +451,7 @@ app_present() {
     unreal) found="cmd:UnrealEditor cmd:UE4Editor mac:Epic_Games_Launcher" ;;
     libreoffice) found="cmd:soffice cmd:libreoffice flatpak:org.libreoffice.LibreOffice mac:LibreOffice" ;;
     krita) found="cmd:krita flatpak:org.kde.krita mac:krita" ;;
+    jetbrains) [ -n "$(jetbrains_plugin_dirs)" ] && return 0; return 1 ;;
     qtct) found="cmd:qt5ct cmd:qt6ct" ;;
     radare2) found="cmd:r2 cmd:radare2" ;;
     rizin) found="cmd:rizin" ;;
@@ -540,6 +568,8 @@ fi
 add_app jellyfin "Jellyfin (media server)" entertainment "" "media server movies tv streaming plex emby"
 add_app mpv "mpv (media player)" entertainment "" "video music"
 add_app obs "OBS Studio (streaming and recording)" entertainment "" "obs streaming recording screen capture twitch youtube"
+# Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
+# add_app veilamp "Veilamp (music player)" entertainment "" "music audio player winamp veilid"
 add_app krita "Krita (painting)" art "" "paint painting drawing illustration art"
 add_app caido "Caido (web security testing)" hacking "" "proxy burp pentest pentesting web security http intercept"
 add_app ghidra "Ghidra (reverse engineering)" hacking "" "reverse engineering disassembler decompiler binary nsa"
@@ -1294,6 +1324,7 @@ install_vivaldi() {
 install_jetbrains() {
   local folder="$ROOT/app-themes/jetbrains-theme/$SLUG"
   local jar="$ROOT/app-themes/jetbrains-theme/jenerated-$SLUG.jar"
+  local dir dirs=()
 
   step "Packaging the JetBrains theme"
   # The theme is a small plugin: its folder, zipped as a .jar.
@@ -1301,18 +1332,39 @@ install_jetbrains() {
     die "couldn't make the .jar (that needs python3 or zip); zip the contents of $folder by hand"
   say "Made $jar"
 
-  step "Done! To turn the theme on:"
-  say "It works in the JetBrains apps built on the IntelliJ Platform (2023.1 or"
-  say "later): IntelliJ IDEA, Android Studio, PyCharm, WebStorm, PhpStorm, GoLand,"
-  say "RubyMine, CLion, Rider, DataGrip, DataSpell and RustRover. (Not Fleet,"
-  say "which has its own theme format.) In the app:"
-  say "1. Open Settings -> Plugins, click the gear icon, and choose"
-  say "   \"Install Plugin from Disk...\"."
-  say "2. Choose $jar"
-  say "   and restart the app if it asks."
-  say "3. Open Settings -> Appearance & Behavior -> Appearance, and choose"
+  while IFS= read -r dir; do dirs+=("$dir"); done < <(jetbrains_plugin_dirs)
+
+  if [ "${#dirs[@]}" -eq 0 ]; then
+    # An IDE makes its settings folder the first time it runs.
+    [ -z "$AUTO_ANSWER" ] ||
+      die "no JetBrains IDE has run yet; run one once, or run ./setup.sh again and choose JetBrains Apps on its own"
+    step "Done! To turn the theme on:"
+    say "It works in the JetBrains apps built on the IntelliJ Platform (2023.1 or"
+    say "later): IntelliJ IDEA, Android Studio, PyCharm, WebStorm, PhpStorm, GoLand,"
+    say "RubyMine, CLion, Rider, DataGrip, DataSpell and RustRover. (Not Fleet,"
+    say "which has its own theme format.) In the app:"
+    say "1. Open Settings -> Plugins, click the gear icon, and choose"
+    say "   \"Install Plugin from Disk...\"."
+    say "2. Choose $jar"
+    say "   and restart the app if it asks."
+    say "3. Open Settings -> Appearance & Behavior -> Appearance, and choose"
+    say "   \"Jenerated $NAME\" as the theme. Its editor colors come with it."
+    say "(Or open the IDE once, and run ./setup.sh again to install it for you.)"
+    say "After changing the palette, run ./setup.sh again and install the new .jar."
+    return 0
+  fi
+
+  # Each IDE loads the plugins in its plugins folder when it starts.
+  for dir in "${dirs[@]}"; do
+    plan_link "$dir/jenerated-$SLUG.jar" "$jar"
+  done
+  run_install_plan "the JetBrains theme plugin"
+
+  step "Done! To turn the theme on, in each of those IDEs:"
+  say "1. Restart the IDE; it loads new plugins when it starts."
+  say "2. Open Settings -> Appearance & Behavior -> Appearance, and choose"
   say "   \"Jenerated $NAME\" as the theme. Its editor colors come with it."
-  say "After changing the palette, run ./setup.sh again and install the new .jar."
+  say "After changing the palette, run ./setup.sh again: it rebuilds the .jar."
 }
 
 # LibreOffice's extension installer, or nothing if it can't be found.
@@ -1348,6 +1400,9 @@ install_libreoffice() {
     fi
   fi
 
+  # Without its installer, or with LibreOffice open, it's only packaged.
+  [ -n "$installed" ] || [ -z "$AUTO_ANSWER" ] ||
+    die "LibreOffice's extension installer (unopkg) wasn't found, or LibreOffice is open; run ./setup.sh again and choose LibreOffice on its own"
   step "Done! To turn the theme on:"
   if [ -z "$installed" ]; then
     say "1. In LibreOffice, open Tools -> Extensions, click Add, and choose"
@@ -1646,6 +1701,8 @@ install_zen() {
   done < <(zen_profiles)
 
   if [ "${#profiles[@]}" -eq 0 ]; then
+    [ -z "$AUTO_ANSWER" ] ||
+      die "Zen hasn't been opened yet, so it has no profile to add the theme to; open it once, close it, and run ./setup.sh again"
     step "Zen hasn't been opened yet, so it has no profile to add the theme to."
     say "Open Zen once, close it, and run ./setup.sh again."
     return 0
@@ -2283,12 +2340,16 @@ install_spyder() {
 
   step "Adding the theme to Spyder's settings"
   if [ "${#found[@]}" -eq 0 ]; then
+    [ -z "$AUTO_ANSWER" ] ||
+      die "Spyder hasn't been opened yet, so it has no settings to add the theme to; open it once, close it, and run ./setup.sh again"
     say "Spyder hasn't been opened yet, so it has no settings to add the theme to."
     say "Open it once, close it, and run ./setup.sh again."
     return 0
   fi
   # Spyder runs as a process named spyder, or as python -m spyder.
   if pgrep -ix spyder >/dev/null 2>&1 || pgrep -f -- '-m spyder( |$)' >/dev/null 2>&1; then
+    [ -z "$AUTO_ANSWER" ] ||
+      die "Spyder is open, and would undo the change when it closes; close it and run ./setup.sh again"
     say "Spyder is open, and it saves its settings when it closes, which would"
     say "undo any change made now. Close it and run ./setup.sh again."
     return 0
@@ -2704,6 +2765,24 @@ install_r2_theme() {
   say "After changing the palette, run ./jenerate.py $SLUG and start $tool again."
 }
 
+# Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
+# # Veilamp keeps imported palettes in its own storage, so the theme file is
+# # imported from inside the app.
+# install_veilamp() {
+#   local file="$ROOT/app-themes/veilamp-theme/jenerated-$SLUG.json"
+#
+#   step "Your Veilamp theme"
+#   say "It's in $file"
+#
+#   step "Done! To turn the theme on (Veilamp imports themes from inside the app):"
+#   say "1. In Veilamp, open the Skins tab (\"Skins\" in the top bar)."
+#   say "2. Under Palette, choose Import, and pick the file above."
+#   say "3. Choose \"Jenerated $NAME\" as the palette, with the Modern, Circular or"
+#   say "   Sci-fi HUD layout. (Winamp Classic keeps its own colors.)"
+#   say "After changing the palette, run ./jenerate.py $SLUG and import it again;"
+#   say "it replaces the one you imported before."
+# }
+
 # Caido keeps its custom CSS in its own settings, so it's pasted in.
 install_caido() {
   local file="app-themes/caido-theme/jenerated-$SLUG.css"
@@ -2799,6 +2878,8 @@ install_app() {
     wireshark) install_wireshark ;;
     ghidra) install_ghidra ;;
     caido) install_caido ;;
+    # Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
+    # veilamp) install_veilamp ;;
     qtct) install_qtct ;;
     radare2) install_r2_theme radare2 ;;
     rizin) install_r2_theme rizin ;;

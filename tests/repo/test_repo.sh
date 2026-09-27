@@ -28,4 +28,25 @@ test_symbols_are_plain_ascii() {
 $OUTPUT"
 }
 
+# GIVEN every file in the repository (tracked, or new and not ignored)
+# WHEN looking for characters outside ASCII that aren't letters or accent
+#      marks in its name, the same rule as the pre-commit hook
+# THEN there are none
+test_file_names_are_plain_ascii() {
+  command -v perl >/dev/null 2>&1 || return 0
+  OUTPUT="$(cd "$SANDBOX/repo" && find . -path ./.git -prune -o -print0 |
+    perl -MEncode -e '
+      $/ = "\0";
+      while (my $file = <STDIN>) {
+        chomp $file;
+        my $name = decode("UTF-8", $file, sub { "\x{FFFD}" });
+        next unless $name =~ /[^\x00-\x7F\p{L}\p{M}]/;
+        $name =~ s/([^\x20-\x7E\p{L}\p{M}])/sprintf("<U+%04X>", ord $1)/ge;
+        print encode("UTF-8", $name), "\n";
+      }
+    ')"
+  [ -z "$OUTPUT" ] || fail "these file names have symbols outside plain ASCII:
+$OUTPUT"
+}
+
 run_tests

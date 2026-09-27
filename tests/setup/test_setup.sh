@@ -1388,6 +1388,59 @@ test_vivaldi_without_a_way_to_zip() {
 
 JETBRAINS_DIR="app-themes/jetbrains-theme"
 
+# GIVEN settings folders for IntelliJ IDEA and PyCharm 2026.2 and Android
+#       Studio (under Google), plus JetBrains Toolbox's folder, which isn't an IDE
+# WHEN choosing JetBrains Apps and Blue Purple
+# THEN the plugin is linked into each IDE's plugins folder under
+#      ~/.local/share, but not Toolbox's, and it says to restart and choose it
+test_jetbrains_links_the_plugin_into_each_ide() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/JetBrains/IntelliJIdea2026.2" "$SANDBOX/home/.config/JetBrains/PyCharm2026.2" \
+    "$SANDBOX/home/.config/JetBrains/Toolbox" "$SANDBOX/home/.config/Google/AndroidStudio2026.1"
+  run_setup "1\njetbrains\n1\n1\ny\n1\n"
+  assert_status 0
+  for dir in JetBrains/IntelliJIdea2026.2 JetBrains/PyCharm2026.2 Google/AndroidStudio2026.1; do
+    assert_link "$SANDBOX/home/.local/share/$dir/jenerated-blue-purple.jar" \
+      "$SANDBOX/repo/app-themes/jetbrains-theme/jenerated-blue-purple.jar"
+  done
+  assert_missing "$SANDBOX/home/.local/share/JetBrains/Toolbox"
+  assert_contains "Restart the IDE"
+  assert_not_contains "Install Plugin from Disk"
+}
+
+# GIVEN a Mac with PyCharm 2026.2's settings folder
+# WHEN choosing JetBrains Apps and Blue Purple
+# THEN the plugin goes in the plugins folder inside it
+test_jetbrains_on_macos_uses_the_plugins_folder() {
+  fake_os Darwin
+  mkdir -p "$SANDBOX/home/Library/Application Support/JetBrains/PyCharm2026.2"
+  run_setup "1\njetbrains\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/Application Support/JetBrains/PyCharm2026.2/plugins/jenerated-blue-purple.jar" \
+    "$SANDBOX/repo/app-themes/jetbrains-theme/jenerated-blue-purple.jar"
+}
+
+# GIVEN JetBrains, LibreOffice, Spyder and Zen counted as found, but no IDE
+#       has run, LibreOffice's installer doesn't work, and Spyder and Zen
+#       haven't been opened
+# WHEN installing ALL THE APPS
+# THEN each is listed as not installed, with why, rather than as installed
+test_all_the_apps_reports_what_it_could_not_install() {
+  fake_os Linux
+  fake_outside_commands
+  export SETUP_FOUND_APPS="jetbrains libreoffice spyder zen tilix"
+  run_setup "1\n9\n1\ny\n"
+  assert_contains "no JetBrains IDE has run yet"
+  assert_contains "LibreOffice's extension installer (unopkg) wasn't found"
+  assert_contains "Spyder hasn't been opened yet"
+  assert_contains "Zen hasn't been opened yet"
+  installed="$(printf '%s\n' "$OUTPUT" | sed -n '/^Installed Jenerated Blue Purple into:$/,/^$/p')"
+  [ "$(printf '%s\n' "$installed" | grep -c '^  - ')" = "1" ] ||
+    fail "expected only Tilix installed, got: $installed"
+  assert_contains "Not installed:
+  - Zen Browser"
+}
+
 # GIVEN the Sunset palette
 # WHEN choosing JetBrains apps and Sunset
 # THEN the theme is packaged as a plugin .jar holding its descriptor, UI theme
@@ -3147,6 +3200,33 @@ test_qtct_is_linux_only() {
   run_setup "1\n9\nqt6ct\n\n1\nslack\n1\n1\n"
   assert_not_contains "Qt apps outside KDE Plasma"
 }
+
+# Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
+# # --- Tests: Veilamp -----------------------------------------------------------
+#
+# # GIVEN Linux
+# # WHEN choosing Veilamp and Blue Purple
+# # THEN it shows where the theme file is, and explains importing it in the
+# #      Skins tab, with a layout other than Winamp Classic
+# test_veilamp_explains_importing_the_theme() {
+#   fake_os Linux
+#   run_setup "1\nveilamp\n1\n1\n"
+#   assert_status 0
+#   assert_contains "It's in $SANDBOX/repo/app-themes/veilamp-theme/jenerated-blue-purple.json"
+#   assert_contains "Under Palette, choose Import"
+#   assert_contains "Winamp Classic keeps its own colors"
+# }
+#
+# # GIVEN ALL THE APPS
+# # WHEN it lists what it leaves out
+# # THEN Veilamp is among the manual installs
+# test_veilamp_is_a_manual_install() {
+#   fake_os Linux
+#   export SETUP_FOUND_APPS="tilix"
+#   run_setup "1\n9\n1\nn\n1\nslack\n1\n1\n"
+#   assert_contains "  - Veilamp (music player)"
+#   assert_not_contains "ALL THE APPS: Veilamp"
+# }
 
 # --- Tests: Caido -------------------------------------------------------------
 
