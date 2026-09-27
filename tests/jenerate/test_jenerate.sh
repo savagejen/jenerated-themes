@@ -77,6 +77,13 @@ obs_style() { printf '%s' "$SANDBOX/repo/app-themes/obs-theme/jenerated-$1.ovt";
 jellyfin_css() { printf '%s' "$SANDBOX/repo/app-themes/jellyfin-theme/jenerated-$1.css"; }
 libreoffice_theme() { printf '%s' "$SANDBOX/repo/app-themes/libreoffice-theme/$1"; }
 wireshark_rules() { printf '%s' "$SANDBOX/repo/app-themes/wireshark-theme/$1/colorfilters"; }
+ghidra_theme() { printf '%s' "$SANDBOX/repo/app-themes/ghidra-theme/jenerated-$1.theme"; }
+caido_css() { printf '%s' "$SANDBOX/repo/app-themes/caido-theme/jenerated-$1.css"; }
+qtct_scheme() { printf '%s' "$SANDBOX/repo/app-themes/qtct-theme/jenerated-$1.conf"; }
+r2_theme() { printf '%s' "$SANDBOX/repo/app-themes/radare2-theme/jenerated-$1"; }
+rizin_theme() { printf '%s' "$SANDBOX/repo/app-themes/rizin-theme/jenerated-$1"; }
+gemini_theme() { printf '%s' "$SANDBOX/repo/app-themes/gemini-theme/jenerated-$1.json"; }
+pwsh_colors() { printf '%s' "$SANDBOX/repo/app-themes/pwsh-theme/jenerated-$1.ps1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -294,6 +301,13 @@ test_generates_every_app_theme() {
   assert_exists "$(libreoffice_theme sunset)/description.txt"
   assert_exists "$(libreoffice_theme sunset)/META-INF/manifest.xml"
   assert_exists "$(wireshark_rules sunset)"
+  assert_exists "$(ghidra_theme sunset)"
+  assert_exists "$(caido_css sunset)"
+  assert_exists "$(qtct_scheme sunset)"
+  assert_exists "$(r2_theme sunset)"
+  assert_exists "$(rizin_theme sunset)"
+  assert_exists "$(gemini_theme sunset)"
+  assert_exists "$(pwsh_colors sunset)"
 }
 
 # GIVEN the Sunset palette
@@ -322,7 +336,9 @@ test_fills_in_every_placeholder() {
     "$(unreal_theme sunset)" "$(obs_style sunset)" "$(jellyfin_css sunset)" \
     "$(libreoffice_theme sunset)/theme.xcu" "$(libreoffice_theme sunset)/description.xml" \
     "$(libreoffice_theme sunset)/description.txt" "$(libreoffice_theme sunset)/META-INF/manifest.xml" \
-    "$(wireshark_rules sunset)"; do
+    "$(wireshark_rules sunset)" "$(ghidra_theme sunset)" "$(caido_css sunset)" \
+    "$(qtct_scheme sunset)" "$(r2_theme sunset)" "$(rizin_theme sunset)" "$(gemini_theme sunset)" \
+    "$(pwsh_colors sunset)"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -449,7 +465,12 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/libreoffice-theme/blue-purple/description.xml \
     app-themes/libreoffice-theme/blue-purple/description.txt \
     app-themes/libreoffice-theme/blue-purple/META-INF/manifest.xml \
-    app-themes/wireshark-theme/blue-purple/colorfilters; do
+    app-themes/wireshark-theme/blue-purple/colorfilters \
+    app-themes/ghidra-theme/jenerated-blue-purple.theme \
+    app-themes/caido-theme/jenerated-blue-purple.css \
+    app-themes/qtct-theme/jenerated-blue-purple.conf \
+    app-themes/radare2-theme/jenerated-blue-purple app-themes/rizin-theme/jenerated-blue-purple \
+    app-themes/gemini-theme/jenerated-blue-purple.json app-themes/pwsh-theme/jenerated-blue-purple.ps1; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -677,6 +698,34 @@ test_colors_are_available_as_16_bit_rgb() {
   render_colors accent_rgb16
   expected="$(color_rgb accent | tr -d ' ' | awk -F, '{ print $1 * 257 "," $2 * 257 "," $3 * 257 }')"
   [ "$RENDERED" = "$expected" ] || fail "expected accent_rgb16 '$expected', got '$RENDERED'"
+}
+
+# GIVEN a template using {{accent_over_bg_20}}, {{text_over_bg_100}} and
+#       {{accent_over_bg_0}}
+# WHEN generating Sunset
+# THEN each is the first color laid over the second at that percentage, as
+#      #rrggbb: 20% mixes them, 100% is the first color, 0% the second
+test_colors_can_be_blended() {
+  render_colors accent_over_bg_20 text_over_bg_100 accent_over_bg_0
+  assert_status 0
+  expected="$("$PYTHON" -c '
+import sys
+a, b = sys.argv[1], sys.argv[2]
+mix = "".join(f"{round(int(a[i:i+2], 16) * 0.2 + int(b[i:i+2], 16) * 0.8):02x}" for i in (1, 3, 5))
+print(f"#{mix}")
+' "$(color accent)" "$(color bg)")"
+  lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+  [ "$RENDERED" = "$expected|$(lower "$(color text)")|$(lower "$(color bg)")" ] ||
+    fail "expected '$expected|$(color text)|$(color bg)', got '$RENDERED'"
+}
+
+# GIVEN a template using {{accent_over_nothing_20}}
+# WHEN generating Sunset
+# THEN it stops, naming the placeholder, since nothing isn't a color
+test_blending_needs_two_colors() {
+  render_colors accent_over_nothing_20
+  assert_status 1
+  assert_contains "accent_over_nothing_20"
 }
 
 # GIVEN a template using {{uuid}}
@@ -3001,6 +3050,171 @@ test_wireshark_rules_keep_the_default_filters() {
   [ "$count" = "21" ] || fail "expected Wireshark's 20 default rules plus the catch-all, got $count"
   assert_file_contains "$(wireshark_rules sunset)" "@Checksum Errors@eth.fcs.status==\"Bad\" || ip.checksum.status==\"Bad\""
   assert_file_contains "$(wireshark_rules sunset)" "@HTTP@http || tcp.port == 80 || http2 || http3@"
+}
+
+# --- Tests: PowerShell -------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating its PowerShell colors
+# THEN they give PSReadLine and $PSStyle Sunset's colors as 0xRRGGBB (strings
+#      green, commands in its function color, errors red)
+test_pwsh_colors_follow_the_palette() {
+  run_jenerate sunset
+  hex() { color "$1" | tr -d '#'; }
+  assert_file_contains "$(pwsh_colors sunset)" "String                 = & \$jeneratedFg 0x$(hex green)"
+  assert_file_contains "$(pwsh_colors sunset)" "Command                = & \$jeneratedFg 0x$(hex accent_light)"
+  assert_file_contains "$(pwsh_colors sunset)" "'Formatting.Error'                  = & \$jeneratedFg 0x$(hex red)"
+}
+
+# GIVEN PowerShell (pwsh), if it's installed
+# WHEN loading Sunset's PowerShell colors in it, with errors stopping it
+# THEN it runs without an error, PSReadLine's string color is Sunset's green as
+#      a 24-bit color code, and it leaves none of its variables behind
+test_pwsh_colors_run_in_powershell() {
+  command -v pwsh >/dev/null 2>&1 || return 0
+  run_jenerate sunset
+  rgb="$(color_rgb green | tr -d ' ' | tr ',' ';')"
+  # -Command doesn't pass further arguments to the script, so the file's
+  # path goes in an environment variable.
+  OUTPUT="$(JENERATED_PS1="$(pwsh_colors sunset)" pwsh -NoLogo -NoProfile -Command '
+$ErrorActionPreference = "Stop"
+Import-Module PSReadLine
+. $env:JENERATED_PS1
+((Get-PSReadLineOption).StringColor -replace [char]27, "ESC")
+"left: " + (@(Get-Variable jenerated* -ErrorAction SilentlyContinue).Count)
+' 2>&1)"
+  assert_contains "ESC[38;2;${rgb}m"
+  assert_contains "left: 0"
+}
+
+# --- Tests: Gemini CLI --------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating its Gemini CLI theme
+# THEN it's valid JSON, a custom theme named Jenerated Sunset, with Sunset's
+#      background and text, and diff backgrounds that are plain #rrggbb
+#      (Gemini CLI ignores colors with transparency)
+test_gemini_theme_follows_the_palette() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import json, re, sys
+t = json.load(open(sys.argv[1]))
+print(t["name"], t["type"], t["background"]["primary"], t["text"]["primary"])
+for key in ("added", "removed"):
+    if not re.fullmatch(r"#[0-9a-f]{6}", t["background"]["diff"][key]):
+        print("bad diff color", key)
+' "$(gemini_theme sunset)")"
+  assert_contains "Jenerated Sunset custom $(color bg) $(color text)"
+  assert_not_contains "bad diff color"
+}
+
+# --- Tests: radare2 and rizin ---------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating its radare2 and rizin themes
+# THEN each is radare2 commands: comments, then "ecd" (back to the defaults),
+#      then "ec <name> rgb:RRGGBB", with an optional background; comments are
+#      Sunset's muted text, and the current line has its line highlight behind
+#      it; radare2 calls addresses addr, rizin offset
+test_r2_themes_follow_the_palette() {
+  run_jenerate sunset
+  hex() { color "$1" | tr -d '#'; }
+  for theme in "$(r2_theme sunset)" "$(rizin_theme sunset)"; do
+    OUTPUT="$(grep -v -e '^#' -e '^ecd$' "$theme" | grep -vE '^ec [a-z0-9._]+ rgb:[0-9a-fA-F]{6}( rgb:[0-9a-fA-F]{6})?$')"
+    [ -z "$OUTPUT" ] || fail "these lines aren't radare2 color commands: $OUTPUT"
+    [ "$(grep -v '^#' "$theme" | head -n 1)" = "ecd" ] || fail "expected ecd first in $theme"
+    assert_file_contains "$theme" "ec comment rgb:$(hex text_muted)"
+    assert_file_contains "$theme" "ec linehl rgb:$(hex text) rgb:$(hex bg_line_highlight)"
+  done
+  assert_file_contains "$(r2_theme sunset)" "ec addr rgb:"
+  assert_file_not_contains "$(r2_theme sunset)" "ec offset "
+  assert_file_contains "$(rizin_theme sunset)" "ec offset rgb:"
+  assert_file_not_contains "$(rizin_theme sunset)" "ec addr "
+  assert_file_contains "$(rizin_theme sunset)" "ec widget_sel rgb:"
+}
+
+# --- Tests: qt5ct and qt6ct ----------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its qt5ct/qt6ct color scheme
+# THEN it has a [ColorScheme] with active, disabled and inactive colors, each
+#      Qt's 21 palette colors as #aarrggbb; and in Qt's order, window text is
+#      Sunset's text, base (views) its editor background, window its sidebar,
+#      and highlight its accent with its bright text on it
+test_qtct_scheme_follows_the_palette() {
+  run_jenerate sunset
+  scheme="$(qtct_scheme sunset)"
+  assert_file_contains "$scheme" "[ColorScheme]"
+  for key in active_colors disabled_colors inactive_colors; do
+    colors="$(sed -n "s/^$key=//p" "$scheme" | tr -d ' ' | tr ',' '\n')"
+    [ "$(printf '%s\n' "$colors" | grep -cE '^#[0-9a-fA-F]{8}$')" = "21" ] ||
+      fail "expected 21 #aarrggbb colors in $key"
+  done
+  active="$(sed -n 's/^active_colors=//p' "$scheme" | tr -d ' ' | tr ',' '\n')"
+  role() { printf '%s\n' "$active" | sed -n "$1p" | tr '[:upper:]' '[:lower:]'; }
+  want() { printf '#ff%s' "$(color "$1" | tr -d '#' | tr '[:upper:]' '[:lower:]')"; }
+  [ "$(role 1)" = "$(want text)" ] || fail "expected window text to be text"
+  [ "$(role 10)" = "$(want bg)" ] || fail "expected base to be bg"
+  [ "$(role 11)" = "$(want bg_sidebar)" ] || fail "expected window to be bg_sidebar"
+  [ "$(role 13)" = "$(want accent)" ] || fail "expected highlight to be accent"
+  [ "$(role 14)" = "$(want text_bright)" ] || fail "expected highlighted text to be text_bright"
+}
+
+# --- Tests: Caido -------------------------------------------------------------
+
+# GIVEN the Sunset palette (dark) and a light one, Daylight
+# WHEN generating them and reading their Caido CSS
+# THEN it sets Caido's color variables, current and older names alike, from
+#      the palette (page background, default text, primary fill), under a
+#      selector that outranks Caido's own, with Sunset dark and Daylight
+#      light, and its braces balance
+test_caido_css_follows_the_palette() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset daylight
+  css="$(caido_css sunset)"
+  assert_file_contains "$css" ":root[data-appearance] {"
+  assert_file_contains "$css" "color-scheme: dark;"
+  assert_file_contains "$css" "--color-surface-page: $(color bg);"
+  assert_file_contains "$css" "--color-fg-default: $(color text);"
+  assert_file_contains "$css" "--color-fill-primary: $(color accent);"
+  assert_file_contains "$css" "--c-surface-900: $(color bg);"
+  assert_file_contains "$(caido_css daylight)" "color-scheme: light;"
+  [ "$(grep -o '{' "$css" | wc -l)" = "$(grep -o '}' "$css" | wc -l)" ] || fail "expected the braces to balance"
+}
+
+# --- Tests: Ghidra ------------------------------------------------------------
+
+# GIVEN the Sunset palette (dark) and a light one, Daylight
+# WHEN generating them and reading their Ghidra themes
+# THEN each is named "Jenerated" plus the palette's name, Sunset builds on
+#      Flat Dark and the dark defaults and Daylight on Flat Light, and the
+#      colors follow the palette: the view background, keywords in the soft
+#      accent, and decompiler function names in the light accent
+test_ghidra_theme_follows_the_palette() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset daylight
+  theme="$(ghidra_theme sunset)"
+  assert_file_contains "$theme" "name = Jenerated Sunset"
+  assert_file_contains "$theme" "lookAndFeel = Flat Dark"
+  assert_file_contains "$theme" "useDarkDefaults = true"
+  assert_file_contains "$theme" "[color]system.color.bg.view = $(color bg)"
+  assert_file_contains "$theme" "color.fg.decompiler.keyword = $(color accent_soft)"
+  assert_file_contains "$theme" "color.fg.decompiler.function.name = $(color accent_light)"
+  assert_file_contains "$(ghidra_theme daylight)" "lookAndFeel = Flat Light"
+  assert_file_contains "$(ghidra_theme daylight)" "useDarkDefaults = false"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Ghidra theme without comments
+# THEN every line is "name = value", with the first three being name,
+#      lookAndFeel and useDarkDefaults, as Ghidra expects
+test_ghidra_theme_is_name_value_lines() {
+  run_jenerate sunset
+  lines="$(grep -v -e '^//' -e '^$' "$(ghidra_theme sunset)")"
+  OUTPUT="$(printf '%s\n' "$lines" | grep -v -E '^[][A-Za-z.]+ = [^ ].*$')"
+  [ -z "$OUTPUT" ] || fail "these lines aren't name = value: $OUTPUT"
+  [ "$(printf '%s\n' "$lines" | head -n 3 | cut -d' ' -f1 | tr '\n' ' ')" = "name lookAndFeel useDarkDefaults " ] ||
+    fail "expected name, lookAndFeel and useDarkDefaults first"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------

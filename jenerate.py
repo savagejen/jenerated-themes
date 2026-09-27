@@ -26,6 +26,9 @@ as Unreal Engine), {{accent_h}}, {{accent_s}} and {{accent_l}} are "235",
 "87" and "65", {{accent_hex}} is "5865F3" (without the #), and
 {{accent_int}} is "5793267" (0xrrggbb as a decimal number, as LibreOffice
 stores colors).
+{{green_over_bg_20}} is one color laid over another at a percentage (0 to
+100), as #rrggbb: how {{green}}33 looks over {{bg}}, for apps that can't take
+a color with transparency.
 {{uuid}} is an ID made from the slug, the same every time, for apps that
 identify themes by UUID.
 
@@ -109,6 +112,13 @@ TARGETS = [
     ("app-themes/libreoffice-theme/description.txt.tmpl", "app-themes/libreoffice-theme/{slug}/description.txt"),
     ("app-themes/libreoffice-theme/manifest.xml.tmpl", "app-themes/libreoffice-theme/{slug}/META-INF/manifest.xml"),
     ("app-themes/wireshark-theme/colorfilters.tmpl", "app-themes/wireshark-theme/{slug}/colorfilters"),
+    ("app-themes/ghidra-theme/theme.theme.tmpl", "app-themes/ghidra-theme/jenerated-{slug}.theme"),
+    ("app-themes/caido-theme/theme.css.tmpl", "app-themes/caido-theme/jenerated-{slug}.css"),
+    ("app-themes/qtct-theme/colors.conf.tmpl", "app-themes/qtct-theme/jenerated-{slug}.conf"),
+    ("app-themes/radare2-theme/theme.r2.tmpl", "app-themes/radare2-theme/jenerated-{slug}"),
+    ("app-themes/rizin-theme/theme.rz.tmpl", "app-themes/rizin-theme/jenerated-{slug}"),
+    ("app-themes/gemini-theme/theme.json.tmpl", "app-themes/gemini-theme/jenerated-{slug}.json"),
+    ("app-themes/pwsh-theme/colors.ps1.tmpl", "app-themes/pwsh-theme/jenerated-{slug}.ps1"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
@@ -129,6 +139,9 @@ HEX = re.compile(r"#[0-9a-fA-F]{6}")
 PLACEHOLDER = re.compile(
     r'\{\{\s*(?:([A-Za-z0-9_]+)|scheme\s*:\s*"([^"]*)"\s*\|\s*"([^"]*)")\s*\}\}')
 SCHEMES = ("dark", "light")
+# {{green_over_bg_20}}: one color laid over another at a percentage, as
+# #rrggbb, for apps that can't take a color with transparency.
+BLEND = re.compile(r"([a-z0-9_]+?)_over_([a-z0-9_]+?)_(100|[1-9]?[0-9])")
 # Slugs become file names, so they're kept to lowercase words and dashes.
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 # Each palette's {{uuid}} is made from its slug in this namespace.
@@ -332,6 +345,14 @@ def read_template(path):
                  f"from TARGETS in jenerate.py.")
 
 
+def blend(top, bottom, percent):
+    """#rrggbb for the color `top` laid over `bottom` at `percent` (0-100),
+    as it looks with that much opacity."""
+    channels = [round(int(t, 16) * percent / 100 + int(b, 16) * (100 - percent) / 100)
+                for t, b in ((top[i:i + 2], bottom[i:i + 2]) for i in (1, 3, 5))]
+    return "#" + "".join(f"{c:02x}" for c in channels)
+
+
 def render(template_path, values):
     """Fill in a template's placeholders, or exit naming any missing ones."""
     text = read_template(template_path)
@@ -342,6 +363,10 @@ def render(template_path, values):
         if key is None:
             return for_dark if values["scheme"] == "dark" else for_light
         if key not in values:
+            blended = BLEND.fullmatch(key)
+            if blended and all(HEX.fullmatch(values.get(name, "")) for name in blended.groups()[:2]):
+                top, bottom, percent = blended.groups()
+                return blend(values[top], values[bottom], int(percent))
             missing.add(key)
             return match.group(0)
         return values[key]

@@ -69,6 +69,10 @@ What you need:
   and `{{accent_l}}` give `235`, `87` and `65`, `{{accent_hex}}` gives
   `5865F3` (without the `#`), and `{{accent_int}}` gives `5793267` (the
   color as one decimal number, as LibreOffice stores colors).
+- `{{green_over_bg_20}}` is one color laid over another at a percentage
+  (0 to 100), as `#rrggbb`: how `{{green}}33` would look over `{{bg}}`. Use
+  it for apps that don't take colors with transparency, like tinted diff
+  backgrounds in Gemini CLI.
 - `{{name}}` and `{{slug}}` are the palette's name and slug.
 - `{{uuid}}` is an ID made from the palette's slug, the same every time, for
   apps that identify themes by UUID.

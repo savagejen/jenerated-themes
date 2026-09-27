@@ -42,13 +42,16 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 - [Sublime Text](app-themes/sublime-theme/)
 - [Unreal Engine](app-themes/unreal-theme/)
 - [Vim and Neovim](app-themes/vim-theme/)
-- [VS Code](app-themes/vs-code-theme/)
+- [VS Code (and Code - OSS, VSCodium)](app-themes/vs-code-theme/)
 - [Xcode](app-themes/xcode-theme/) (macOS)
 
 ### Terminals and command-line tools
 
 - [fzf (fuzzy finder)](app-themes/fzf-theme/)
+- [Gemini CLI](app-themes/gemini-theme/)
+- [PowerShell (pwsh)](app-themes/pwsh-theme/)
 - [Ptyxis (Ubuntu terminal)](app-themes/ptyxis-theme/) (Linux)
+- [QTerminal (LXQt's and Kali's terminal)](app-themes/qterminal-theme/) (Linux)
 - [Tilix (terminal)](app-themes/tilix-theme/) (Linux)
 - [tmux](app-themes/tmux-theme/)
 - [zsh (syntax highlighting and suggestions)](app-themes/zsh-theme/)
@@ -58,6 +61,7 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 - [Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)](app-themes/decky-theme/)
 - [GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)](app-themes/gtk3-theme/)
 - [KDE Plasma (Plasma and KDE apps, Konsole, Kate)](app-themes/kde-theme/)
+- [Qt apps outside KDE Plasma (qt5ct and qt6ct)](app-themes/qtct-theme/)
 
 ### Entertainment
 
@@ -71,7 +75,11 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 
 ### Hacking and testing tools
 
+- [Caido (web security testing)](app-themes/caido-theme/)
+- [Ghidra (reverse engineering)](app-themes/ghidra-theme/)
 - [Insomnia (API client)](app-themes/insomnia-theme/)
+- [radare2 (reverse engineering)](app-themes/radare2-theme/)
+- [rizin (reverse engineering)](app-themes/rizin-theme/)
 - [Wireshark (network analyzer)](app-themes/wireshark-theme/)
 
 ## Themes

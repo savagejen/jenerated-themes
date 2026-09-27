@@ -1,8 +1,11 @@
 # Jenerated Themes for VS Code
 
 A VS Code extension with one color theme for each palette you generate with
-[jenerate.py](../../jenerate.py). It comes with the default, Blue Purple. Each theme is named "Jenerated" plus the
-palette's name, for example "Jenerated Blue Purple".
+[jenerate.py](../../jenerate.py). It comes with the default, Blue Purple.
+Each theme is named "Jenerated" plus the palette's name, for example
+"Jenerated Blue Purple". The same extension works in Code - OSS (the
+open-source build some Linux distributions ship, like Arch's `code` package)
+and VSCodium.
 
 The theme files in `themes/` (`jenerated-<slug>-color-theme.json`) are
 generated from `themes/color-theme.json.tmpl`, and `package.json` from
@@ -24,10 +27,13 @@ Development Host with the themes available immediately.
    git clone https://github.com/savagejen/jenerated-themes jenerated-themes
    ```
 
-2. Symlink or copy the folder into your extensions directory. A symlink
+2. Symlink or copy the folder into your extensions directory:
+   `~/.vscode/extensions` for VS Code, or `~/.vscode-oss/extensions` for
+   Code - OSS and VSCodium (use that path in the commands below). A symlink
    means themes you generate or remove later show up after a reload; with
    a copy, you copy the folder again. Run these from
-   the same folder where you ran `git clone`.
+   the same folder where you ran `git clone`. (`./setup.sh` links it into
+   each of those folders that exists.)
 
    ```bash
    # Symlink (ln needs an absolute path, hence $PWD)

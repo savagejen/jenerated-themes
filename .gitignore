@@ -38,6 +38,13 @@ app-themes/jellyfin-theme/*.css
 app-themes/libreoffice-theme/*/
 app-themes/libreoffice-theme/*.oxt
 app-themes/wireshark-theme/*/
+app-themes/ghidra-theme/*.theme
+app-themes/caido-theme/*.css
+app-themes/qtct-theme/*.conf
+app-themes/radare2-theme/jenerated-*
+app-themes/rizin-theme/jenerated-*
+app-themes/gemini-theme/*.json
+app-themes/pwsh-theme/*.ps1
 *.vsix
 
 # Your palette draft in the Palette Creator.
@@ -87,6 +94,13 @@ app-themes/decky-theme/*/config_*.json
 !app-themes/vivaldi-theme/jenerated-blue-purple.zip
 !app-themes/jetbrains-theme/jenerated-blue-purple.jar
 !app-themes/wireshark-theme/blue-purple/
+!app-themes/ghidra-theme/jenerated-blue-purple.theme
+!app-themes/caido-theme/jenerated-blue-purple.css
+!app-themes/qtct-theme/jenerated-blue-purple.conf
+!app-themes/radare2-theme/jenerated-blue-purple
+!app-themes/rizin-theme/jenerated-blue-purple
+!app-themes/gemini-theme/jenerated-blue-purple.json
+!app-themes/pwsh-theme/jenerated-blue-purple.ps1
 
 # Python bytecode (from importing jenerate.py)
 __pycache__/

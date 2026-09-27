@@ -345,11 +345,11 @@ add_app() {
 
 # Apps setup.sh can't install a theme into: it makes the theme and explains
 # what to do in the app. ALL THE APPS leaves them out.
-MANUAL_APPS=" firefox vivaldi chromium jetbrains slack mattermost jellyfin "
+MANUAL_APPS=" firefox vivaldi chromium jetbrains slack mattermost jellyfin caido "
 # Apps that use one palette at a time: installing one switches the app to it.
 # ALL THE PALETTES isn't offered for them (or for the manual apps). Every
 # other app keeps each palette's theme side by side, to choose in the app.
-ONE_PALETTE_APPS=" fzf tmux zsh mpv zen godot gtk3 kde "
+ONE_PALETTE_APPS=" fzf tmux zsh mpv zen godot gtk3 kde radare2 rizin gemini pwsh "
 
 is_manual() { case "$MANUAL_APPS" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 is_one_palette() { case "$ONE_PALETTE_APPS" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
@@ -370,6 +370,19 @@ known_obsidian_vaults() {
   done
 }
 
+# Prints Ghidra's settings folders, one for each version that has run (the
+# folder's name has the version in it): ghidra_<version> in ~/.config/ghidra
+# on Linux (11.1 and later), in ~/Library/ghidra on macOS, and in the
+# Flatpak's config folder, and .ghidra_<version> in ~/.ghidra from before 11.1.
+ghidra_settings_dirs() {
+  local dir
+  for dir in "${XDG_CONFIG_HOME:-$HOME/.config}"/ghidra/ghidra_* "$HOME/Library/ghidra"/ghidra_* \
+    "$HOME/.var/app/org.ghidra_sre.Ghidra/config/ghidra"/ghidra_* "$HOME/.ghidra"/.ghidra_*; do
+    if [ -d "$dir" ]; then printf '%s\n' "$dir"; fi
+  done
+  return 0
+}
+
 # app_present id -> returns 0 if the app looks installed on this computer: one
 # of its commands is on PATH, its Flatpak is installed, or (on macOS) its app
 # is in Applications. ALL THE APPS only installs into apps it finds. The
@@ -381,7 +394,7 @@ app_present() {
     case " $SETUP_FOUND_APPS " in *" $1 "*) return 0 ;; *) return 1 ;; esac
   fi
   case "$1" in
-    vscode) found="cmd:code cmd:codium flatpak:com.visualstudio.code flatpak:com.vscodium.codium mac:Visual_Studio_Code" ;;
+    vscode) found="cmd:code cmd:code-oss cmd:codium flatpak:com.visualstudio.code flatpak:com.vscodium.codium mac:Visual_Studio_Code mac:VSCodium" ;;
     ptyxis) found="cmd:ptyxis flatpak:app.devsuite.Ptyxis" ;;
     obsidian)
       # An AppImage may not be on PATH, but its vaults are listed.
@@ -411,7 +424,18 @@ app_present() {
     unreal) found="cmd:UnrealEditor cmd:UE4Editor mac:Epic_Games_Launcher" ;;
     libreoffice) found="cmd:soffice cmd:libreoffice flatpak:org.libreoffice.LibreOffice mac:LibreOffice" ;;
     krita) found="cmd:krita flatpak:org.kde.krita mac:krita" ;;
+    qtct) found="cmd:qt5ct cmd:qt6ct" ;;
+    radare2) found="cmd:r2 cmd:radare2" ;;
+    rizin) found="cmd:rizin" ;;
+    gemini) found="cmd:gemini" ;;
+    pwsh) found="cmd:pwsh" ;;
+    qterminal) found="cmd:qterminal" ;;
     wireshark) found="cmd:wireshark flatpak:org.wireshark.Wireshark mac:Wireshark" ;;
+    ghidra)
+      # Ghidra is often unzipped somewhere rather than installed, but it
+      # leaves a settings folder once it has run.
+      [ -n "$(ghidra_settings_dirs)" ] && return 0
+      found="cmd:ghidra cmd:ghidraRun flatpak:org.ghidra_sre.Ghidra" ;;
     *) return 0 ;;
   esac
   for found in $found; do
@@ -482,17 +506,20 @@ add_app unreal "Unreal Engine" editors "" "ue5 unreal editor game engine epic"
 add_app vim "Vim / Neovim" editors \
     "" \
     "nvim"
-add_app vscode "VS Code" editors \
-    "" \
-    "visual studio code"
+add_app vscode "VS Code (and Code - OSS, VSCodium)" editors \
+    "VS Code, Code - OSS, VSCodium" \
+    "visual studio code oss codium"
 if [ "$OS" = "Darwin" ]; then
   add_app xcode "Xcode" editors "" "apple swift"
 fi
 add_app fzf "fzf (fuzzy finder)" terminal
+add_app gemini "Gemini CLI" terminal "" "ai assistant agent llm"
+add_app pwsh "PowerShell (pwsh)" terminal "PSReadLine" "powershell pwsh psreadline psstyle"
 if [ "$OS" = "Linux" ]; then
   add_app ptyxis "Ptyxis (Ubuntu terminal)" terminal \
     "" \
     "gnome"
+  add_app qterminal "QTerminal (LXQt's and Kali's terminal)" terminal "" "lxqt kali qtermwidget"
   add_app tilix "Tilix (terminal)" terminal
 fi
 add_app tmux "tmux" terminal
@@ -506,12 +533,19 @@ if [ "$OS" = "Linux" ]; then
     "GIMP, Inkscape, Shotwell, Thunar, Nemo, Caja, gedit, Mousepad, Geany, Meld, Pluma, Xed, GParted, Synaptic, dconf Editor, Virtual Machine Manager, Evolution, Remmina, Deluge, Rhythmbox, GNOME Terminal, and the Xfce, MATE and Cinnamon desktops' own apps"
   add_app kde "KDE Plasma (Plasma and KDE apps, Konsole, Kate)" desktop \
     "Dolphin, Kate, KWrite, Okular, Konsole, System Settings"
+  add_app qtct "Qt apps outside KDE Plasma (qt5ct and qt6ct)" desktop \
+    "Legion, Wireshark, VLC, qBittorrent, KeePassXC and other Qt apps, on GNOME, Xfce and other desktops" \
+    "qt qt5 qt6 qt5ct qt6ct pyqt legion"
 fi
 add_app jellyfin "Jellyfin (media server)" entertainment "" "media server movies tv streaming plex emby"
 add_app mpv "mpv (media player)" entertainment "" "video music"
 add_app obs "OBS Studio (streaming and recording)" entertainment "" "obs streaming recording screen capture twitch youtube"
 add_app krita "Krita (painting)" art "" "paint painting drawing illustration art"
+add_app caido "Caido (web security testing)" hacking "" "proxy burp pentest pentesting web security http intercept"
+add_app ghidra "Ghidra (reverse engineering)" hacking "" "reverse engineering disassembler decompiler binary nsa"
 add_app insomnia "Insomnia (API client)" hacking "" "rest http graphql api kong testing"
+add_app radare2 "radare2 (reverse engineering)" hacking "Iaito" "r2 disassembler debugger reverse engineering"
+add_app rizin "rizin (reverse engineering)" hacking "Cutter" "rz disassembler debugger reverse engineering"
 add_app wireshark "Wireshark (network analyzer)" hacking "" "packets packet capture pcap network sniffer"
 
 # lowercase text -> prints text in lowercase (macOS's bash 3.2 has no ${x,,}).
@@ -531,7 +565,7 @@ category_name() {
 # chosen from. Returns 1 for Back from the main menu.
 APP_MENU=""
 pick_app() {
-  local labels=() targets=() i category count query
+  local labels=() targets=() i category count query pass
   while :; do
     labels=()
     targets=()
@@ -565,21 +599,31 @@ pick_app() {
       choose_or_back "Which app do you want to theme?" search "${labels[@]}"
     elif [ "$APP_MENU" = search ]; then
       query="$(lowercase "$SEARCH")"
-      for i in "${!APP_IDS[@]}"; do
-        # Match the app's name, id, covered apps, words, or category's name.
-        case "$(lowercase "${APP_LABELS[$i]} ${APP_IDS[$i]} ${APP_COVERS[$i]} ${APP_WORDS[$i]} $(category_name "${APP_CATEGORIES[$i]}")")" in
-          *"$query"*)
-            # Here the list of apps the theme covers helps, so show it under
-            # the label, wrapped and indented to line up with it.
-            if [ -n "${APP_COVERS[$i]}" ]; then
-              labels+=("${APP_LABELS[$i]}
+      # Apps whose name or id matches come first (searching "wireshark" puts
+      # Wireshark itself before a theme that covers it), then apps matching
+      # by the apps they cover, their other words, or their category's name.
+      for pass in name other; do
+        for i in "${!APP_IDS[@]}"; do
+          case "$(lowercase "${APP_LABELS[$i]} ${APP_IDS[$i]}")" in
+            *"$query"*) [ "$pass" = name ] || continue ;;
+            *)
+              [ "$pass" = other ] || continue
+              case "$(lowercase "${APP_COVERS[$i]} ${APP_WORDS[$i]} $(category_name "${APP_CATEGORIES[$i]}")")" in
+                *"$query"*) ;;
+                *) continue ;;
+              esac
+              ;;
+          esac
+          # Here the list of apps the theme covers helps, so show it under
+          # the label, wrapped and indented to line up with it.
+          if [ -n "${APP_COVERS[$i]}" ]; then
+            labels+=("${APP_LABELS[$i]}
 $(printf 'Covers: %s\n' "${APP_COVERS[$i]}" | fold -s -w 70 | sed 's/ *$//; s/^/     /')")
-            else
-              labels+=("${APP_LABELS[$i]}")
-            fi
-            targets+=("app:${APP_IDS[$i]}")
-            ;;
-        esac
+          else
+            labels+=("${APP_LABELS[$i]}")
+          fi
+          targets+=("app:${APP_IDS[$i]}")
+        done
       done
       if [ "${#labels[@]}" -eq 0 ]; then
         say ""
@@ -988,47 +1032,74 @@ $dir
   done
 }
 
-install_vscode() {
-  local extensions="$HOME/.vscode/extensions"
-  local target="$extensions/jenerated-themes"
-  local source="$ROOT/app-themes/vs-code-theme"
+# The extensions folders of the VS Code family that are in use: VS Code's
+# (~/.vscode), and Code - OSS's and VSCodium's (both ~/.vscode-oss), which each
+# makes the first time it runs. With neither there, VS Code's.
+vscode_extension_dirs() {
+  local found=""
+  if [ -d "$HOME/.vscode" ]; then
+    printf '%s\n' "$HOME/.vscode/extensions"
+    found=1
+  fi
+  if [ -d "$HOME/.vscode-oss" ]; then
+    printf '%s\n' "$HOME/.vscode-oss/extensions"
+    found=1
+  fi
+  [ -n "$found" ] || printf '%s\n' "$HOME/.vscode/extensions"
+  return 0
+}
 
-  plan_link "$target" "$source"
+install_vscode() {
+  local source="$ROOT/app-themes/vs-code-theme"
+  local extensions dirs=() other obsolete
+
+  while IFS= read -r extensions; do dirs+=("$extensions"); done < <(vscode_extension_dirs)
+
+  for extensions in "${dirs[@]}"; do
+    plan_link "$extensions/jenerated-themes" "$source"
+  done
   run_install_plan "the VS Code extension"
 
-  # A .vsix install of the same extension would clash with the link.
-  for other in "$extensions"/local.jenerated-themes-*; do
-    [ -e "$other" ] || continue
-    say ""
-    say "Note: you also have a packaged copy installed ($(basename "$other"))."
-    say "Uninstall \"Jenerated Themes\" from VS Code's Extensions view so the two don't clash."
+  for extensions in "${dirs[@]}"; do
+    # A .vsix install of the same extension would clash with the link.
+    for other in "$extensions"/local.jenerated-themes-*; do
+      [ -e "$other" ] || continue
+      say ""
+      say "Note: you also have a packaged copy installed ($(basename "$other"), in $extensions)."
+      say "Uninstall \"Jenerated Themes\" from the editor's Extensions view so the two don't clash."
+    done
+
+    # If the extension was ever uninstalled, VS Code lists it in .obsolete and
+    # ignores it, even after it's reinstalled. VS Code rewrites that file while
+    # it runs, so it has to be closed while we remove the entry.
+    obsolete="$extensions/.obsolete"
+    if [ "$INSTALL_MODE" != manual ] && [ -f "$obsolete" ] && grep -q 'local\.jenerated-themes' "$obsolete"; then
+      say ""
+      say "This extension is marked as uninstalled in $extensions,"
+      say "which hides the theme."
+      # Fixing that waits for the editor to be closed, so it can't happen by itself.
+      [ -z "$AUTO_ANSWER" ] || die "run ./setup.sh again and choose VS Code on its own, to fix that"
+      say "Quit it completely (all windows), then press Enter to fix it."
+      read -r _ || die "stopped before changing its files; run ./setup.sh again"
+      sed -e 's/"local\.jenerated-themes[^"]*":[a-z]*//g' \
+        -e 's/,,*/,/g' -e 's/{,/{/' -e 's/,}/}/' "$obsolete" >"$obsolete.tmp"
+      if grep -q '^{}$' "$obsolete.tmp"; then
+        rm -f "$obsolete" "$obsolete.tmp"
+      else
+        mv "$obsolete.tmp" "$obsolete"
+      fi
+      say "Fixed."
+    fi
   done
 
-  # If the extension was ever uninstalled, VS Code lists it in .obsolete and
-  # ignores it, even after it's reinstalled. VS Code rewrites that file while
-  # it runs, so it has to be closed while we remove the entry.
-  local obsolete="$extensions/.obsolete"
-  if [ "$INSTALL_MODE" != manual ] && [ -f "$obsolete" ] && grep -q 'local\.jenerated-themes' "$obsolete"; then
-    say ""
-    say "VS Code has this extension marked as uninstalled, which hides the theme."
-    # Fixing that waits for VS Code to be closed, so it can't happen by itself.
-    [ -z "$AUTO_ANSWER" ] || die "run ./setup.sh again and choose VS Code on its own, to fix that"
-    say "Quit VS Code completely (all windows), then press Enter to fix it."
-    read -r _ || die "stopped before changing VS Code's files; run ./setup.sh again"
-    sed -e 's/"local\.jenerated-themes[^"]*":[a-z]*//g' \
-      -e 's/,,*/,/g' -e 's/{,/{/' -e 's/,}/}/' "$obsolete" >"$obsolete.tmp"
-    if grep -q '^{}$' "$obsolete.tmp"; then
-      rm -f "$obsolete" "$obsolete.tmp"
-    else
-      mv "$obsolete.tmp" "$obsolete"
-    fi
-    say "Fixed."
-  fi
-
-  step "Done! To turn the theme on:"
-  say "1. Open (or reload) VS Code: Command Palette -> \"Developer: Reload Window\"."
+  step "Done! To turn the theme on (in VS Code, Code - OSS or VSCodium):"
+  say "1. Open (or reload) the editor: Command Palette -> \"Developer: Reload Window\"."
   say "2. Open the theme picker (Ctrl+K Ctrl+T, or Cmd+K Cmd+T on a Mac)."
   say "3. Choose \"Jenerated $NAME\"."
+  if [ ! -d "$HOME/.vscode-oss" ]; then
+    say "For Code - OSS or VSCodium, open it once first, so it makes its"
+    say "~/.vscode-oss folder, then run ./setup.sh again."
+  fi
 }
 
 install_ptyxis() {
@@ -2462,6 +2533,232 @@ install_wireshark() {
   say "profile again (or restart Wireshark)."
 }
 
+# qt5ct and qt6ct each read color schemes from their own colors folder, and
+# list each by its file name, so the link is named for the palette. The
+# schemes do nothing until Qt apps use qt5ct or qt6ct (QT_QPA_PLATFORMTHEME),
+# which KDE Plasma's own Qt integration replaces, so they never change KDE.
+install_qtct() {
+  local source="$ROOT/app-themes/qtct-theme/jenerated-$SLUG.conf" tool
+  for tool in qt5ct qt6ct; do
+    plan_link "${XDG_CONFIG_HOME:-$HOME/.config}/$tool/colors/Jenerated $NAME.conf" "$source"
+  done
+  run_install_plan "the qt5ct and qt6ct color scheme"
+
+  step "Done! To turn the colors on:"
+  say "1. Qt apps use qt6ct (or qt5ct, for Qt 5 apps) when QT_QPA_PLATFORMTHEME"
+  say "   is set to it. If yours isn't, add QT_QPA_PLATFORMTHEME=qt6ct to"
+  say "   /etc/environment (or ~/.profile), and log out and back in. (On KDE"
+  say "   Plasma, leave it unset and use the KDE Plasma theme instead.)"
+  say "2. Open Qt6 Settings (qt6ct): on the Appearance tab, choose Fusion as the"
+  say "   style, then Custom palette and \"Jenerated $NAME\", and Apply. Do the"
+  say "   same in Qt5 Settings (qt5ct) for Qt 5 apps."
+  say "3. Restart your Qt apps."
+  say "Apps started with sudo (like Legion) use root's settings, not yours. To"
+  say "color them too, set up qt6ct for root the same way (sudo qt6ct), with the"
+  say "scheme copied into /root/.config/qt6ct/colors."
+  say "After changing the palette, run ./jenerate.py $SLUG and restart your Qt apps."
+}
+
+# QTerminal's terminal (qtermwidget) reads Konsole's color scheme format, so it
+# uses the KDE theme's Konsole scheme. It lists schemes by file name, so the
+# link is named for the palette.
+install_qterminal() {
+  local schemes="${XDG_DATA_HOME:-$HOME/.local/share}/qterminal/color-schemes"
+
+  plan_link "$schemes/Jenerated $NAME.colorscheme" "$ROOT/app-themes/kde-theme/$SLUG/Jenerated-$SLUG.colorscheme"
+  run_install_plan "the QTerminal color scheme"
+
+  step "Done! To turn the colors on:"
+  say "1. Close every QTerminal window, then open QTerminal again; it reads its"
+  say "   color schemes when it starts."
+  say "2. Open File -> Preferences, and on the Appearance tab choose"
+  say "   \"Jenerated $NAME\" as the Color scheme."
+  say "After changing the palette, run ./jenerate.py $SLUG and restart QTerminal."
+}
+
+# PowerShell's profile (the same place on Linux and macOS) loads the colors
+# from one file, so switching palettes just repoints the link.
+install_pwsh() {
+  local config="${XDG_CONFIG_HOME:-$HOME/.config}/powershell"
+  local colors="$config/jenerated-colors.ps1"
+  local profile="$config/Microsoft.PowerShell_profile.ps1"
+  local path line
+
+  step "Installing the PowerShell colors"
+  mkdir -p "$config"
+  install_link "$colors" "$ROOT/app-themes/pwsh-theme/jenerated-$SLUG.ps1"
+
+  # In PowerShell, $HOME is your home folder, so the line works wherever it is.
+  case "$colors" in
+    "$HOME"/*) path="\$HOME/${colors#"$HOME"/}" ;;
+    *) path="$colors" ;;
+  esac
+  line="if (Test-Path \"$path\") { . \"$path\" }"
+
+  if [ ! -e "$profile" ]; then
+    printf '%s\n' "# PowerShell profile. The line below loads the Jenerated colors." "$line" >"$profile"
+    say "Created $profile"
+  elif grep -qxF -- "$line" "$profile"; then
+    :
+  elif ask_yes "Load the colors at the end of $profile? (Your settings in it are kept.)"; then
+    if [ -s "$profile" ] && [ -n "$(tail -c 1 "$profile")" ]; then printf '\n' >>"$profile"; fi
+    printf '%s\n' "# Colors from Jenerated Themes" "$line" >>"$profile"
+    say "Added the colors to $profile"
+  else
+    say "Left $profile alone; add this line to the end of it to use the colors:"
+    say "    $line"
+  fi
+
+  step "Done! Start a new PowerShell (pwsh) to see Jenerated $NAME."
+  say "The output colors need PowerShell 7.2 or later; the command line's work"
+  say "in any version with PSReadLine."
+  say "After changing the palette, run ./jenerate.py $SLUG and start pwsh again."
+}
+
+# Gemini CLI loads a theme from a JSON file named in ui.theme in its
+# settings.json, and only from inside your home folder, so the theme is linked
+# into ~/.gemini/themes and ui.theme is pointed at the link.
+install_gemini() {
+  local file="jenerated-$SLUG.json"
+  local theme="$HOME/.gemini/themes/$file"
+  local settings="$HOME/.gemini/settings.json"
+
+  plan_link "$theme" "$ROOT/app-themes/gemini-theme/$file"
+  run_install_plan "the Gemini CLI theme"
+
+  if [ -z "$PYTHON" ]; then
+    say "Setting the theme in $settings needs Python 3.11 or later."
+  elif ask_yes "Use it in Gemini CLI? (Sets ui.theme in $settings; your other settings are kept.)"; then
+    if "$PYTHON" -c '
+import json, os, sys
+path, theme = sys.argv[1], sys.argv[2]
+settings = {}
+if os.path.exists(path):
+    with open(path) as f:
+        settings = json.load(f)
+if not isinstance(settings, dict) or not isinstance(settings.setdefault("ui", {}), dict):
+    sys.exit(1)
+settings["ui"]["theme"] = theme
+os.makedirs(os.path.dirname(path), exist_ok=True)
+with open(path + ".jenerated-new", "w") as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+os.replace(path + ".jenerated-new", path)
+' "$settings" "$theme" 2>/dev/null; then
+      step "Done! Gemini CLI uses Jenerated $NAME the next time it starts."
+      say "(With ui.theme set, /theme can't switch themes; remove it to choose"
+      say "with /theme again.)"
+      say "After changing the palette, run ./jenerate.py $SLUG and start Gemini CLI again."
+      return 0
+    fi
+    say "Couldn't read $settings as JSON (does it have comments?), so it's unchanged."
+  fi
+  step "To use the theme, set this in $settings:"
+  say "    \"ui\": { \"theme\": \"$theme\" }"
+  say "After changing the palette, run ./jenerate.py $SLUG and start Gemini CLI again."
+}
+
+# install_r2_theme radare2|rizin -> links the theme into the tool's themes
+# folder (both keep them in ~/.local/share/<tool>/cons, and load one with
+# "eco <name>"), then offers to load it, with 24-bit color, every time the tool
+# starts, from its startup file. Switching palettes replaces the earlier
+# Jenerated theme's line.
+install_r2_theme() {
+  local tool="$1" name="jenerated-$SLUG" rc line color_line
+  local themes="$HOME/.local/share/$tool/cons"
+  if [ "$tool" = radare2 ]; then
+    rc="$HOME/.radare2rc"
+    [ -f "$rc" ] || [ ! -f "${XDG_CONFIG_HOME:-$HOME/.config}/radare2/radare2rc" ] ||
+      rc="${XDG_CONFIG_HOME:-$HOME/.config}/radare2/radare2rc"
+  else
+    rc="$HOME/.rizinrc"
+    [ -f "$rc" ] || rc="${XDG_CONFIG_HOME:-$HOME/.config}/rizin/rizinrc"
+  fi
+  line="eco $name"
+  color_line="e scr.color=3"
+
+  plan_link "$themes/$name" "$ROOT/app-themes/$tool-theme/$name"
+  run_install_plan "the $tool theme"
+
+  if [ -f "$rc" ] && grep -qxF -- "$line" "$rc"; then
+    :
+  elif [ -f "$rc" ] && grep -q '^eco jenerated-' "$rc"; then
+    # Another palette's theme: switch the line to this one.
+    sed "s/^eco jenerated-.*/$line/" "$rc" >"$rc.tmp" && mv "$rc.tmp" "$rc"
+    say "Switched $rc to $name"
+  elif ask_yes "Load the theme every time $tool starts? (Adds two lines to $rc.)"; then
+    mkdir -p "$(dirname "$rc")"
+    if [ -s "$rc" ] && [ -n "$(tail -c 1 "$rc")" ]; then printf '\n' >>"$rc"; fi
+    grep -qxF -- "$color_line" "$rc" 2>/dev/null ||
+      printf '%s\n' "# 24-bit color, for the Jenerated theme's exact colors" "$color_line" >>"$rc"
+    printf '%s\n' "# Colors from Jenerated Themes" "$line" >>"$rc"
+    say "Added the theme to $rc"
+  else
+    say "Left $rc alone. To load the theme, run these in $tool (or add them to $rc):"
+    say "    $color_line"
+    say "    $line"
+  fi
+
+  step "Done! $tool uses Jenerated $NAME the next time it starts."
+  say "To try it in a running $tool: $color_line; $line"
+  say "After changing the palette, run ./jenerate.py $SLUG and start $tool again."
+}
+
+# Caido keeps its custom CSS in its own settings, so it's pasted in.
+install_caido() {
+  local file="app-themes/caido-theme/jenerated-$SLUG.css"
+  local appearance=Dark
+  grep -q 'color-scheme: light;' "$file" && appearance=Light
+
+  step "Your Caido CSS"
+  say "It's in $ROOT/$file"
+  if copy_to_clipboard <"$file" 2>/dev/null; then
+    say "(Copied to your clipboard.)"
+  else
+    say "Open that file and copy everything in it."
+  fi
+
+  step "Done! To turn the theme on (Caido is themed from inside the app):"
+  say "1. In Caido, click your account button at the top right and choose"
+  say "   Settings, then open the Appearance tab."
+  say "2. Choose the $appearance appearance, to match the palette."
+  say "3. Open Custom CSS, paste the CSS in, replacing anything there, and save."
+  say "After changing the palette, run ./setup.sh again and paste the new CSS."
+}
+
+install_ghidra() {
+  local file="jenerated-$SLUG.theme"
+  local source="$ROOT/app-themes/ghidra-theme/$file"
+  local dir dirs=()
+
+  while IFS= read -r dir; do dirs+=("$dir"); done < <(ghidra_settings_dirs)
+
+  if [ "${#dirs[@]}" -eq 0 ]; then
+    # Ghidra makes its settings folder the first time it runs, named for its
+    # version, so there's nowhere to put the theme yet.
+    [ -z "$AUTO_ANSWER" ] ||
+      die "no Ghidra settings folder found; run Ghidra once, or run ./setup.sh again and choose Ghidra on its own"
+    step "No Ghidra settings folder found (Ghidra makes one the first time it runs)."
+    say "To add the theme from Ghidra itself:"
+    say "1. In Ghidra's project window, choose Edit -> Theme -> Import..., and"
+    say "   choose $source"
+    say "2. Choose Edit -> Theme -> Switch..., and pick \"Jenerated $NAME\"."
+    say "Importing copies the theme, so import it again after changing the palette."
+    return 0
+  fi
+
+  for dir in "${dirs[@]}"; do
+    plan_link "$dir/themes/$file" "$source"
+  done
+  run_install_plan "the Ghidra theme"
+
+  step "Done! To turn the theme on:"
+  say "1. Restart Ghidra if it's open; it reads its themes when it starts."
+  say "2. In the project window, choose Edit -> Theme -> Switch..., and pick"
+  say "   \"Jenerated $NAME\"."
+  say "After changing the palette, run ./jenerate.py $SLUG and restart Ghidra."
+}
+
 # install_app id -> installs the theme (NAME, SLUG) for one app.
 install_app() {
   case "$1" in
@@ -2500,6 +2797,14 @@ install_app() {
     libreoffice) install_libreoffice ;;
     krita) install_krita ;;
     wireshark) install_wireshark ;;
+    ghidra) install_ghidra ;;
+    caido) install_caido ;;
+    qtct) install_qtct ;;
+    radare2) install_r2_theme radare2 ;;
+    rizin) install_r2_theme rizin ;;
+    gemini) install_gemini ;;
+    pwsh) install_pwsh ;;
+    qterminal) install_qterminal ;;
   esac
 }
 

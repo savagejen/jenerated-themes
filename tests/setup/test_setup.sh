@@ -83,11 +83,11 @@ test_app_menu_on_linux_groups_the_apps() {
   1) Web browsers (4 apps)
   2) Communication (3 apps)
   3) Editors: code, text and notes (13 apps)
-  4) Terminals and command-line tools (5 apps)
-  5) Linux desktops (3 apps)
+  4) Terminals and command-line tools (8 apps)
+  5) Linux desktops (4 apps)
   6) Entertainment (3 apps)
   7) Art and design (1 app)
-  8) Hacking and testing tools (2 apps)
+  8) Hacking and testing tools (6 apps)
   9) ALL THE APPS
   10) Search for an app by name
   0) Back"
@@ -106,10 +106,10 @@ test_app_menu_on_macos_leaves_out_linux_apps() {
   1) Web browsers (4 apps)
   2) Communication (3 apps)
   3) Editors: code, text and notes (13 apps)
-  4) Terminals and command-line tools (3 apps)
+  4) Terminals and command-line tools (5 apps)
   5) Entertainment (3 apps)
   6) Art and design (1 app)
-  7) Hacking and testing tools (2 apps)
+  7) Hacking and testing tools (6 apps)
   8) ALL THE APPS
   9) Search for an app by name
   0) Back"
@@ -123,7 +123,7 @@ test_app_menu_on_macos_leaves_out_linux_apps() {
 #      returns to the app menu each time
 test_each_category_lists_its_apps() {
   fake_os Linux
-  run_setup "1\n1\n0\n2\n0\n3\n0\n4\n0\n5\n0\n6\n0\n7\n0\n8\n1\n1\n"
+  run_setup "1\n1\n0\n2\n0\n3\n0\n4\n0\n5\n0\n6\n0\n7\n0\n8\n3\n1\n"
   assert_status 0
   assert_contains "Communication:
   1) Element (Matrix chat)
@@ -149,19 +149,23 @@ test_each_category_lists_its_apps() {
   10) Sublime Text
   11) Unreal Engine
   12) Vim / Neovim
-  13) VS Code
+  13) VS Code (and Code - OSS, VSCodium)
   0) Back"
   assert_contains "Terminals and command-line tools:
   1) fzf (fuzzy finder)
-  2) Ptyxis (Ubuntu terminal)
-  3) Tilix (terminal)
-  4) tmux
-  5) zsh (syntax highlighting and suggestions)
+  2) Gemini CLI
+  3) PowerShell (pwsh)
+  4) Ptyxis (Ubuntu terminal)
+  5) QTerminal (LXQt's and Kali's terminal)
+  6) Tilix (terminal)
+  7) tmux
+  8) zsh (syntax highlighting and suggestions)
   0) Back"
   assert_contains "Linux desktops:
   1) Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)
   2) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)
   3) KDE Plasma (Plasma and KDE apps, Konsole, Kate)
+  4) Qt apps outside KDE Plasma (qt5ct and qt6ct)
   0) Back"
   assert_contains "Entertainment:
   1) Jellyfin (media server)
@@ -172,8 +176,12 @@ test_each_category_lists_its_apps() {
   1) Krita (painting)
   0) Back"
   assert_contains "Hacking and testing tools:
-  1) Insomnia (API client)
-  2) Wireshark (network analyzer)
+  1) Caido (web security testing)
+  2) Ghidra (reverse engineering)
+  3) Insomnia (API client)
+  4) radare2 (reverse engineering)
+  5) rizin (reverse engineering)
+  6) Wireshark (network analyzer)
   0) Back"
   count="$(printf '%s\n' "$OUTPUT" | grep -c '^Which app do you want to theme?$')"
   [ "$count" -eq 8 ] || fail "expected the app menu 8 times (once, then after each Back), got $count"
@@ -184,7 +192,7 @@ test_each_category_lists_its_apps() {
 # THEN that app is installed
 test_choosing_an_app_from_a_category() {
   fake_os Linux
-  run_setup "1\n4\n4\n1\n"
+  run_setup "1\n4\n7\n1\n"
   assert_status 0
   assert_contains "Installing the tmux colors"
 }
@@ -195,17 +203,21 @@ test_choosing_an_app_from_a_category() {
 #      matter), and one can be chosen from them
 test_typing_a_name_searches() {
   fake_os Linux
-  run_setup "1\nCOMMAND-LINE\n4\n1\n"
+  run_setup "1\nCOMMAND-LINE\n7\n1\n"
   assert_status 0
-  assert_contains 'Apps matching "COMMAND-LINE":
+  assert_contains "Apps matching \"COMMAND-LINE\":
   1) fzf (fuzzy finder)
-  2) Ptyxis (Ubuntu terminal)
-  3) Tilix (terminal)
-  4) tmux
-  5) zsh (syntax highlighting and suggestions)
+  2) Gemini CLI
+  3) PowerShell (pwsh)
+     Covers: PSReadLine
+  4) Ptyxis (Ubuntu terminal)
+  5) QTerminal (LXQt's and Kali's terminal)
+  6) Tilix (terminal)
+  7) tmux
+  8) zsh (syntax highlighting and suggestions)
      Covers: zsh-syntax-highlighting, fast-syntax-highlighting,
      zsh-autosuggestions
-  0) Back'
+  0) Back"
   assert_contains "Installing the tmux colors"
 }
 
@@ -492,7 +504,7 @@ test_all_the_apps_lists_the_apps_and_asks_first() {
   assert_status 0
   assert_contains "==> ALL THE APPS
 This installs Jenerated Blue Purple into all 3 of these apps, with no"
-  assert_contains "  - VS Code
+  assert_contains "  - VS Code (and Code - OSS, VSCodium)
   - Tilix (terminal)
   - tmux
 
@@ -530,13 +542,14 @@ test_all_the_apps_installs_into_every_automated_app() {
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
   assert_contains "==> ALL THE APPS: done
 Installed Jenerated Blue Purple into:
-  - VS Code
+  - VS Code (and Code - OSS, VSCodium)
   - Tilix (terminal)
 
 Not installed:
   - Obsidian
   - Chromium browsers (Chrome, Brave, Edge, Opera and more)"
   assert_contains "  - Jellyfin (media server)
+  - Caido (web security testing)
 
 These may need to be done by hand. Run ./setup.sh again and choose each"
   assert_contains "Not found on this computer, so left out:"
@@ -878,6 +891,41 @@ test_repo_in_a_folder_with_spaces() {
 
 # --- Tests: VS Code ----------------------------------------------------------
 
+# GIVEN Code - OSS (or VSCodium) has run, so ~/.vscode-oss exists, but VS
+#       Code hasn't
+# WHEN choosing VS Code and Blue Purple
+# THEN the extension is linked into ~/.vscode-oss/extensions, and not into
+#      ~/.vscode
+test_vscode_links_the_extension_for_code_oss() {
+  mkdir -p "$SANDBOX/home/.vscode-oss"
+  run_setup "1\nvs code\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.vscode-oss/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
+  assert_missing "$SANDBOX/home/.vscode"
+  assert_not_contains "open it once first"
+}
+
+# GIVEN both VS Code and Code - OSS have run
+# WHEN choosing VS Code and Blue Purple
+# THEN the extension is linked into both extensions folders
+test_vscode_links_the_extension_for_both() {
+  mkdir -p "$SANDBOX/home/.vscode" "$SANDBOX/home/.vscode-oss"
+  run_setup "1\nvs code\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
+  assert_link "$SANDBOX/home/.vscode-oss/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
+}
+
+# GIVEN a search for Code - OSS
+# WHEN searching "code-oss" and "codium"
+# THEN both find the VS Code entry
+test_vscode_is_found_as_code_oss_and_codium() {
+  run_setup "1\ncode - oss\n0\n0\n"
+  assert_contains "1) VS Code (and Code - OSS, VSCodium)"
+  run_setup "1\ncodium\n0\n0\n"
+  assert_contains "1) VS Code (and Code - OSS, VSCodium)"
+}
+
 # GIVEN no VS Code extension installed
 # WHEN choosing VS Code and Blue Purple
 # THEN the extension folder is linked into ~/.vscode/extensions, and it says
@@ -943,7 +991,7 @@ test_vscode_warns_about_a_packaged_copy() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/local.jenerated-themes-1.0.0"
   run_setup "1\nvs code\n1\n1\ny\n1\n"
   assert_status 0
-  assert_contains "you also have a packaged copy installed (local.jenerated-themes-1.0.0)"
+  assert_contains "you also have a packaged copy installed (local.jenerated-themes-1.0.0, in $SANDBOX/home/.vscode/extensions)"
 }
 
 # GIVEN VS Code's .obsolete file lists only this extension
@@ -979,7 +1027,7 @@ test_vscode_stops_if_input_ends_before_enter() {
   printf '{"local.jenerated-themes-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
   run_setup "1\nvs code\n1\n1\ny\n1\n"
   assert_status 1
-  assert_contains "stopped before changing VS Code's files"
+  assert_contains "stopped before changing its files"
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" '{"local.jenerated-themes-1.0.0":true}'
 }
 
@@ -2867,6 +2915,333 @@ test_krita_on_macos_uses_application_support() {
   assert_status 0
   assert_link "$SANDBOX/home/Library/Application Support/krita/color-schemes/Jenerated-blue-purple.colors" \
     "$SANDBOX/repo/app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colors"
+}
+
+# --- Tests: QTerminal ---------------------------------------------------------
+
+# GIVEN Linux
+# WHEN choosing QTerminal and Blue Purple
+# THEN the KDE theme's Konsole scheme is linked into QTerminal's
+#      color-schemes folder, named for the palette (the name QTerminal lists
+#      it by), and it says where to choose it
+test_qterminal_links_the_konsole_scheme() {
+  fake_os Linux
+  run_setup "1\nqterminal\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.local/share/qterminal/color-schemes/Jenerated Blue Purple.colorscheme" \
+    "$SANDBOX/repo/app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colorscheme"
+  assert_contains '"Jenerated Blue Purple" as the Color scheme'
+}
+
+# GIVEN dark palettes and a light one, Dawn
+# WHEN choosing QTerminal and ALL THE PALETTES
+# THEN every palette's scheme is linked, side by side
+test_qterminal_takes_all_the_palettes() {
+  fake_os Linux
+  dawn_palette Light
+  run_setup "1\nqterminal\n1\n3\ny\n"
+  assert_status 0
+  for name in "Blue Purple" "Dawn" "Sunset"; do
+    assert_exists "$SANDBOX/home/.local/share/qterminal/color-schemes/Jenerated $name.colorscheme"
+  done
+}
+
+# GIVEN a Mac
+# WHEN looking for QTerminal
+# THEN it isn't offered, since it's for Linux
+test_qterminal_is_linux_only() {
+  fake_os Darwin
+  run_setup "1\n9\nqterminal\n\n1\nslack\n1\n1\n"
+  assert_not_contains "QTerminal"
+}
+
+# --- Tests: PowerShell -------------------------------------------------------
+
+# GIVEN no PowerShell profile
+# WHEN choosing PowerShell and Blue Purple
+# THEN the colors script is linked to ~/.config/powershell/jenerated-colors.ps1,
+#      and a new profile loads it, by a path starting at $HOME
+test_pwsh_links_the_colors_and_starts_a_profile() {
+  fake_os Linux
+  run_setup "1\npowershell\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/powershell/jenerated-colors.ps1" \
+    "$SANDBOX/repo/app-themes/pwsh-theme/jenerated-blue-purple.ps1"
+  assert_file_contains "$SANDBOX/home/.config/powershell/Microsoft.PowerShell_profile.ps1" \
+    'if (Test-Path "$HOME/.config/powershell/jenerated-colors.ps1") { . "$HOME/.config/powershell/jenerated-colors.ps1" }'
+}
+
+# GIVEN a PowerShell profile with your settings, and Blue Purple installed
+# WHEN choosing PowerShell and Sunset
+# THEN the link points at Sunset's script, and the profile, which already
+#      loads the colors, is left alone
+test_pwsh_switching_palettes_repoints_the_link() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/powershell"
+  printf 'Set-Alias ll Get-ChildItem\n' >"$SANDBOX/home/.config/powershell/Microsoft.PowerShell_profile.ps1"
+  run_setup "1\npowershell\n1\n1\ny\n"
+  cp "$SANDBOX/home/.config/powershell/Microsoft.PowerShell_profile.ps1" "$SANDBOX/after-first"
+  run_setup "1\npowershell\n1\n2\ny\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/powershell/jenerated-colors.ps1" \
+    "$SANDBOX/repo/app-themes/pwsh-theme/jenerated-sunset.ps1"
+  assert_same_file "$SANDBOX/home/.config/powershell/Microsoft.PowerShell_profile.ps1" "$SANDBOX/after-first"
+  assert_file_contains "$SANDBOX/after-first" "Set-Alias ll Get-ChildItem"
+}
+
+# GIVEN a PowerShell profile with your settings
+# WHEN choosing PowerShell and Blue Purple, and answering no to loading it
+# THEN the profile is left alone, and it says what to add
+test_pwsh_leaves_the_profile_alone_when_declined() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/powershell"
+  printf 'Set-Alias ll Get-ChildItem\n' >"$SANDBOX/home/.config/powershell/Microsoft.PowerShell_profile.ps1"
+  cp "$SANDBOX/home/.config/powershell/Microsoft.PowerShell_profile.ps1" "$SANDBOX/before"
+  run_setup "1\npowershell\n1\n1\nn\n"
+  assert_status 0
+  assert_same_file "$SANDBOX/home/.config/powershell/Microsoft.PowerShell_profile.ps1" "$SANDBOX/before"
+  assert_contains '    if (Test-Path "$HOME/.config/powershell/jenerated-colors.ps1")'
+}
+
+# --- Tests: Gemini CLI --------------------------------------------------------
+
+# GIVEN ~/.gemini/settings.json with your settings
+# WHEN choosing Gemini CLI and Blue Purple, and saying yes to using it
+# THEN the theme is linked into ~/.gemini/themes, ui.theme points at the
+#      link, and your other settings are kept
+test_gemini_links_the_theme_and_sets_it() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.gemini"
+  printf '{"general": {"vimMode": true}, "ui": {"hideTips": true}}\n' >"$SANDBOX/home/.gemini/settings.json"
+  run_setup "1\ngemini\n1\n1\ny\n1\ny\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.gemini/themes/jenerated-blue-purple.json" \
+    "$SANDBOX/repo/app-themes/gemini-theme/jenerated-blue-purple.json"
+  OUTPUT="$("$(find_python)" -c '
+import json, sys
+s = json.load(open(sys.argv[1]))
+print(s["ui"]["theme"], s["ui"]["hideTips"], s["general"]["vimMode"])
+' "$SANDBOX/home/.gemini/settings.json")"
+  assert_contains "$SANDBOX/home/.gemini/themes/jenerated-blue-purple.json True True"
+}
+
+# GIVEN ~/.gemini/settings.json with comments, which isn't plain JSON
+# WHEN choosing Gemini CLI and Blue Purple, and saying yes to using it
+# THEN the file is left alone, and it says what to set
+test_gemini_leaves_settings_it_cannot_read() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.gemini"
+  printf '{\n  // my settings\n  "ui": {}\n}\n' >"$SANDBOX/home/.gemini/settings.json"
+  cp "$SANDBOX/home/.gemini/settings.json" "$SANDBOX/before"
+  run_setup "1\ngemini\n1\n1\ny\n1\ny\n"
+  assert_status 0
+  assert_same_file "$SANDBOX/home/.gemini/settings.json" "$SANDBOX/before"
+  assert_contains "so it's unchanged"
+  assert_contains "\"theme\": \"$SANDBOX/home/.gemini/themes/jenerated-blue-purple.json\""
+}
+
+# --- Tests: radare2 and rizin ---------------------------------------------------
+
+# GIVEN no ~/.radare2rc
+# WHEN choosing radare2 and Blue Purple
+# THEN the theme is linked into ~/.local/share/radare2/cons, and a new
+#      ~/.radare2rc loads it with 24-bit color
+test_radare2_links_the_theme_and_loads_it() {
+  fake_os Linux
+  run_setup "1\nradare2\n1\n1\ny\n1\ny\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.local/share/radare2/cons/jenerated-blue-purple" \
+    "$SANDBOX/repo/app-themes/radare2-theme/jenerated-blue-purple"
+  assert_file_contains "$SANDBOX/home/.radare2rc" "e scr.color=3"
+  assert_file_contains "$SANDBOX/home/.radare2rc" "eco jenerated-blue-purple"
+}
+
+# GIVEN ~/.radare2rc with your settings and Blue Purple's theme loaded
+# WHEN choosing radare2 and Sunset
+# THEN the line switches to Sunset's theme, without asking or adding another,
+#      and your settings stay
+test_radare2_switching_palettes_replaces_the_line() {
+  fake_os Linux
+  printf 'e asm.bytes=false\ne scr.color=3\neco jenerated-blue-purple\n' >"$SANDBOX/home/.radare2rc"
+  run_setup "1\nradare2\n1\n2\ny\n1\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/home/.radare2rc" "eco jenerated-sunset"
+  assert_file_not_contains "$SANDBOX/home/.radare2rc" "eco jenerated-blue-purple"
+  assert_file_contains "$SANDBOX/home/.radare2rc" "e asm.bytes=false"
+  [ "$(grep -c '^eco ' "$SANDBOX/home/.radare2rc")" = "1" ] || fail "expected one eco line"
+}
+
+# GIVEN ~/.radare2rc with your settings
+# WHEN choosing radare2 and Blue Purple, and answering no to loading it
+# THEN the file is left alone, and it says what to add
+test_radare2_leaves_its_rc_alone_when_declined() {
+  fake_os Linux
+  printf 'e asm.bytes=false\n' >"$SANDBOX/home/.radare2rc"
+  cp "$SANDBOX/home/.radare2rc" "$SANDBOX/before"
+  run_setup "1\nradare2\n1\n1\ny\n1\nn\n"
+  assert_status 0
+  assert_same_file "$SANDBOX/home/.radare2rc" "$SANDBOX/before"
+  assert_contains "    eco jenerated-blue-purple"
+}
+
+# GIVEN no rizin startup file
+# WHEN choosing rizin and Blue Purple
+# THEN rizin's theme is linked into ~/.local/share/rizin/cons, and
+#      ~/.config/rizin/rizinrc is started, loading it
+test_rizin_links_its_own_theme() {
+  fake_os Linux
+  run_setup "1\nrizin\n1\n1\ny\n1\ny\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.local/share/rizin/cons/jenerated-blue-purple" \
+    "$SANDBOX/repo/app-themes/rizin-theme/jenerated-blue-purple"
+  assert_file_contains "$SANDBOX/home/.config/rizin/rizinrc" "eco jenerated-blue-purple"
+}
+
+# GIVEN dark palettes and a light one
+# WHEN choosing radare2
+# THEN ALL THE PALETTES isn't offered, since its startup file loads one theme
+test_radare2_has_no_all_the_palettes() {
+  fake_os Linux
+  dawn_palette Light
+  run_setup "1\nradare2\n1\n1\n1\ny\n1\nn\n"
+  assert_not_contains "ALL THE PALETTES"
+}
+
+# --- Tests: qt5ct and qt6ct ----------------------------------------------------
+
+# GIVEN Linux
+# WHEN choosing Qt apps outside KDE Plasma, and Blue Purple
+# THEN the scheme is linked into qt6ct's and qt5ct's colors folders, named for
+#      the palette (the name they list it by), and it explains
+#      QT_QPA_PLATFORMTHEME, choosing the scheme, KDE, and apps run with sudo
+test_qtct_links_the_scheme_for_both() {
+  fake_os Linux
+  run_setup "1\nqt6ct\n1\n1\ny\n1\n"
+  assert_status 0
+  for tool in qt5ct qt6ct; do
+    assert_link "$SANDBOX/home/.config/$tool/colors/Jenerated Blue Purple.conf" \
+      "$SANDBOX/repo/app-themes/qtct-theme/jenerated-blue-purple.conf"
+  done
+  assert_contains "QT_QPA_PLATFORMTHEME=qt6ct"
+  assert_contains 'Custom palette and "Jenerated Blue Purple"'
+  assert_contains "On KDE"
+  assert_contains "sudo"
+}
+
+# GIVEN Linux, where the Qt apps theme also covers Wireshark
+# WHEN searching for "wireshark"
+# THEN Wireshark itself comes first, then the Qt apps theme that covers it
+test_search_lists_name_matches_first() {
+  fake_os Linux
+  run_setup "1\nwireshark\n0\n0\n"
+  assert_contains 'Apps matching "wireshark":
+  1) Wireshark (network analyzer)
+  2) Qt apps outside KDE Plasma (qt5ct and qt6ct)'
+}
+
+# GIVEN a Mac
+# WHEN looking for the Qt apps theme
+# THEN it isn't offered, since qt5ct and qt6ct are for Linux desktops
+test_qtct_is_linux_only() {
+  fake_os Darwin
+  run_setup "1\n9\nqt6ct\n\n1\nslack\n1\n1\n"
+  assert_not_contains "Qt apps outside KDE Plasma"
+}
+
+# --- Tests: Caido -------------------------------------------------------------
+
+# GIVEN a clipboard tool
+# WHEN choosing Caido and Blue Purple
+# THEN it shows where the CSS is, copies it to the clipboard, and explains
+#      pasting it into Custom CSS with the Dark appearance
+test_caido_copies_the_css() {
+  fake_os Linux
+  run_setup "1\ncaido\n1\n1\n"
+  assert_status 0
+  assert_contains "It's in $SANDBOX/repo/app-themes/caido-theme/jenerated-blue-purple.css"
+  assert_contains "(Copied to your clipboard.)"
+  assert_same_file "$SANDBOX/clipboard" "$SANDBOX/repo/app-themes/caido-theme/jenerated-blue-purple.css"
+  assert_contains "Choose the Dark appearance"
+  assert_contains "Open Custom CSS"
+}
+
+# GIVEN a light palette, Dawn
+# WHEN choosing Caido and Dawn
+# THEN it says to choose Caido's Light appearance
+test_caido_light_palette_says_light() {
+  fake_os Linux
+  dawn_palette Light
+  run_setup "1\ncaido\n1\n2\n1\n"
+  assert_status 0
+  assert_contains "Choose the Light appearance"
+}
+
+# GIVEN ALL THE APPS
+# WHEN it lists what it leaves out
+# THEN Caido is among the manual installs
+test_caido_is_a_manual_install() {
+  fake_os Linux
+  export SETUP_FOUND_APPS="tilix"
+  run_setup "1\n9\n1\nn\n1\nslack\n1\n1\n"
+  assert_contains "  - Caido (web security testing)"
+  assert_not_contains "ALL THE APPS: Caido"
+}
+
+# --- Tests: Ghidra ------------------------------------------------------------
+
+# GIVEN settings folders for Ghidra 11.3 and 11.4 (Linux, 11.1 and later) and
+#       for 10.4 (from before 11.1, in ~/.ghidra)
+# WHEN choosing Ghidra and Blue Purple
+# THEN the theme is linked into each version's themes folder, and it says
+#      how to switch to it
+test_ghidra_links_the_theme_for_each_version() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/ghidra/ghidra_11.3_PUBLIC" "$SANDBOX/home/.config/ghidra/ghidra_11.4_PUBLIC" \
+    "$SANDBOX/home/.ghidra/.ghidra_10.4_PUBLIC"
+  run_setup "1\nghidra\n1\n1\ny\n1\n"
+  assert_status 0
+  for dir in .config/ghidra/ghidra_11.3_PUBLIC .config/ghidra/ghidra_11.4_PUBLIC .ghidra/.ghidra_10.4_PUBLIC; do
+    assert_link "$SANDBOX/home/$dir/themes/jenerated-blue-purple.theme" \
+      "$SANDBOX/repo/app-themes/ghidra-theme/jenerated-blue-purple.theme"
+  done
+  assert_contains 'Edit -> Theme -> Switch...'
+}
+
+# GIVEN a Mac with a Ghidra settings folder
+# WHEN choosing Ghidra and Blue Purple
+# THEN the theme goes in the folder in ~/Library/ghidra
+test_ghidra_on_macos_uses_library() {
+  fake_os Darwin
+  mkdir -p "$SANDBOX/home/Library/ghidra/ghidra_11.4_PUBLIC"
+  run_setup "1\nghidra\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/ghidra/ghidra_11.4_PUBLIC/themes/jenerated-blue-purple.theme" \
+    "$SANDBOX/repo/app-themes/ghidra-theme/jenerated-blue-purple.theme"
+}
+
+# GIVEN no Ghidra settings folder (Ghidra hasn't run yet)
+# WHEN choosing Ghidra and Blue Purple
+# THEN nothing is installed, and it explains importing the theme in Ghidra
+test_ghidra_without_a_settings_folder_explains_importing() {
+  fake_os Linux
+  run_setup "1\nghidra\n1\n1\n"
+  assert_status 0
+  assert_contains "No Ghidra settings folder found"
+  assert_contains "Edit -> Theme -> Import..."
+  assert_contains "$SANDBOX/repo/app-themes/ghidra-theme/jenerated-blue-purple.theme"
+  assert_missing "$SANDBOX/home/.config/ghidra"
+}
+
+# GIVEN Ghidra found, but no settings folder
+# WHEN installing ALL THE APPS
+# THEN Ghidra is listed as not installed, since the theme has to be imported
+test_ghidra_without_a_settings_folder_in_all_the_apps() {
+  fake_os Linux
+  export SETUP_FOUND_APPS="ghidra tilix"
+  run_setup "1\n9\n1\ny\n"
+  assert_contains "no Ghidra settings folder found"
+  assert_contains "Not installed:
+  - Ghidra (reverse engineering)"
 }
 
 # --- Tests: Wireshark ---------------------------------------------------------

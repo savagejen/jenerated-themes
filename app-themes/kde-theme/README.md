@@ -7,10 +7,12 @@ VS Code themes:
   itself (the panel, menus and widgets, with the Breeze Plasma style), window
   title bars (with Breeze window decorations), and every KDE and Qt app, such
   as Dolphin, Kate, Okular and System Settings. (The [Krita theme](../krita-theme/)
-  uses this same file.) KDE's GTK integration applies
+  uses this same file. On other desktops, the [qt5ct and qt6ct
+  theme](../qtct-theme/) colors Qt apps the same way.) KDE's GTK integration applies
   it to GTK apps too;
 - a **Konsole color scheme** (`Jenerated-<slug>.colorscheme`), with the same
-  16 terminal colors as the Ptyxis and Tilix themes; and
+  16 terminal colors as the Ptyxis and Tilix themes (the
+  [QTerminal theme](../qterminal-theme/) uses this same file); and
 - a **Kate syntax theme** (`Jenerated-<slug>.theme`), with the same syntax
   colors as the VS Code theme, for Kate, KWrite and other apps that use
   KDE's text editor.

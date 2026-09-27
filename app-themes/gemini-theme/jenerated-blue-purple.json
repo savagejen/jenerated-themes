@@ -1,0 +1,33 @@
+{
+  "name": "Jenerated Blue Purple",
+  "type": "custom",
+  "background": {
+    "primary": "#12131c",
+    "diff": {
+      "added": "#204032",
+      "removed": "#3e1c24"
+    }
+  },
+  "text": {
+    "primary": "#DBDEE1",
+    "secondary": "#6b6f8a",
+    "link": "#7289DA",
+    "accent": "#5865F3",
+    "response": "#DBDEE1"
+  },
+  "border": {
+    "default": "#2a2d40",
+    "focused": "#5865F3"
+  },
+  "status": {
+    "success": "#57F288",
+    "warning": "#FEE75D",
+    "error": "#ED4246"
+  },
+  "ui": {
+    "comment": "#6b6f8a",
+    "symbol": "#9cb2fa",
+    "focus": "#5865F3",
+    "gradient": ["#5865F3", "#7289DA", "#8593f5"]
+  }
+}
