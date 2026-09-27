@@ -3,7 +3,7 @@
 # and this script generates the theme and installs it for you. It can also
 # start the Palette Creator, for designing a new palette.
 #
-# Usage: ./setup.sh
+# Usage: ./setup.sh (./setup.sh --help lists the options)
 #
 # Works on Linux and macOS (including macOS's built-in bash 3.2).
 
@@ -163,9 +163,9 @@ with zipfile.ZipFile(target, "w") as z:
 # template changed), and package.json is rebuilt listing only Blue Purple
 # (keeping any change to package.json.tmpl). The example packages made from
 # Blue Purple (EXAMPLE_PACKAGES) are rebuilt from its regenerated files.
-# Other generated themes stay on disk; they're ignored by git. Left out of
-# the usage and README, which are for people installing themes; documented in
-# CONTRIBUTING.md.
+# Other generated themes stay on disk; they're ignored by git. Listed under
+# "For maintainers" in --help, and left out of the README, which is for people
+# installing themes; documented in CONTRIBUTING.md.
 
 PYTHON="$(find_python)"
 
@@ -213,8 +213,9 @@ jenerate.write_vscode_package(["blue-purple"])
 # Creator's preview, with Playwright), and updates palettes/README.md: new
 # palettes get a section in the dark or light group, and existing ones get
 # their key colors refreshed. See palette-creator/screenshots.py. Needs
-# Python 3.11 or later, Node.js and npm. Left out of the usage and README,
-# which are for people installing themes; documented in CONTRIBUTING.md.
+# Python 3.11 or later, Node.js and npm. Listed under "For maintainers" in
+# --help, and left out of the README, which is for people installing themes;
+# documented in CONTRIBUTING.md.
 
 update_screenshots() {
   [ -n "$PYTHON" ] || die "--update-screenshots needs Python 3.11 or later"
@@ -224,8 +225,66 @@ update_screenshots() {
   "$PYTHON" palette-creator/screenshots.py "$@"
 }
 
+# --- Options -----------------------------------------------------------------
+
+usage() {
+  cat <<'EOF_USAGE'
+Usage: ./setup.sh [option]
+
+Walks you through installing a Jenerated theme: pick an app, pick a palette,
+and it generates the theme and installs it for you.
+
+With no option, it shows a menu:
+  1) Install a theme for an app
+  2) Design a new palette (opens the Palette Creator in your browser)
+
+Options:
+  -h, --help                  Show this help, and exit.
+  --design                    Start the Palette Creator, skipping the menu.
+  --install=APP,PALETTE       Install a theme, skipping the menus: APP is an
+                              app's id and PALETTE a palette's slug, like
+                              --install=vscode,candy. Leave either out to
+                              choose it from its menu (--install=vscode, or
+                              --install=,candy). "all" means ALL THE APPS or
+                              ALL THE PALETTES. A name it doesn't know lists
+                              the ones it does.
+
+For maintainers (see CONTRIBUTING.md):
+  --prep-commit               Put the generated files git tracks back to the
+                              Blue Purple defaults, before a commit.
+  --update-screenshots        File every palette as dark or light, retake
+                              every palette's screenshot, and update
+                              palettes/README.md. Needs Node.js and npm.
+  --update-screenshots=SLUGS  The same, but retake only these palettes'
+                              screenshots, by slug, with commas between
+                              several (like candy,sunset).
+EOF_USAGE
+}
+
+# Set by --design and --install, for the menus further down to act on.
+DESIGN=""
+INSTALL_REQUEST=""
+
+[ "$#" -le 1 ] || die "one option at a time (./setup.sh --help lists the options)"
 case "${1:-}" in
   "") ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  --design)
+    DESIGN=1
+    ;;
+  --install=*)
+    INSTALL_REQUEST="${1#*=}"
+    case "$INSTALL_REQUEST" in
+      "" | ",") die "name an app, a palette or both, like --install=vscode,candy" ;;
+      *,*,*) die "name one app and one palette, like --install=vscode,candy" ;;
+    esac
+    ;;
+  --install)
+    die "name an app, a palette or both, like --install=vscode,candy"
+    ;;
   --prep-commit)
     prep_commit
     exit 0
@@ -239,7 +298,7 @@ case "${1:-}" in
     update_screenshots "${1#*=}"
     exit 0
     ;;
-  *) die "unknown option: $1 (run ./setup.sh with no options)" ;;
+  *) die "unknown option: $1 (./setup.sh --help lists the options)" ;;
 esac
 
 # --- Install a theme, or design a palette -----------------------------------
@@ -498,6 +557,10 @@ CATEGORY_NAMES=("Web browsers" "Communication" "Editors: code, text and notes"
   "Terminals and command-line tools" "Linux desktops" "Entertainment"
   "Art and design" "Hacking and testing tools")
 
+# Apps only offered on the other system, as " id:System" entries, so
+# --install can say why one isn't here. See other_system.
+OTHER_SYSTEM_APPS=""
+
 # Each category lists its apps in the order they're added: alphabetical.
 add_app chromium "Chromium browsers (Chrome, Brave, Edge, Opera and more)" browsers \
     "Google Chrome, Chromium, Brave, Microsoft Edge, Opera"
@@ -514,6 +577,8 @@ if [ "$OS" = "Linux" ]; then
   add_app gtksourceview "GNOME text editors: gedit, GNOME Text Editor and Xed (and Pluma, Meld and more)" editors \
     "gedit, GNOME Text Editor, Xed, Pluma, Meld" \
     "gtksourceview"
+else
+  OTHER_SYSTEM_APPS="$OTHER_SYSTEM_APPS gtksourceview:Linux"
 fi
 add_app godot "Godot" editors \
     "" \
@@ -539,6 +604,8 @@ add_app vscode "VS Code (and Code - OSS, VSCodium)" editors \
     "visual studio code oss codium"
 if [ "$OS" = "Darwin" ]; then
   add_app xcode "Xcode" editors "" "apple swift"
+else
+  OTHER_SYSTEM_APPS="$OTHER_SYSTEM_APPS xcode:macOS"
 fi
 add_app fzf "fzf (fuzzy finder)" terminal
 add_app gemini "Gemini CLI" terminal "" "ai assistant agent llm"
@@ -549,6 +616,8 @@ if [ "$OS" = "Linux" ]; then
     "gnome"
   add_app qterminal "QTerminal (LXQt's and Kali's terminal)" terminal "" "lxqt kali qtermwidget"
   add_app tilix "Tilix (terminal)" terminal
+else
+  OTHER_SYSTEM_APPS="$OTHER_SYSTEM_APPS ptyxis:Linux qterminal:Linux tilix:Linux"
 fi
 add_app tmux "tmux" terminal
 add_app zsh "zsh (syntax highlighting and suggestions)" terminal \
@@ -564,6 +633,8 @@ if [ "$OS" = "Linux" ]; then
   add_app qtct "Qt apps outside KDE Plasma (qt5ct and qt6ct)" desktop \
     "Legion, Wireshark, VLC, qBittorrent, KeePassXC and other Qt apps, on GNOME, Xfce and other desktops" \
     "qt qt5 qt6 qt5ct qt6ct pyqt legion"
+else
+  OTHER_SYSTEM_APPS="$OTHER_SYSTEM_APPS decky:Linux gtk3:Linux kde:Linux qtct:Linux"
 fi
 add_app jellyfin "Jellyfin (media server)" entertainment "" "media server movies tv streaming plex emby"
 add_app mpv "mpv (media player)" entertainment "" "video music"
@@ -778,7 +849,7 @@ pick_palette() {
     scheme=""
     if [ -n "$has_dark" ] && [ -n "$has_light" ]; then
       options=("Dark" "Light")
-      if [ "$APP" != all ] && ! is_manual "$APP" && ! is_one_palette "$APP"; then
+      if [ -z "$(all_palettes_refusal "$APP")" ]; then
         options+=("ALL THE PALETTES")
       fi
       options+=("Preview the palettes (opens in your browser)")
@@ -817,6 +888,19 @@ pick_palette() {
     fi
     [ -n "$scheme" ] || return 1
   done
+}
+
+# all_palettes_refusal app -> prints why ALL THE PALETTES isn't offered for
+# the app (or for ALL THE APPS), or nothing if it is.
+all_palettes_refusal() {
+  if [ "$1" = all ]; then
+    say "ALL THE APPS and ALL THE PALETTES don't go together: choose one palette, or one app"
+  elif is_manual "$1"; then
+    say "$(app_label "$1") is themed by hand, one palette at a time"
+  elif is_one_palette "$1"; then
+    say "$(app_label "$1") uses one palette at a time"
+  fi
+  return 0
 }
 
 # confirm_all -> for ALL THE APPS or ALL THE PALETTES, says what will be
@@ -877,26 +961,126 @@ confirm_all() {
   fi
 }
 
+# --- The --design and --install shortcuts ----------------------------------
+
+# other_system id -> prints the system an app is only offered on (Linux or
+# macOS) when it's not this one, or nothing.
+other_system() {
+  local entry
+  for entry in $OTHER_SYSTEM_APPS; do
+    if [ "${entry%%:*}" = "$1" ]; then printf '%s' "${entry#*:}"; fi
+  done
+  return 0
+}
+
+# check_app id -> stops, listing the apps, unless id is an app offered on
+# this system or "all" (ALL THE APPS).
+check_app() {
+  local system
+  if [ "$1" = all ] || [ -n "$(app_label "$1")" ]; then return 0; fi
+  system="$(other_system "$1")"
+  [ -z "$system" ] || die "$1 is only offered on $system"
+  die "no app called \"$1\". The apps are:
+$(printf '%s, ' "${APP_IDS[@]}" | fold -s -w 76 | sed "s/ *$//")
+or all, for ALL THE APPS"
+}
+
+# find_palette slug -> sets PALETTE_INDEX to the palette's index in SLUGS, or
+# to "all" (ALL THE PALETTES); stops, listing the palettes, for any other
+# slug. Needs load_palettes first.
+find_palette() {
+  local i
+  PALETTE_INDEX=""
+  if [ "$1" = all ]; then
+    PALETTE_INDEX=all
+    return 0
+  fi
+  for i in "${!SLUGS[@]}"; do
+    if [ "${SLUGS[$i]}" = "$1" ]; then
+      PALETTE_INDEX="$i"
+      return 0
+    fi
+  done
+  die "no palette called \"$1\". The palettes are:
+$(printf '%s, ' "${SLUGS[@]}" | fold -s -w 76 | sed "s/ *$//")
+or all, for ALL THE PALETTES"
+}
+
+# --install=APP,PALETTE: the app and palette it names (WANT_APP, and
+# WANT_PALETTE as an index in SLUGS or "all") skip their menus. Going back
+# from a later question, or saying no to ALL THE APPS or ALL THE PALETTES,
+# leads to the menus as usual.
+WANT_APP=""
+WANT_PALETTE=""
+if [ -n "$INSTALL_REQUEST" ]; then
+  WANT_APP="${INSTALL_REQUEST%%,*}"
+  case "$INSTALL_REQUEST" in
+    *,*) WANT_PALETTE="${INSTALL_REQUEST#*,}" ;;
+  esac
+  [ -z "$WANT_APP" ] || check_app "$WANT_APP"
+  if [ -n "$WANT_PALETTE" ]; then
+    load_palettes
+    find_palette "$WANT_PALETTE"
+    WANT_PALETTE="$PALETTE_INDEX"
+    if [ -n "$WANT_APP" ] && [ "$WANT_PALETTE" = all ]; then
+      refusal="$(all_palettes_refusal "$WANT_APP")"
+      [ -z "$refusal" ] || die "$refusal"
+    fi
+  fi
+fi
+
+# next_app -> like pick_app, but the first time, the app --install named.
+next_app() {
+  if [ -n "$WANT_APP" ]; then
+    APP="$WANT_APP"
+    WANT_APP=""
+    return 0
+  fi
+  pick_app
+}
+
 # --- Choose what to do -------------------------------------------------------
 
 say "Jenerated Themes setup"
 say "======================"
 
+if [ -n "$DESIGN" ]; then
+  # Back, at the question about a Palette Creator that's already running,
+  # ends here: there's no menu to go back to.
+  start_palette_creator
+  exit 0
+fi
+
 # Each menu's Back goes to the one before it: the theme menu back to the app
-# menus, and the main app menu back to this first question.
+# menus, and the main app menu back to this first question. --install starts
+# past the first question.
 while :; do
-  choose "What would you like to do?" \
-    "Install a theme for an app" \
-    "Design a new palette (opens the Palette Creator)"
-  if [ "$CHOICE" -eq 1 ]; then
-    start_palette_creator
-    continue
+  if [ -z "$INSTALL_REQUEST" ]; then
+    choose "What would you like to do?" \
+      "Install a theme for an app" \
+      "Design a new palette (opens the Palette Creator)"
+    if [ "$CHOICE" -eq 1 ]; then
+      start_palette_creator
+      continue
+    fi
   fi
+  INSTALL_REQUEST=""
 
   APP_MENU=""
   chosen=""
-  while pick_app; do
+  while next_app; do
     load_palettes
+    if [ -n "$WANT_PALETTE" ]; then
+      refusal="$(all_palettes_refusal "$APP")"
+      if [ "$WANT_PALETTE" = all ] && [ -n "$refusal" ]; then
+        say ""
+        say "$refusal. Choose another app."
+        continue
+      fi
+      CHOICE="$WANT_PALETTE"
+      chosen=1
+      break
+    fi
     if pick_palette; then
       chosen=1
       break
@@ -905,6 +1089,9 @@ while :; do
   PALETTE="${CHOICE:-}"
   # Saying no to ALL THE APPS or ALL THE PALETTES goes back to this menu.
   if [ -n "$chosen" ] && confirm_all; then break; fi
+  # From the first menu on, the palette --install named is chosen from the
+  # menus too.
+  WANT_PALETTE=""
 done
 
 # The palettes to install: one, or every one for ALL THE PALETTES.

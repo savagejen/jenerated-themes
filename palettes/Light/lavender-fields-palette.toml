@@ -1,0 +1,69 @@
+# A light palette of a lavender field in the morning: misty-white and pale
+# lavender backgrounds, twilight-plum text, a lavender-purple accent, and
+# syntax colors from around the field: heather, cornflower, poppy,
+# terracotta, sunflower, stem green, rosemary and clover.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Lavender Fields"
+slug = "lavender-fields"
+
+[colors]
+# Backgrounds: morning mist and lavender haze, from the editor to the chrome
+bg_chrome = "#e2d8f0"          # activity bar, title bar, status bar: lavender haze
+bg_minimap = "#f4f1f9"
+bg = "#fbf9fd"                 # editor and terminal: morning mist
+bg_sidebar = "#f1ecf7"         # pale lavender
+bg_widget = "#ffffff"          # popups, hovers, notifications
+bg_line_highlight = "#f3eff8"
+bg_hover = "#e8e0f3"           # hovered items, inputs
+bg_selected = "#dcd1ec"        # inactive selection in lists
+bg_secondary_hover = "#cbbde2" # hovered secondary buttons
+selection = "#d6d0f4"          # selected text: periwinkle
+
+# Lines
+guide = "#e6e0ef"              # indent guides, rulers
+whitespace = "#d5cce2"         # rendered whitespace
+border = "#dad1e8"
+
+# Text: twilight plum, faintest to darkest
+text_faint = "#968ba8"         # line numbers, ignored files
+text_muted = "#685c7a"         # comments, inactive tabs
+text_subtle = "#4d4260"        # sidebar text, punctuation
+text = "#2c2340"               # twilight plum
+text_bright = "#ffffff"        # text on the accent color
+text_strong = "text"           # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#7446bd"             # lavender: cursor, focus, buttons, badges
+accent_hover = "#6639ab"       # hovered buttons
+accent_soft = "#9a3a8c"        # heather: keywords, links
+accent_light = "#3a5cb6"       # cornflower: functions
+accent_pale = "#655592"        # dusk: properties
+
+# Syntax and status colors: flowers and the farm around the field
+red = "#c0373c"                # poppy: errors, deleted
+orange = "#a5520e"             # terracotta roof: numbers, parameters, attributes
+yellow = "#836208"             # sunflower: warnings, regex
+green = "#3b7840"              # lavender stems: strings, added
+cyan = "#1d737c"               # rosemary: classes, types
+magenta = "#b3348c"            # clover: constants, search matches
+
+# Terminal (ANSI) colors, for a light background
+term_black = "text"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_light"
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "#c3b8d3"
+term_bright_black = "text_muted"
+term_bright_red = "#dc4f55"
+term_bright_green = "#4c9651"
+term_bright_yellow = "#a57f10"
+term_bright_blue = "#5577d0"
+term_bright_magenta = "#cf51a7"
+term_bright_cyan = "#23909a"
+term_bright_white = "#e3dcec"

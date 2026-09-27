@@ -726,6 +726,16 @@ test_no_answer_exits_with_error() {
 
 # --- Tests: the first menu --------------------------------------------------
 
+# sunset_number -> prints Sunset's number in the dark palettes' menu.
+sunset_number() {
+  local i=1 file
+  for file in "$SANDBOX"/repo/palettes/Dark/*-palette.toml; do
+    [ "$(basename "$file")" = sunset-palette.toml ] && break
+    i=$((i + 1))
+  done
+  printf '%s' "$i"
+}
+
 # Replaces the sandbox's serve.py with a stub that records its folder and
 # arguments in $SANDBOX/serve-ran, then exits.
 stub_palette_creator() {
@@ -811,6 +821,196 @@ test_palette_creator_needs_python() {
   assert_status 1
   assert_contains "the Palette Creator needs Python 3.11 or later"
   assert_missing "$SANDBOX/serve-ran"
+}
+
+# --- Tests: the --design and --install shortcuts ----------------------------
+
+# GIVEN setup.sh
+# WHEN running it with --design
+# THEN it starts the Palette Creator straight away, without the first menu
+test_design_starts_the_palette_creator() {
+  stub_palette_creator
+  run_setup "" --design
+  assert_status 0
+  assert_contains "Starting the Palette Creator"
+  assert_contains "stub server running"
+  assert_not_contains "What would you like to do?"
+}
+
+# GIVEN serve.py exiting with status 3, for Back when asked about a Palette
+#       Creator that's already running
+# WHEN running setup.sh with --design
+# THEN it exits, since there's no menu to go back to
+test_design_back_exits() {
+  stub_palette_creator
+  printf 'sys.exit(3)\n' >>"$SANDBOX/repo/palette-creator/serve.py"
+  run_setup "" --design
+  assert_status 0
+  assert_not_contains "What would you like to do?"
+  assert_not_contains "Which app"
+}
+
+# GIVEN setup.sh
+# WHEN running it with --install=slack,sunset
+# THEN it installs Slack's Sunset theme without asking for the app or palette
+test_install_with_an_app_and_a_palette_skips_the_menus() {
+  run_setup "" --install=slack,sunset
+  assert_status 0
+  assert_contains "Generating the Sunset theme"
+  assert_contains "Your Slack theme string"
+  assert_not_contains "What would you like to do?"
+  assert_not_contains "Which app"
+  assert_not_contains "Which theme do you want?"
+}
+
+# GIVEN setup.sh
+# WHEN running it with --install=slack, and choosing Sunset
+# THEN it asks only for the palette
+test_install_with_an_app_asks_for_the_palette() {
+  run_setup "$(sunset_number)\n" --install=slack
+  assert_status 0
+  assert_contains "Which theme do you want?"
+  assert_contains "Generating the Sunset theme"
+  assert_not_contains "Which app"
+}
+
+# GIVEN setup.sh
+# WHEN running it with --install=,sunset, and choosing Slack
+# THEN it asks only for the app
+test_install_with_a_palette_asks_for_the_app() {
+  run_setup "slack\n1\n" --install=,sunset
+  assert_status 0
+  assert_contains "Which app do you want to theme?"
+  assert_contains "Generating the Sunset theme"
+  assert_contains "Your Slack theme string"
+  assert_not_contains "What would you like to do?"
+  assert_not_contains "Which theme do you want?"
+}
+
+# GIVEN setup.sh run with --install=slack
+# WHEN going back from the palette question
+# THEN the app menu is shown, as it would be after choosing Slack there
+test_install_back_from_the_palette_goes_to_the_app_menu() {
+  run_setup "0\nslack\n1\n$(sunset_number)\n" --install=slack
+  assert_status 0
+  assert_contains "Which app do you want to theme?"
+  assert_contains "Generating the Sunset theme"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN setup.sh
+# WHEN running it with an app or palette it doesn't know
+# THEN it stops before any menu, listing the ones it knows
+test_install_names_what_it_doesnt_know() {
+  run_setup "" --install=bogus,sunset
+  assert_status 1
+  assert_contains 'no app called "bogus". The apps are:'
+  assert_contains "vscode"
+  assert_contains "or all, for ALL THE APPS"
+  assert_not_contains "Which app"
+  run_setup "" --install=slack,nope
+  assert_status 1
+  assert_contains 'no palette called "nope". The palettes are:'
+  assert_contains "blue-purple"
+  assert_contains "or all, for ALL THE PALETTES"
+  assert_not_contains "Your Slack theme string"
+}
+
+# GIVEN a Linux system, then a macOS one
+# WHEN asking for an app only offered on the other one
+# THEN it says which system the app is offered on
+test_install_names_the_system_an_app_is_offered_on() {
+  fake_os Linux
+  run_setup "" --install=xcode,sunset
+  assert_status 1
+  assert_contains "xcode is only offered on macOS"
+  fake_os Darwin
+  run_setup "" --install=tilix,sunset
+  assert_status 1
+  assert_contains "tilix is only offered on Linux"
+}
+
+# GIVEN setup.sh
+# WHEN reading the apps it notes as only offered on the other system
+# THEN each is an app it adds on one system, so the two lists agree
+test_other_system_apps_are_real_apps() {
+  for id in $(grep -o '^  OTHER_SYSTEM_APPS="$OTHER_SYSTEM_APPS [^"]*' "$SANDBOX/repo/setup.sh" |
+    sed 's/.*OTHER_SYSTEM_APPS //' | tr ' ' '\n' | cut -d: -f1); do
+    grep -q "^  add_app $id " "$SANDBOX/repo/setup.sh" ||
+      fail "$id is noted as another system's app, but isn't added for any system"
+  done
+}
+
+# GIVEN setup.sh
+# WHEN asking for ALL THE PALETTES with an app that uses one palette at a
+#      time, a manual one, or ALL THE APPS
+# THEN it stops, saying why
+test_install_refuses_all_the_palettes_where_the_menu_doesnt_offer_it() {
+  fake_os Linux
+  run_setup "" --install=tmux,all
+  assert_status 1
+  assert_contains "tmux uses one palette at a time"
+  run_setup "" --install=slack,all
+  assert_status 1
+  assert_contains "Slack is themed by hand, one palette at a time"
+  run_setup "" --install=all,all
+  assert_status 1
+  assert_contains "ALL THE APPS and ALL THE PALETTES don't go together"
+}
+
+# GIVEN dark palettes and a light one
+# WHEN running setup.sh with --install=tilix,all, and saying yes
+# THEN it asks first, as the menu's ALL THE PALETTES does, then installs
+#      every palette
+test_install_all_the_palettes_asks_first() {
+  fake_os Linux
+  dawn_palette Light
+  run_setup "y\n" --install=tilix,all
+  assert_status 0
+  assert_contains "==> ALL THE PALETTES"
+  assert_contains "Install all "
+  assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-dawn.json" \
+    "$SANDBOX/repo/app-themes/tilix-theme/dawn.json"
+}
+
+# GIVEN setup.sh run with --install=,all
+# WHEN choosing tmux (one palette at a time) from the app menu, then Tilix
+# THEN it explains why tmux can't take them all, and asks for another app
+test_install_all_the_palettes_asks_again_for_an_app_that_cant_take_them() {
+  fake_os Linux
+  run_setup "tmux\n1\ntilix\n1\ny\n" --install=,all
+  assert_status 0
+  assert_contains "tmux uses one palette at a time. Choose another app."
+  assert_contains "==> ALL THE PALETTES"
+}
+
+# GIVEN setup.sh run with --install=all,blue-purple, with Tilix found
+# WHEN saying yes
+# THEN it asks first, as the menu's ALL THE APPS does, then installs
+test_install_all_the_apps_asks_first() {
+  fake_os Linux
+  fake_outside_commands
+  export SETUP_FOUND_APPS="tilix"
+  run_setup "y\n" --install=all,blue-purple
+  assert_contains "==> ALL THE APPS"
+  assert_contains "Install into all 1 apps?"
+  assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-blue-purple.json" \
+    "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
+}
+
+# GIVEN setup.sh
+# WHEN running --install without an app or palette, with too many, or with
+#      two options at once
+# THEN it stops, showing how it's written
+test_install_is_written_app_comma_palette() {
+  for option in --install --install= --install=, --install=a,b,c; do
+    run_setup "" "$option"
+    assert_status 1
+    assert_contains "like --install=vscode,candy"
+  done
+  run_setup "" --design --install=slack,sunset
+  assert_status 1
+  assert_contains "one option at a time"
 }
 
 # --- Tests: generating -------------------------------------------------------
@@ -2913,8 +3113,39 @@ test_update_screenshots_with_an_empty_list_is_an_error() {
 test_unknown_option_is_an_error() {
   run_setup "" --bogus
   assert_status 1
-  assert_contains "unknown option: --bogus"
+  assert_contains "unknown option: --bogus (./setup.sh --help lists the options)"
   assert_not_contains "Which app"
+}
+
+# GIVEN setup.sh
+# WHEN running it with --help, or -h
+# THEN it lists every option, the maintainers' ones included, and exits
+#      without showing the menu
+test_help_lists_the_options() {
+  for option in --help -h; do
+    run_setup "" "$option"
+    assert_status 0
+    assert_contains "Usage: ./setup.sh [option]"
+    assert_contains "-h, --help"
+    assert_contains "--prep-commit"
+    assert_contains "--update-screenshots "
+    assert_contains "--update-screenshots=SLUGS"
+    assert_not_contains "What would you like to do?"
+  done
+}
+
+# GIVEN setup.sh
+# WHEN reading its option handling
+# THEN every option it accepts is in --help (so a new option isn't left out)
+test_help_covers_every_option() {
+  run_setup "" --help
+  for option in $(sed -n '/^case "\${1:-}" in$/,/^esac$/p' "$SANDBOX/repo/setup.sh" |
+    grep -o -- '--[a-z-]*' | sort -u); do
+    case "$option" in
+      --update-screenshot) continue ;; # the singular, accepted as a typo
+    esac
+    assert_contains "$option"
+  done
 }
 
 # --- Tests: Slack ------------------------------------------------------------

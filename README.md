@@ -107,6 +107,10 @@ cd jenerated-themes
 ./setup.sh
 ```
 
+`./setup.sh --help` lists its shortcuts, like going straight to installing a
+particular palette into a particular app, or straight to the Palette
+Creator.
+
 To theme everything at once, choose **ALL THE APPS** in the app menu: it
 installs one palette into every app it finds on your computer that it can
 install into by itself, without asking anything else once you've said yes.

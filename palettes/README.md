@@ -188,4 +188,17 @@ teal, with a pink tail and a patch of grass green below.
 
 Editor `#f9fbfd`, Sidebar `#eaf2fa`, Accent `#1f6fbf`, Text `#1f2d3f`
 
+### Lavender Fields
+
+`lavender-fields`
+
+A light palette of a lavender field in the morning: misty-white and pale
+lavender backgrounds, twilight-plum text, a lavender-purple accent, and syntax
+colors from around the field: heather, cornflower, poppy, terracotta,
+sunflower, stem green, rosemary and clover.
+
+![The Lavender Fields palette in the Palette Creator's preview](Screenshots/Light/lavender-fields.png)
+
+Editor `#fbf9fd`, Sidebar `#f1ecf7`, Accent `#7446bd`, Text `#2c2340`
+
 </details>
