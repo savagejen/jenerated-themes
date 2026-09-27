@@ -53,9 +53,17 @@ ROOT = jenerate.ROOT
 PALETTES = jenerate.PALETTES
 SCREENSHOTS = PALETTES / "Screenshots"
 README = PALETTES / "README.md"
-CACHE = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "jenerated-themes" / "playwright"
-# The line under each screenshot in the README, with the palette's key colors.
-COLORS_LINE = re.compile(r"^Editor `#[0-9a-fA-F]{6}`, Sidebar .*$", re.M)
+CACHE = (Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+         / "jenerated-themes" / "playwright")
+# Each scheme, by the name of its folder (Dark, Light).
+FOLDER_SCHEMES = {folder: scheme for scheme, folder in jenerate.SCHEME_FOLDERS.items()}
+# The palette's key colors, in the line under its screenshot in the README:
+# each color's label there, and its template value.
+KEY_COLORS = (("Editor", "bg"), ("Sidebar", "bg_sidebar"), ("Accent", "accent"),
+              ("Text", "text"))
+# That line, as written by colors_line.
+COLORS_LINE = re.compile(
+    "^" + ", ".join(f"{label} `#[0-9a-fA-F]{{6}}`" for label, _ in KEY_COLORS) + "$", re.M)
 # A section's screenshot, filed (Screenshots/Dark/<slug>.png) or from before
 # the palettes were filed (Screenshots/<slug>.png).
 IMAGE = re.compile(r"\]\(Screenshots/(?:(Dark|Light)/)?([a-z0-9-]+)\.png\)")
@@ -67,6 +75,9 @@ GROUP_START = "<details open>\n<summary><h2>{title}</h2></summary>\n"
 GROUP_END = "</details>\n"
 GROUP_LINE = re.compile(r"^(?:<details open>|<summary><h2>(?:Dark|Light) palettes</h2></summary>"
                         r"|</details>)\n?", re.M)
+# The README's text is wrapped at 78 columns. (Palette header comments wrap
+# at 76, to leave room for their "# ".)
+README_WIDTH = 78
 
 
 def relative(path):
@@ -75,6 +86,11 @@ def relative(path):
 
 def screenshot_path(slug, scheme):
     return SCREENSHOTS / jenerate.SCHEME_FOLDERS[scheme] / f"{slug}.png"
+
+
+def image_link(slug, scheme):
+    """Where the README links to a palette's screenshot, relative to it."""
+    return screenshot_path(slug, scheme).relative_to(PALETTES).as_posix()
 
 
 def move(source, target):
@@ -97,14 +113,17 @@ def file_palettes():
                            f"Keep one of them." for slug, places in twice.items()))
 
     palettes = {}
+    # Every slug has exactly one place now, so each list unpacks to one pair.
     for slug, [(path, values)] in sorted(found.items()):
+        scheme = values["scheme"]
         target = jenerate.filed_path(values)
         if path != target:
             move(path, target)
-        screenshot = screenshot_path(slug, values["scheme"])
+        screenshot = screenshot_path(slug, scheme)
         if not screenshot.exists():
+            # Not filed yet, or filed under the other scheme.
             for place in (SCREENSHOTS / f"{slug}.png",
-                          *(screenshot_path(slug, s) for s in jenerate.SCHEMES)):
+                          *(screenshot_path(slug, s) for s in jenerate.SCHEMES if s != scheme)):
                 if place.exists():
                     move(place, screenshot)
                     break
@@ -112,9 +131,19 @@ def file_palettes():
     return palettes
 
 
+def report_stray_screenshots(palettes):
+    """Point out screenshots of palettes that no longer exist."""
+    if not SCREENSHOTS.is_dir():
+        return
+    for png in sorted(SCREENSHOTS.rglob("*.png")):
+        if png.stem not in palettes:
+            print(f"{relative(png)} is of {png.stem}, which isn't a palette any more",
+                  file=sys.stderr)
+
+
 # --- Screenshots -------------------------------------------------------------
 
-def playwright():
+def playwright_folder():
     """The folder whose node_modules has Playwright and its browser,
     installing them the first time."""
     for tool in ("node", "npm"):
@@ -143,7 +172,9 @@ def copy_repository(target):
     except (OSError, subprocess.CalledProcessError):
         shutil.copytree(ROOT, target, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         return
-    for name in filter(None, listed.decode().split("\0")):
+    # Names are bytes, decoded the way the file system does, so a name that
+    # isn't valid UTF-8 still names its file.
+    for name in map(os.fsdecode, filter(None, listed.split(b"\0"))):
         source = ROOT / name
         if source.is_file():
             (target / name).parent.mkdir(parents=True, exist_ok=True)
@@ -156,39 +187,47 @@ def free_port():
         return s.getsockname()[1]
 
 
+def wait_for_server(server, base, log):
+    """Wait until the Palette Creator started as `server` answers at `base`,
+    or stop with what it said (in the file `log`) if it doesn't."""
+    for _ in range(100):
+        if server.poll() is not None:
+            break
+        try:
+            with urllib.request.urlopen(base, timeout=1):
+                return
+        except OSError:
+            time.sleep(0.05)
+    said = log.read_text(encoding="utf-8", errors="replace").strip()
+    sys.exit("The Palette Creator didn't start" + (f":\n{said}" if said else ""))
+
+
 def take_screenshots(palettes):
     """Screenshot each (path, values) palette into its scheme's folder."""
-    modules = playwright()
-    by_scheme = {}
-    for path, values in palettes:
-        by_scheme.setdefault(values["scheme"], []).append(path)
+    modules = playwright_folder()
+    for scheme in {values["scheme"] for _, values in palettes}:
+        (SCREENSHOTS / jenerate.SCHEME_FOLDERS[scheme]).mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as folder:
         copy = Path(folder) / "repo"
         copy_repository(copy)
         port = free_port()
-        server = subprocess.Popen(
-            [sys.executable, str(copy / "palette-creator" / "serve.py"),
-             "--no-browser", "--port", str(port)],
-            env={**os.environ, "PALETTE_CREATOR_DIALOG": "none"},
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        log = Path(folder) / "server.log"
+        with log.open("w") as output:
+            server = subprocess.Popen(
+                [sys.executable, str(copy / "palette-creator" / "serve.py"),
+                 "--no-browser", "--port", str(port)],
+                env={**os.environ, "PALETTE_CREATOR_DIALOG": "none"},
+                stdout=output, stderr=subprocess.STDOUT)
         try:
             base = f"http://127.0.0.1:{port}"
-            for _ in range(100):
-                try:
-                    urllib.request.urlopen(base, timeout=1)
-                    break
-                except OSError:
-                    time.sleep(0.05)
-            else:
-                sys.exit("The Palette Creator didn't start")
-            for scheme, paths in by_scheme.items():
-                out = SCREENSHOTS / jenerate.SCHEME_FOLDERS[scheme]
-                out.mkdir(parents=True, exist_ok=True)
-                # Named as the Palette Creator lists them, like Dark/sunset-palette.toml.
-                subprocess.run(["node", str(HERE / "screenshots.js"), base, str(out),
-                                *[serve.listed_name(p) for p in paths]],
-                               env={**os.environ, "NODE_PATH": str(modules / "node_modules")},
-                               check=True)
+            wait_for_server(server, base, log)
+            # Named as the Palette Creator lists them, like
+            # Dark/sunset-palette.toml: the palettes are filed by now, so
+            # each one's folder is also its screenshot's.
+            subprocess.run(["node", str(HERE / "screenshots.js"), base, str(SCREENSHOTS),
+                            *[serve.listed_name(path) for path, _ in palettes]],
+                           env={**os.environ, "NODE_PATH": str(modules / "node_modules")},
+                           check=True)
         finally:
             server.terminate()
             server.wait()
@@ -198,35 +237,31 @@ def take_screenshots(palettes):
 
 def colors_line(values):
     """The line of key colors under a palette's screenshot."""
-    return ", ".join(f"{label} `{values[key]}`" for label, key in
-                      (("Editor", "bg"), ("Sidebar", "bg_sidebar"),
-                       ("Accent", "accent"), ("Text", "text")))
+    return ", ".join(f"{label} `{values[key]}`" for label, key in KEY_COLORS)
 
 
 def section(path, values):
     """A new README section for a palette."""
     name, slug = values["name"], values["slug"]
     description = serve.read_palette(path)["description"]
-    description = "\n\n".join(textwrap.fill(p, 78, break_long_words=False,
+    description = "\n\n".join(textwrap.fill(p, README_WIDTH, break_long_words=False,
                                             break_on_hyphens=False)
                               for p in description.split("\n\n") if p.strip())
-    image = screenshot_path(slug, values["scheme"]).relative_to(PALETTES).as_posix()
     parts = [f"### {name}", f"`{slug}`"]
     if description:
         parts.append(description)
-    parts += [f"![The {name} palette in the Palette Creator's preview]({image})",
+    parts += [f"![The {name} palette in the Palette Creator's preview]"
+              f"({image_link(slug, values['scheme'])})",
               colors_line(values)]
     return "\n\n".join(parts) + "\n"
 
 
-def update_readme(palettes):
-    """Bring palettes/README.md up to date with `palettes` ({slug: (path,
-    values)}): every palette's section in its scheme's group."""
-    text = README.read_text() if README.exists() else ""
-    if not text.strip():
-        text = "# Palettes\n"
+def split_readme(text, palettes):
+    """Split the README into the text before the palette sections, the
+    sections by scheme, the text after them, and the slugs that have a
+    section. Each section is brought up to date on the way: a ### heading,
+    its screenshot where it's filed, and its palette's key colors."""
     text = GROUP_LINE.sub("", text)
-
     # Split at each heading. Sections with a screenshot are the palettes';
     # other text stays before the groups, or after them if it came later.
     starts = [m.start() for m in HEADING.finditer(text)] + [len(text)]
@@ -246,28 +281,20 @@ def update_readme(palettes):
             scheme = values["scheme"]
             chunk = COLORS_LINE.sub(colors_line(values), chunk, count=1)
         else:
-            print(f"palettes/README.md has a section for {slug}, which isn't a palette any more")
-            scheme = "light" if folder == "Light" else "dark"
+            print(f"palettes/README.md has a section for {slug}, which isn't a palette "
+                  f"any more", file=sys.stderr)
+            # Where its screenshot is filed; one from before filing was dark,
+            # as jenerate.py takes a palette to be without other clues.
+            scheme = FOLDER_SCHEMES.get(folder, "dark")
         chunk = HEADING.sub("### ", chunk, count=1)
-        image_path = screenshot_path(slug, scheme).relative_to(PALETTES).as_posix()
-        chunk = IMAGE.sub(f"]({image_path})", chunk)
+        chunk = IMAGE.sub(f"]({image_link(slug, scheme)})", chunk)
         groups[scheme].append(chunk)
+    return before, groups, after, listed
 
-    # Add sections for palettes that have a screenshot but no section.
-    added = []
-    for slug, (path, values) in palettes.items():
-        if slug in listed:
-            continue
-        if not screenshot_path(slug, values["scheme"]).exists():
-            print(f"No screenshot of {slug}, so it isn't added to palettes/README.md")
-            continue
-        groups[values["scheme"]].append(section(path, values))
-        added.append(slug)
 
-    for png in sorted(SCREENSHOTS.rglob("*.png")) if SCREENSHOTS.is_dir() else []:
-        if png.stem not in palettes:
-            print(f"{relative(png)} is of {png.stem}, which isn't a palette any more")
-
+def join_readme(before, groups, after):
+    """The README text from split_readme's parts: the text before, a group
+    for each scheme that has sections, then the text after."""
     text = "".join(before).rstrip("\n") + "\n\n"
     for scheme, sections in groups.items():
         if sections:
@@ -275,13 +302,35 @@ def update_readme(palettes):
             text += (GROUP_START.format(title=title) + "\n"
                      + "\n".join(s.strip("\n") + "\n" for s in sections)
                      + "\n" + GROUP_END + "\n")
-    text = (text + "".join(after).strip("\n")).rstrip("\n") + "\n"
+    return (text + "".join(after).strip("\n")).rstrip("\n") + "\n"
 
-    if not README.exists() or README.read_text() != text:
-        README.write_text(text)
-        print("Updated palettes/README.md" + (f" (added {', '.join(added)})" if added else ""))
+
+def update_readme(palettes):
+    """Bring palettes/README.md up to date with `palettes` ({slug: (path,
+    values)}): every palette's section in its scheme's group."""
+    old = README.read_text(encoding="utf-8") if README.exists() else ""
+    before, groups, after, listed = split_readme(old if old.strip() else "# Palettes\n",
+                                                 palettes)
+
+    # Add sections for palettes that have a screenshot but no section.
+    added = []
+    for slug, (path, values) in palettes.items():
+        if slug in listed:
+            continue
+        if not screenshot_path(slug, values["scheme"]).exists():
+            print(f"No screenshot of {slug}, so it isn't added to palettes/README.md",
+                  file=sys.stderr)
+            continue
+        groups[values["scheme"]].append(section(path, values))
+        added.append(slug)
+
+    text = join_readme(before, groups, after)
+    if text != old:
+        README.write_text(text, encoding="utf-8")
+        print("Updated palettes/README.md" + (f" (added {', '.join(added)})" if added else ""),
+              flush=True)
     else:
-        print("palettes/README.md is up to date")
+        print("palettes/README.md is up to date", flush=True)
 
 
 def main():
@@ -303,11 +352,13 @@ def main():
         if unknown:
             sys.exit(f"No palette in palettes/ called {', '.join(unknown)} "
                      f"(the palettes are: {', '.join(palettes)})")
+        # dict.fromkeys drops a slug named twice, keeping the order given.
         chosen = [palettes[s] for s in dict.fromkeys(slugs)]
     if not args.readme_only:
         take_screenshots(chosen)
     # The README covers every palette, so its key colors stay current.
     update_readme(palettes)
+    report_stray_screenshots(palettes)
 
 
 if __name__ == "__main__":

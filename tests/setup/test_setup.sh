@@ -2863,7 +2863,7 @@ mkdir -p \"\$prefix/node_modules/playwright\" \"\$prefix/node_modules/.bin\"
 printf '#!/bin/sh\nexit 0\n' >\"\$prefix/node_modules/.bin/playwright\"
 chmod +x \"\$prefix/node_modules/.bin/playwright\""
   fake_command node "out=\"\$3\"; shift 3
-for f in \"\$@\"; do f=\"\${f##*/}\"; printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
+for f in \"\$@\"; do printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
   run_setup "" --update-screenshots
   assert_status 0
   assert_contains "Updating the palette screenshots"
@@ -2888,7 +2888,7 @@ printf '#!/bin/sh\nexit 0\n' >\"\$prefix/node_modules/.bin/playwright\"
 chmod +x \"\$prefix/node_modules/.bin/playwright\""
   fake_command node "out=\"\$3\"; shift 3
 printf '%s\n' \"\$@\" >\"$SANDBOX/node-palettes\"
-for f in \"\$@\"; do f=\"\${f##*/}\"; printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
+for f in \"\$@\"; do printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
   run_setup "" --update-screenshots=sunset
   assert_status 0
   assert_file_equals "$SANDBOX/node-palettes" "Dark/sunset-palette.toml"

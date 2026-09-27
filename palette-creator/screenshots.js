@@ -2,14 +2,15 @@
 // palettes/README.md. Run by screenshots.py, which starts the Palette Creator
 // (on a copy of the repository) and provides Playwright.
 //
-// Usage: node screenshots.js <page-url> <out-dir> <palette-file>...
-// Writes <out-dir>/<slug>.png for each palette file, named as the Palette
-// Creator lists them (like Dark/<slug>-palette.toml).
+// Usage: node screenshots.js <page-url> <screenshots-dir> <palette-file>...
+// Each palette file is named as the Palette Creator lists them, like
+// Dark/<slug>-palette.toml, and its screenshot is written to the same folder
+// of <screenshots-dir>, like <screenshots-dir>/Dark/<slug>.png.
 
 const { chromium } = require("playwright");
 const path = require("path");
 
-const [, , base, outDir, ...files] = process.argv;
+const [, , base, screenshotsDir, ...files] = process.argv;
 
 (async () => {
   const browser = await chromium.launch();
@@ -19,6 +20,7 @@ const [, , base, outDir, ...files] = process.argv;
 
   for (const file of files) {
     const slug = path.basename(file).replace(/-palette\.toml$/, "");
+    const out = path.join(screenshotsDir, path.dirname(file), `${slug}.png`);
     // Load the palette the way the page's "Load from..." does.
     const response = await page.request.post(`${base}/api/load`, { data: { filename: file } });
     const result = await response.json();
@@ -29,7 +31,7 @@ const [, , base, outDir, ...files] = process.argv;
       () => document.getElementById("status").textContent.startsWith("Looks good"));
     // Keep the mouse off the preview, so nothing is highlighted.
     await page.mouse.move(0, 0);
-    await page.locator("#preview").screenshot({ path: path.join(outDir, `${slug}.png`) });
+    await page.locator("#preview").screenshot({ path: out });
     console.log(`Screenshot of ${slug}`);
   }
 

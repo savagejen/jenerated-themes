@@ -45,7 +45,8 @@ add_palette() {
 # fake_playwright -> fakes npm (it "installs" Playwright into the prefix it's
 # given) and node (it records its arguments, checks the Palette Creator
 # answers at the address it's given, and writes a placeholder screenshot for
-# each palette).
+# each palette, in the Screenshots folder it's given, under the palette's own
+# folder). Each run of node is counted in $SANDBOX/node-runs.
 fake_playwright() {
   fake_command npm "prefix=''
 while [ \$# -gt 0 ]; do [ \"\$1\" = --prefix ] && prefix=\"\$2\"; shift; done
@@ -56,7 +57,8 @@ touch \"$SANDBOX/npm-ran\""
   fake_command node "base=\"\$2\"; out=\"\$3\"; shift 3
 curl -s \"\$base/api/palette\" >\"$SANDBOX/node-saw\" || exit 1
 printf '%s\n' \"\$@\" >\"$SANDBOX/node-palettes\"
-for f in \"\$@\"; do f=\"\${f##*/}\"; printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
+echo run >>\"$SANDBOX/node-runs\"
+for f in \"\$@\"; do printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
 }
 
 # --- Tests: updating the README ----------------------------------------------
@@ -286,6 +288,48 @@ test_full_run_takes_screenshots_and_updates_the_readme() {
   assert_file_equals "$SANDBOX/repo/palettes/Screenshots/Light/candy.png" "new png"
   assert_contains "Updated palettes/README.md (added forest)"
   assert_missing "$SANDBOX/repo/palette-creator/work-in-progress-palette.toml"
+  # Dark and light palettes alike, in one run of the browser.
+  assert_file_equals "$SANDBOX/node-runs" "run"
+}
+
+# GIVEN the repository is a git repository, with a new file whose name isn't
+#       valid UTF-8
+# WHEN taking screenshots, which copies the repository as git sees it
+# THEN the copy takes that file too, and the screenshots are taken
+test_full_run_copies_a_file_whose_name_isnt_utf8() {
+  fake_playwright
+  git -C "$SANDBOX/repo" init -q
+  git -C "$SANDBOX/repo" add -A
+  printf 'x\n' >"$SANDBOX/repo/$(printf 'odd\377name.txt')"
+  run_screenshots sunset
+  assert_status 0
+  assert_not_contains "Traceback"
+  assert_file_equals "$SANDBOX/repo/palettes/Screenshots/Dark/sunset.png" "new png"
+}
+
+# GIVEN fake node and npm, and a port for the Palette Creator that another
+#       program already has
+# WHEN taking screenshots
+# THEN it stops, saying the Palette Creator didn't start, with what it said
+test_full_run_says_why_the_palette_creator_didnt_start() {
+  fake_playwright
+  OUTPUT="$(cd "$SANDBOX/repo" && HOME="$SANDBOX/home" XDG_CACHE_HOME= PATH="$SANDBOX/bin:$PATH" \
+    "$PYTHON" -c '
+import socket, sys
+sys.path.insert(0, "palette-creator")
+import screenshots
+taken = socket.socket()
+taken.bind(("127.0.0.1", 0))
+taken.listen()
+screenshots.free_port = lambda: taken.getsockname()[1]
+sys.argv = ["screenshots.py", "sunset"]
+screenshots.main()
+' 2>&1)"
+  STATUS=$?
+  assert_status 1
+  assert_contains "The Palette Creator didn't start:"
+  assert_contains "Can't use port"
+  assert_missing "$SANDBOX/node-runs"
 }
 
 # GIVEN fake node and npm

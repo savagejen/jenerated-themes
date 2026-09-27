@@ -236,9 +236,84 @@ test_running_palette_creator_can_be_restarted() {
   url="$(second_url)"
   [ "$url" = "http://127.0.0.1:$PORT/" ] || fail "expected the same port, got '$url'"
   assert_file_contains "$SANDBOX/second.log" "Stopped it."
+  # Its port is free once it stops serving, a moment before it exits.
+  for _ in $(seq 100); do
+    kill -0 "$SERVER_PID" 2>/dev/null || break
+    "$PYTHON" -c 'import time; time.sleep(0.05)'
+  done
   kill -0 "$SERVER_PID" 2>/dev/null && fail "expected the old Palette Creator to have stopped"
+  wait "$SERVER_PID"
+  [ $? -eq 0 ] || fail "expected the old Palette Creator to exit with status 0"
+  assert_file_contains "$SANDBOX/server.log" "Stopped: a fresh Palette Creator was started"
   get /api/info
   assert_json 'd["pid"]' "$SECOND_PID"
+}
+
+# fake_palette_creator info -> runs a program on a free port (sets PORT and
+# SERVER_PID) that answers /api/info with the given JSON, and every POST with
+# 404, as another program pretending to be the Palette Creator could.
+fake_palette_creator() {
+  PORT="$("$PYTHON" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
+  "$PYTHON" -c '
+import sys
+from http.server import BaseHTTPRequestHandler, HTTPServer
+class Fake(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200); self.end_headers(); self.wfile.write(sys.argv[2].encode())
+    def do_POST(self):
+        self.send_response(404); self.end_headers()
+    def log_message(self, *args):
+        pass
+HTTPServer(("127.0.0.1", int(sys.argv[1])), Fake).serve_forever()
+' "$PORT" "$1" &
+  SERVER_PID=$!
+  trap 'kill "$SERVER_PID" ${VICTIM_PID:-} 2>/dev/null; rm -rf "$SANDBOX"' EXIT
+  for _ in $(seq 100); do
+    curl -s -o /dev/null "http://127.0.0.1:$PORT/api/info" && return
+    "$PYTHON" -c 'import time; time.sleep(0.05)'
+  done
+  fail "the fake Palette Creator didn't start"
+}
+
+# GIVEN another program on the port claiming to be this folder's Palette
+#       Creator, with the process number of an unrelated program of yours
+# WHEN starting serve.py and choosing to stop it and start afresh
+# THEN the unrelated program keeps running (no signal is sent to a process
+#      number the port reported), and serve.py explains what to do
+test_a_fake_palette_creator_cant_get_a_process_stopped() {
+  sleep 30 &
+  VICTIM_PID=$!
+  fake_palette_creator "{\"app\": \"palette-creator\", \"root\": \"$SANDBOX/repo\", \"pid\": $VICTIM_PID, \"started\": 0}"
+  OUTPUT="$(printf '2\n' | PALETTE_CREATOR_PORT="$PORT" PALETTE_CREATOR_DIALOG=none \
+    timeout 10 "$PYTHON" "$SANDBOX/repo/palette-creator/serve.py" --no-browser 2>&1)"
+  STATUS=$?
+  assert_status 1
+  assert_contains "Stop it with Ctrl+C in its terminal"
+  kill -0 "$VICTIM_PID" 2>/dev/null || fail "expected the unrelated program to keep running"
+}
+
+# GIVEN another program on the port whose /api/info has the right app and
+#       folder, but a process number that isn't a number
+# WHEN starting serve.py
+# THEN it isn't asked about: serve.py quietly uses another port
+test_a_malformed_info_means_another_port() {
+  fake_palette_creator "{\"app\": \"palette-creator\", \"root\": \"$SANDBOX/repo\", \"pid\": \"-1\", \"started\": 0}"
+  start_second ""
+  url="$(second_url)"
+  [ -n "$url" ] && [ "$url" != "http://127.0.0.1:$PORT/" ] ||
+    fail "expected another port than $PORT, got '$url'"
+  assert_file_not_contains "$SANDBOX/second.log" "already running"
+}
+
+# GIVEN a running Palette Creator
+# WHEN another website asks it to stop
+# THEN it refuses with 403 and keeps running
+test_refuses_stops_from_other_origins() {
+  start_server
+  post /api/stop '{}' -H "Origin: http://evil.example"
+  assert_code 403
+  get /api/info
+  assert_code 200
 }
 
 # GIVEN this folder's Palette Creator already running on the port
@@ -544,6 +619,30 @@ test_check_reports_an_incomplete_palette() {
   assert_json 'd["error"]' "the palette sent by the page is incomplete"
 }
 
+# GIVEN palettes from the page with a group that isn't an object, a color
+#       without a value, and colors that aren't a list
+# WHEN checking each
+# THEN each is reported as incomplete, rather than failing on the server
+test_check_reports_misshapen_palettes() {
+  start_server
+  for change in 'p["groups"][0] = ["accent"]' \
+      'del p["groups"][0]["colors"][0]["value"]' \
+      'p["groups"][0]["colors"] = "accent"'; do
+    post /api/check "$(palette_body "" "$change")"
+    assert_code 200
+    assert_json 'd["error"]' "the palette sent by the page is incomplete"
+  done
+}
+
+# GIVEN a color whose name is a number, with a note that has a line break
+# WHEN checking it
+# THEN the name is reported, since it's checked before the note
+test_check_reports_a_bad_color_name_before_its_note() {
+  start_server
+  post /api/check "$(palette_body "" 'p["groups"][0]["colors"].append({"key": 5, "value": "#000000", "note": "a\nb"})')"
+  assert_json 'd["error"]' "5 can't be a color name (use letters, numbers and underscores)"
+}
+
 # --- Tests: saving as a palette ----------------------------------------------
 
 # fake_dialog exit-status [path] -> fakes the save dialogs (zenity, kdialog and
@@ -700,6 +799,77 @@ test_save_as_palette_dialog_refuses_a_misnamed_palette() {
   assert_json 'd["ok"]' "False"
   assert_contains "has to be named forest-palette.toml"
   assert_missing "$SANDBOX/repo/palettes/woods.toml"
+}
+
+# GIVEN a file named woods.toml already in palettes/Dark
+# WHEN saving the Forest palette there with the typed name woods.toml
+# THEN it's refused for its name, without first asking to replace the file
+test_save_as_palette_checks_the_name_before_asking_to_replace() {
+  printf 'keep\n' >"$SANDBOX/repo/palettes/Dark/woods.toml"
+  start_server
+  post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'woods.toml'")"
+  assert_json 'd["ok"]' "False"
+  assert_contains "has to be named forest-palette.toml"
+  assert_not_contains '"exists"'
+  assert_file_equals "$SANDBOX/repo/palettes/Dark/woods.toml" "keep"
+}
+
+# GIVEN a save dialog that chooses a folder that doesn't exist
+# WHEN saving as a palette
+# THEN the page is told it couldn't be saved, and why
+test_save_as_palette_reports_a_place_it_cant_save() {
+  fake_dialog 0 "$SANDBOX/no such folder/forest-palette.toml"
+  start_server
+  post /api/save "$(palette_body "" "$FOREST")"
+  assert_code 200
+  assert_json 'd["ok"]' "False"
+  assert_json 'd["error"]' "couldn't save $SANDBOX/no such folder/forest-palette.toml: No such file or directory"
+}
+
+# --- Tests: the macOS dialog -------------------------------------------------
+
+# mac_dialog kind default status stderr -> calls serve.py's ask_path as on
+# macOS, with a fake osascript that prints the chosen path (for status 0) or
+# the given error, and exits with the status. Sets OUTPUT to what ask_path
+# returns; the script it was given is in $SANDBOX/dialog-args.
+mac_dialog() {
+  fake_command osascript "printf '%s\\n' \"\$@\" >\"$SANDBOX/dialog-args\"
+[ $3 -eq 0 ] && printf '%s\\n' '$SANDBOX/chosen-palette.toml'
+printf '%s\\n' '$4' >&2
+exit $3"
+  OUTPUT="$(PATH="$SANDBOX/bin:$PATH" "$PYTHON" -c '
+import platform, sys
+from pathlib import Path
+platform.system = lambda: "Darwin"
+sys.path.insert(0, sys.argv[1])
+import serve
+print(serve.ask_path(sys.argv[2], Path(sys.argv[3])))
+' "$SANDBOX/repo/palette-creator" "$1" "$2" 2>&1)"
+}
+
+# GIVEN a save dialog starting in a folder with a letter outside ASCII, and
+#       a double quote, in its name
+# WHEN asking osascript for it
+# THEN the script has the letter as it is, and the quote escaped as
+#      AppleScript escapes it, rather than JSON's \u escapes
+test_mac_dialog_writes_paths_as_applescript_strings() {
+  mac_dialog save "/Users/J$(printf '\303\270')rgen/say \"hi\"/forest-palette.toml" 0 ""
+  assert_contains "chosen-palette.toml"
+  OUTPUT="$(cat "$SANDBOX/dialog-args")"
+  assert_contains "default location (POSIX file \"/Users/J$(printf '\303\270')rgen/say \\\"hi\\\"\")"
+  assert_contains 'default name "forest-palette.toml"'
+  assert_not_contains '\u'
+}
+
+# GIVEN osascript cancelled (error -128), or failing another way
+# WHEN asking for a palette to load
+# THEN Cancel counts as cancelled, and any other failure as no dialog, so
+#      the page asks for a name instead of saying nothing was loaded
+test_mac_dialog_tells_cancel_from_failure() {
+  mac_dialog open "$SANDBOX/repo/palettes" 1 "execution error: User canceled. (-128)"
+  assert_contains "NoPath.CANCELLED"
+  mac_dialog open "$SANDBOX/repo/palettes" 1 "execution error: Expected end of line. (-2741)"
+  assert_contains "NoPath.NO_DIALOG"
 }
 
 # --- Tests: loading a palette ------------------------------------------------
@@ -878,6 +1048,75 @@ test_refuses_other_origins() {
   post /api/save "$body" -H "Origin: http://127.0.0.1:$PORT"
   assert_code 200
   assert_file_contains "$SANDBOX/repo/$WIP_REL" 'accent = "#123456"'
+}
+
+# GIVEN a running Palette Creator
+# WHEN asking for the page
+# THEN the answer says no other site may show it in a frame, and not to
+#      guess its type
+test_the_page_cant_be_framed() {
+  start_server
+  get / -D "$SANDBOX/headers"
+  assert_code 200
+  OUTPUT="$(tr -d '\r' <"$SANDBOX/headers")"
+  assert_contains "Content-Security-Policy: frame-ancestors 'none'"
+  assert_contains "X-Frame-Options: DENY"
+  assert_contains "X-Content-Type-Options: nosniff"
+}
+
+# --- Tests: request bodies ---------------------------------------------------
+
+# post_with_length length -> posts {} to /api/check with the given
+# Content-Length header, as is, and sets OUTPUT to the status line of the
+# answer (or nothing).
+post_with_length() {
+  OUTPUT="$("$PYTHON" -c '
+import socket, sys
+port, length = sys.argv[1:]
+request = (f"POST /api/check HTTP/1.0\r\nHost: 127.0.0.1:{port}\r\n"
+           f"Content-Type: application/json\r\nContent-Length: {length}\r\n\r\n{{}}")
+with socket.create_connection(("127.0.0.1", int(port)), timeout=10) as s:
+    s.sendall(request.encode())
+    print(s.makefile("rb").readline().decode().strip())
+' "$PORT" "$1")"
+}
+
+# GIVEN a request whose Content-Length isn't a whole number of bytes: text,
+#       negative, or with a sign or underscore Python's int() would take
+# WHEN serve.py receives it
+# THEN it refuses with 400, and keeps answering
+test_refuses_bad_content_lengths() {
+  start_server
+  for length in abc -1 +5 1_0; do
+    post_with_length "$length"
+    case "$OUTPUT" in
+      *" 400 "*) ;;
+      *) fail "expected 400 for Content-Length $length, got '$OUTPUT'" ;;
+    esac
+  done
+  get /api/info
+  assert_code 200
+}
+
+# GIVEN a connection that announces a body and never sends it, left open
+# WHEN the page then asks for something
+# THEN it's answered once the stalled connection times out, rather than
+#      never
+test_a_stalled_request_doesnt_hold_up_the_server() {
+  start_server
+  "$PYTHON" -c '
+import socket, sys, time
+s = socket.create_connection(("127.0.0.1", int(sys.argv[1])))
+s.sendall(("POST /api/check HTTP/1.0\r\nHost: 127.0.0.1:%s\r\n"
+           "Content-Type: application/json\r\nContent-Length: 100\r\n\r\n" % sys.argv[1]).encode())
+time.sleep(30)
+' "$PORT" &
+  STALLED_PID=$!
+  trap 'kill "$SERVER_PID" "$STALLED_PID" 2>/dev/null; rm -rf "$SANDBOX"' EXIT
+  "$PYTHON" -c 'import time; time.sleep(0.3)'
+  get /api/info --max-time 15
+  assert_code 200
+  assert_file_not_contains "$SANDBOX/server.log" "Traceback"
 }
 
 run_tests
