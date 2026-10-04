@@ -77,11 +77,11 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 #      one), then ALL THE APPS, then search, and a way back
 test_app_menu_on_linux_groups_the_apps() {
   fake_os Linux
-  run_setup "1\n2\n3\n1\n"
+  run_setup "1\n2\n4\n1\n"
   assert_status 0
   assert_contains "Which app do you want to theme?
   1) Web browsers (4 apps)
-  2) Communication (3 apps)
+  2) Communication (4 apps)
   3) Editors: code, text and notes (13 apps)
   4) Terminals and command-line tools (8 apps)
   5) Linux desktops (4 apps)
@@ -100,11 +100,11 @@ test_app_menu_on_linux_groups_the_apps() {
 #      desktops category, which has none left, isn't shown
 test_app_menu_on_macos_leaves_out_linux_apps() {
   fake_os Darwin
-  run_setup "1\n2\n3\n1\n"
+  run_setup "1\n2\n4\n1\n"
   assert_status 0
   assert_contains "Which app do you want to theme?
   1) Web browsers (4 apps)
-  2) Communication (3 apps)
+  2) Communication (4 apps)
   3) Editors: code, text and notes (13 apps)
   4) Terminals and command-line tools (5 apps)
   5) Entertainment (3 apps)
@@ -128,7 +128,8 @@ test_each_category_lists_its_apps() {
   assert_contains "Communication:
   1) Element (Matrix chat)
   2) Mattermost
-  3) Slack
+  3) Quassel IRC
+  4) Slack
   0) Back"
   assert_contains "Web browsers:
   1) Chromium browsers (Chrome, Brave, Edge, Opera and more)
@@ -3553,6 +3554,70 @@ test_ghidra_without_a_settings_folder_in_all_the_apps() {
   assert_contains "no Ghidra settings folder found"
   assert_contains "Not installed:
   - Ghidra (reverse engineering)"
+}
+
+# --- Tests: Quassel IRC -------------------------------------------------------
+
+QUASSEL_QSS="app-themes/quassel-theme/jenerated-blue-purple.qss"
+QUASSEL_FLATPAK_DIR=".var/app/org.quassel_irc.QuasselClient/config/quassel-irc.org"
+
+# GIVEN Linux
+# WHEN choosing Quassel IRC and Blue Purple
+# THEN the stylesheet is linked into a stylesheets folder in Quassel's
+#      settings folder, and it says how to turn the stylesheet on
+test_quassel_links_the_stylesheet() {
+  fake_os Linux
+  run_setup "1\nquassel\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/quassel-irc.org/stylesheets/jenerated-blue-purple.qss" \
+    "$SANDBOX/repo/$QUASSEL_QSS"
+  assert_contains "Settings -> Configure Quassel... -> Interface"
+  assert_contains '"Use custom stylesheet"'
+  assert_contains "$SANDBOX/home/.config/quassel-irc.org/stylesheets/jenerated-blue-purple.qss"
+}
+
+# GIVEN a Mac
+# WHEN choosing Quassel IRC and Blue Purple
+# THEN the stylesheet goes in Quassel's folder in Application Support
+test_quassel_on_macos_uses_application_support() {
+  fake_os Darwin
+  run_setup "1\nquassel\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/Application Support/Quassel/stylesheets/jenerated-blue-purple.qss" \
+    "$SANDBOX/repo/$QUASSEL_QSS"
+}
+
+# GIVEN the Quassel Flatpak, which can't see files outside its own folder
+# WHEN choosing Quassel IRC and Blue Purple, and linking
+# THEN the usual settings folder gets a link, the Flatpak's gets a copy (a
+#      file, not a link), and it says to run setup again after changing the
+#      palette
+test_quassel_copies_the_stylesheet_for_the_flatpak() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/org.quassel_irc.QuasselClient"
+  run_setup "1\nquassel\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/quassel-irc.org/stylesheets/jenerated-blue-purple.qss" \
+    "$SANDBOX/repo/$QUASSEL_QSS"
+  copy="$SANDBOX/home/$QUASSEL_FLATPAK_DIR/stylesheets/jenerated-blue-purple.qss"
+  [ -f "$copy" ] && [ ! -L "$copy" ] || fail "expected a copy (not a link) at $copy"
+  assert_same_file "$copy" "$SANDBOX/repo/$QUASSEL_QSS"
+  assert_contains "run ./setup.sh again for it"
+}
+
+# GIVEN the Quassel Flatpak
+# WHEN choosing Quassel IRC and Blue Purple, and saying no to running the
+#      install commands
+# THEN nothing is installed, and it shows the command to copy the
+#      stylesheet for the Flatpak too
+test_quassel_flatpak_copy_is_shown_when_installing_by_hand() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/org.quassel_irc.QuasselClient"
+  run_setup "1\nquassel\n1\n1\nn\n"
+  assert_status 0
+  assert_missing "$SANDBOX/home/.config/quassel-irc.org"
+  assert_missing "$SANDBOX/home/$QUASSEL_FLATPAK_DIR"
+  assert_contains "cp \"$SANDBOX/repo/$QUASSEL_QSS\" \"\$HOME/$QUASSEL_FLATPAK_DIR/stylesheets/jenerated-blue-purple.qss\""
 }
 
 # --- Tests: Wireshark ---------------------------------------------------------

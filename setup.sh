@@ -516,6 +516,7 @@ app_present() {
     rizin) found="cmd:rizin" ;;
     gemini) found="cmd:gemini" ;;
     pwsh) found="cmd:pwsh" ;;
+    quassel) found="cmd:quasselclient cmd:quassel flatpak:org.quassel_irc.QuasselClient mac:Quassel_Client mac:Quassel" ;;
     qterminal) found="cmd:qterminal" ;;
     wireshark) found="cmd:wireshark flatpak:org.wireshark.Wireshark mac:Wireshark" ;;
     ghidra)
@@ -571,6 +572,7 @@ add_app vivaldi "Vivaldi" browsers
 add_app zen "Zen Browser" browsers
 add_app element "Element (Matrix chat)" communication "" "matrix riot chat messaging"
 add_app mattermost "Mattermost" communication "" "chat messaging"
+add_app quassel "Quassel IRC" communication "" "irc chat messaging quasselclient"
 add_app slack "Slack" communication "" "chat messaging"
 add_app emacs "Emacs" editors "" "gnu doom spacemacs"
 if [ "$OS" = "Linux" ]; then
@@ -3025,6 +3027,58 @@ install_ghidra() {
   say "After changing the palette, run ./jenerate.py $SLUG and restart Ghidra."
 }
 
+# Quassel's settings folder (not the Flatpak's; see QUASSEL_FLATPAK).
+quassel_config_dir() {
+  if [ "$OS" = "Darwin" ]; then
+    printf '%s' "$HOME/Library/Application Support/Quassel"
+  else
+    printf '%s' "${XDG_CONFIG_HOME:-$HOME/.config}/quassel-irc.org"
+  fi
+}
+
+# The Flatpak's own folder. The Flatpak can't see files outside it, so it
+# gets a copy of the stylesheet rather than a link to this folder.
+QUASSEL_FLATPAK="$HOME/.var/app/org.quassel_irc.QuasselClient"
+
+install_quassel() {
+  local file="jenerated-$SLUG.qss"
+  local source="$ROOT/app-themes/quassel-theme/$file"
+  local stylesheets flatpak_copy=""
+  stylesheets="$(quassel_config_dir)/stylesheets"
+
+  plan_link "$stylesheets/$file" "$source"
+  run_install_plan "the Quassel stylesheet"
+
+  if [ -d "$QUASSEL_FLATPAK" ]; then
+    flatpak_copy="$QUASSEL_FLATPAK/config/quassel-irc.org/stylesheets/$file"
+  fi
+  if [ -n "$flatpak_copy" ] && [ "$INSTALL_MODE" = manual ]; then
+    step "For the Quassel Flatpak, which can't see files outside its own folder, run:"
+    say "    mkdir -p $(shell_quote "$(dirname "$flatpak_copy")")"
+    say "    cp $(shell_quote "$source") $(shell_quote "$flatpak_copy")"
+  elif [ -n "$flatpak_copy" ]; then
+    step "Copying the stylesheet for the Quassel Flatpak"
+    say "(The Flatpak can't see files outside its own folder, so it gets a copy.)"
+    mkdir -p "$(dirname "$flatpak_copy")"
+    rm -f "$flatpak_copy"
+    cp "$source" "$flatpak_copy"
+    say "Copied $source to $flatpak_copy"
+  fi
+
+  step "Done! To turn the stylesheet on:"
+  say "1. In Quassel, open Settings -> Configure Quassel... -> Interface."
+  say "2. Check \"Use custom stylesheet\" and choose"
+  say "   $stylesheets/$file"
+  if [ -n "$flatpak_copy" ]; then
+    say "   (or, in the Flatpak, $flatpak_copy)"
+  fi
+  say "3. Click OK; the colors change right away."
+  say "After changing the palette, run ./jenerate.py $SLUG and restart Quassel."
+  if [ -n "$flatpak_copy" ]; then
+    say "The Flatpak's copy doesn't update itself: run ./setup.sh again for it."
+  fi
+}
+
 # install_app id -> installs the theme (NAME, SLUG) for one app.
 install_app() {
   case "$1" in
@@ -3073,6 +3127,7 @@ install_app() {
     gemini) install_gemini ;;
     pwsh) install_pwsh ;;
     qterminal) install_qterminal ;;
+    quassel) install_quassel ;;
   esac
 }
 

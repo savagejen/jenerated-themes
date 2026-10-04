@@ -26,6 +26,7 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 
 - [Element (Matrix chat)](app-themes/element-theme/)
 - [Mattermost](app-themes/mattermost-theme/)
+- [Quassel IRC](app-themes/quassel-theme/)
 - [Slack](app-themes/slack-theme/)
 
 ### Editors: code, text and notes
@@ -91,23 +92,27 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 A few premade palettes are included, dark and light, and can be previewed in
 [palettes/README.md](palettes/README.md).
 
-## Getting started
+## Quick Start Guide
 
-The quickest way is the setup script. Clone the repository and run it; it
-asks which app and which theme you want (dark or light, then which one; it
-can also open the palette previews in your browser), then does the rest (on
-Linux or macOS). For most apps it first shows the commands that install the
-theme, then offers to run them for you, linking the files (so they follow
-palette changes) or copying them. It can also start the [Palette
-Creator](palette-creator/), for designing a palette of your own:
-
+The quickest way to use Jenerated Themes is to clone the repository and 
+run the setup script: 
 ```bash
 git clone https://github.com/savagejen/jenerated-themes jenerated-themes
 cd jenerated-themes
 ./setup.sh
 ```
 
-`./setup.sh --help` lists its shortcuts, like going straight to installing a
+The setup script asks which app and which theme you want (dark or light, then which one) 
+and it can also open the palette previews in your browser. 
+
+It is designed to work on Linux or macOS, but some of the themes function on other 
+platforms and users on those platforms can use the `jenerate.py` python script instead. See [Setting up by hand](#setting-up-by-hand) below.
+For most apps, the startup script first shows the commands that install the theme, 
+then offers to run them for you, linking the files (so they follow
+palette changes) or copying them. It can also start the [Palette
+Creator](palette-creator/), for designing a palette of your own:
+
+`./setup.sh --help` lists the setup shortcuts, like going straight to installing a
 particular palette into a particular app, or straight to the Palette
 Creator.
 

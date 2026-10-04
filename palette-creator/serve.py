@@ -593,8 +593,13 @@ class Handler(BaseHTTPRequestHandler):
     # fields say why (an error, or a question for the page to ask).
 
     def api_check(self, body):
-        check_palette(palette_in(body))
-        return {"ok": True}
+        # With the text below the recommended contrast, which the page points
+        # out before "Save as palette". It's a recommendation, so it doesn't
+        # make the palette fail the check.
+        _, values = check_palette(palette_in(body))
+        return {"ok": True, "contrast_target": jenerate.CONTRAST_TARGET,
+                "low_contrast": [{"color": key, "on": background, "ratio": ratio}
+                                 for key, background, ratio in jenerate.low_contrast(values)]}
 
     def api_save(self, body):
         return save_palette(palette_in(body), body.get("target", "wip"),

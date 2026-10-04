@@ -157,6 +157,21 @@ and whitespace.
 
 Editor `#1f1f1f`, Sidebar `#2b2b2b`, Accent `#ff00aa`, Text `#f2f2f2`
 
+### Herbstfreude
+
+`herbstfreude`
+
+Herbstfreude means autumn joy in German. A forest in October, in full color.
+Backgrounds in the deep emerald of leaves that haven't turned yet, with a
+sidebar of copper beech in the shade and a title bar of embers, text in warm
+morning mist, an accent of blazing beech orange, and syntax colors from the
+woods at their brightest: linden gold, copper beech, rowan red, turning linden
+leaves, the alpine sky, sunlit peaks, slate blue and pink sedum.
+
+![The Herbstfreude palette in the Palette Creator's preview](Screenshots/Dark/herbstfreude.png)
+
+Editor `#0c2a1b`, Sidebar `#432414`, Accent `#ff9a2e`, Text `#f3ece4`
+
 </details>
 
 <details open>

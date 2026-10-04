@@ -84,6 +84,7 @@ r2_theme() { printf '%s' "$SANDBOX/repo/app-themes/radare2-theme/jenerated-$1"; 
 rizin_theme() { printf '%s' "$SANDBOX/repo/app-themes/rizin-theme/jenerated-$1"; }
 gemini_theme() { printf '%s' "$SANDBOX/repo/app-themes/gemini-theme/jenerated-$1.json"; }
 pwsh_colors() { printf '%s' "$SANDBOX/repo/app-themes/pwsh-theme/jenerated-$1.ps1"; }
+quassel_qss() { printf '%s' "$SANDBOX/repo/app-themes/quassel-theme/jenerated-$1.qss"; }
 # Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
 # veilamp_theme() { printf '%s' "$SANDBOX/repo/app-themes/veilamp-theme/jenerated-$1.json"; }
 
@@ -242,6 +243,79 @@ test_unknown_palette_is_an_error() {
   assert_contains "No palette named 'nope'"
 }
 
+# --- Tests: text contrast ---------------------------------------------------
+
+# candy_with slug name [key value]... -> writes palettes/<slug>-palette.toml,
+# a copy of Candy (which reaches 4.5:1 everywhere) under a new name and slug,
+# with the given colors changed.
+candy_with() {
+  local slug="$1" name="$2" file="$SANDBOX/repo/palettes/$1-palette.toml"
+  shift 2
+  sed -e "s/^name = .*/name = \"$name\"/" -e "s/^slug = .*/slug = \"$slug\"/" \
+    "$SANDBOX/repo/palettes/Light/candy-palette.toml" >"$file"
+  while [ "$#" -ge 2 ]; do
+    sed -i "s/^$1 = \"[^\"]*\"/$1 = \"$2\"/" "$file"
+    shift 2
+  done
+}
+
+# GIVEN a copy of Candy with a pale magenta (#f0c0e0)
+# WHEN checking its contrast
+# THEN it names magenta on both editor backgrounds, with their ratios, and
+#      exits with status 0, since the contrast is a recommendation
+test_contrast_names_colors_below_the_target() {
+  candy_with murky Murky magenta "#f0c0e0"
+  run_jenerate --contrast murky
+  assert_status 0
+  assert_contains "Murky: 2 below the recommended 4.5:1
+  magenta on bg: 1.51:1
+  magenta on bg_line_highlight: 1.42:1"
+}
+
+# GIVEN Candy
+# WHEN checking its contrast
+# THEN it says all its text reaches 4.5:1
+test_contrast_of_a_palette_that_reaches_the_target() {
+  candy_with clear Clear
+  run_jenerate --contrast clear
+  assert_status 0
+  assert_contains "Clear: all text reaches 4.5:1"
+}
+
+# GIVEN a copy of Candy with a grey accent (#777777) under its white button
+#       text, 4.48:1
+# WHEN checking its contrast
+# THEN the ratio is shown rounded down, 4.47, so nothing below 4.5 looks
+#      like it reaches it
+test_contrast_rounds_ratios_down() {
+  candy_with grey Grey accent "#777777"
+  run_jenerate --contrast grey
+  assert_contains "  text_bright on accent: 4.47:1"
+}
+
+# GIVEN the palettes in palettes/
+# WHEN checking contrast without naming any
+# THEN every palette is reported
+test_contrast_checks_every_palette_without_names() {
+  run_jenerate --contrast
+  assert_status 0
+  for file in "$SANDBOX"/repo/palettes/{Dark,Light}/*-palette.toml; do
+    assert_contains "$(sed -n 's/^name = "\(.*\)"$/\1/p' "$file"): "
+  done
+}
+
+# GIVEN no palette with the slug 'nope'
+# WHEN checking its contrast, or checking contrast along with --list
+# THEN it says there's no such palette, or that the two don't go together
+test_contrast_errors() {
+  run_jenerate --contrast nope
+  assert_status 1
+  assert_contains "No palette named 'nope'"
+  run_jenerate --contrast --list
+  assert_status 2
+  assert_contains "not allowed with argument"
+}
+
 # --- Tests: generating -------------------------------------------------------
 
 # GIVEN the Sunset palette
@@ -310,6 +384,7 @@ test_generates_every_app_theme() {
   assert_exists "$(rizin_theme sunset)"
   assert_exists "$(gemini_theme sunset)"
   assert_exists "$(pwsh_colors sunset)"
+  assert_exists "$(quassel_qss sunset)"
   # Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
   # assert_exists "$(veilamp_theme sunset)"
 }
@@ -342,7 +417,7 @@ test_fills_in_every_placeholder() {
     "$(libreoffice_theme sunset)/description.txt" "$(libreoffice_theme sunset)/META-INF/manifest.xml" \
     "$(wireshark_rules sunset)" "$(ghidra_theme sunset)" "$(caido_css sunset)" \
     "$(qtct_scheme sunset)" "$(r2_theme sunset)" "$(rizin_theme sunset)" "$(gemini_theme sunset)" \
-    "$(pwsh_colors sunset)"; do # Veilamp is switched off; add "$(veilamp_theme sunset)" back then.
+    "$(pwsh_colors sunset)" "$(quassel_qss sunset)"; do # Veilamp is switched off; add "$(veilamp_theme sunset)" back then.
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -474,7 +549,8 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/caido-theme/jenerated-blue-purple.css \
     app-themes/qtct-theme/jenerated-blue-purple.conf \
     app-themes/radare2-theme/jenerated-blue-purple app-themes/rizin-theme/jenerated-blue-purple \
-    app-themes/gemini-theme/jenerated-blue-purple.json app-themes/pwsh-theme/jenerated-blue-purple.ps1; do
+    app-themes/gemini-theme/jenerated-blue-purple.json app-themes/pwsh-theme/jenerated-blue-purple.ps1 \
+    app-themes/quassel-theme/jenerated-blue-purple.qss; do
     # (Veilamp is switched off; add app-themes/veilamp-theme/jenerated-blue-purple.json back then.)
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
@@ -3239,6 +3315,85 @@ test_ghidra_theme_is_name_value_lines() {
   [ -z "$OUTPUT" ] || fail "these lines aren't name = value: $OUTPUT"
   [ "$(printf '%s\n' "$lines" | head -n 3 | cut -d' ' -f1 | tr '\n' ' ')" = "name lookAndFeel useDarkDefaults " ] ||
     fail "expected name, lookAndFeel and useDarkDefaults first"
+}
+
+# --- Tests: Quassel IRC -------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Quassel stylesheet
+# THEN the window follows the palette (Qt's palette and the chat view), the
+#      marker line is the accent, lines that mention you are orange laid over
+#      the background, and IRC's white and black are the palette's bright
+#      white and black terminal colors
+test_quassel_stylesheet_follows_the_palette() {
+  run_jenerate sunset
+  qss="$(quassel_qss sunset)"
+  assert_file_contains "$qss" "Jenerated Sunset"
+  assert_file_contains "$qss" "  window: $(color bg_sidebar);"
+  assert_file_contains "$qss" "  base: $(color bg);"
+  assert_file_contains "$qss" "  highlight: $(color accent);"
+  assert_file_contains "$qss" "ChatView { background: $(color bg); }"
+  assert_file_contains "$qss" "stop: 0 $(color accent), stop: 0.1 transparent"
+  highlight="$("$PYTHON" -c '
+import sys
+sys.path.insert(0, sys.argv[1])
+import jenerate
+print(jenerate.blend(sys.argv[2], sys.argv[3], 30))
+' "$SANDBOX/repo" "$(color orange)" "$(color bg)")"
+  assert_file_contains "$qss" "  background: $highlight;"
+  assert_file_contains "$qss" "ChatLine[fg-color=\"00\"] { foreground: $(color term_bright_white); }"
+  assert_file_contains "$qss" "ChatLine[bg-color=\"01\"] { background: $(color term_black); }"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Quassel stylesheet the way Quassel does
+#      (comments removed, then its own blocks taken out)
+# THEN every Palette role is one Quassel knows, every ChatLine, ChatListItem
+#      and NickListItem declaration matches Quassel's patterns, every IRC
+#      color from 00 to 0f is set for text and background, and what's left
+#      for Qt is only the chat view's background
+test_quassel_stylesheet_parses_as_quassel_reads_it() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+ss = open(sys.argv[1]).read()
+problems = []
+# As qssparser.cpp: remove // and /* */ comments, then the Palette blocks,
+# then ChatLine, ChatListItem and NickListItem blocks.
+ss = re.sub(r"//.*?(\n|$)|/\*.*?\*/", "", ss, flags=re.S)
+roles = {"alternate-base", "background", "base", "bright-text", "button",
+         "button-text", "dark", "foreground", "highlight", "highlighted-text",
+         "light", "link", "link-visited", "mid", "midlight", "shadow", "text",
+         "tooltip-base", "tooltip-text", "window", "window-text", "marker-line",
+         "sender-color-self"} | {f"sender-color-0{i:x}" for i in range(16)}
+for decl, body in re.findall(r"(Palette[^{]*)\{([^}]+)\}", ss):
+    if not re.fullmatch(r"Palette((:(normal|active|inactive|disabled))*)", decl.strip()):
+        problems.append("bad palette declaration: " + decl)
+    for line in filter(str.strip, body.split(";")):
+        role = line.split(":", 1)[0].strip()
+        if role not in roles:
+            problems.append("unknown palette role: " + role)
+ss = re.sub(r"(Palette[^{]*)\{([^}]+)\}", "", ss)
+irc = set()
+chatline = re.compile(r"ChatLine(?:::(\w+))?(?:#([\w\-]+))?(?:\[([=\-,\"\w\s]+)\])?")
+item = re.compile(r"(Chat|Nick)ListItem(?:\[([=\-,\"\w\s]+)\])?")
+for decl, body in re.findall(r"((?:ChatLine|ChatListItem|NickListItem)[^{]*)\{([^}]+)\}", ss):
+    decl = decl.strip()
+    if not (chatline.fullmatch(decl) or item.fullmatch(decl)):
+        problems.append("bad declaration: " + decl)
+    irc.update(re.findall(r"(fg|bg)-color=\"(0[0-9a-f])\"", decl))
+    for line in filter(str.strip, body.split(";")):
+        if not re.fullmatch(r"\s*(foreground|background): #[0-9a-f]{6}\s*", line):
+            problems.append("bad property in " + decl + ": " + line.strip())
+missing = {(k, f"0{i:x}") for k in ("fg", "bg") for i in range(16)} - irc
+if missing:
+    problems.append("IRC colors not set: " + ", ".join(sorted("-".join(m) for m in missing)))
+rest = re.sub(r"((?:ChatLine|ChatListItem|NickListItem)[^{]*)\{([^}]+)\}", "", ss).split()
+if " ".join(rest) != "ChatView { background: " + sys.argv[2] + "; }":
+    problems.append("left for Qt: " + " ".join(rest))
+print("\n".join(problems))
+' "$(quassel_qss sunset)" "$(color bg)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------

@@ -133,12 +133,40 @@ Then:
 2. Write a description as the comment at the top of the file: what the
    palette is and where its colors come from. It becomes the palette's
    section in [palettes/README.md](palettes/README.md).
-3. Check that text is readable: body text, comments and the syntax colors
-   against `bg`, `text_bright` against `accent`, and `text_strong` against
-   `bg` and `bg_selected`. The tests require `text_strong` to reach 4.5:1
-   against `bg` and `bg_selected`.
+3. Check its text contrast with `./jenerate.py --contrast <slug>`: a
+   recommendation, not a rule (see [Text contrast](#text-contrast)).
 4. [Update the screenshots](#screenshots), which adds the palette's
    screenshot and README section.
+
+### Text contrast
+
+We recommend, but don't require, a contrast ratio of at least 4.5:1 (WCAG's
+level for ordinary text) for the colors people read:
+
+- `text`, `text_subtle` and `text_muted` (comments), and the syntax and
+  accent colors (`accent`, `accent_soft`, `accent_light`, `accent_pale`,
+  `red`, `orange`, `yellow`, `green`, `cyan`, `magenta`), against both `bg`
+  and `bg_line_highlight`, since the line the cursor is on is read too.
+- `text_bright` against `accent`, for button and badge labels.
+- `text_strong` against `bg` and `bg_selected`. This is the one pair the
+  tests do check, since a palette that fails it makes selected items hard
+  to read in many apps.
+
+Colors meant to recede, like `text_faint` (line numbers), `guide`,
+`whitespace`, `border` and the bright terminal colors, aren't included.
+Several published palettes fall short in places; that's allowed, but it's
+worth a look when you design or change one.
+
+To see how a palette does:
+
+```bash
+./jenerate.py --contrast sunset      # one palette, or several with commas
+./jenerate.py --contrast             # every palette
+```
+
+It lists each pair below 4.5:1, with its ratio, and never fails. The Palette
+Creator shows the same list when you click "Save as palette", before the save
+dialog opens: OK saves anyway, and Cancel goes back to editing.
 
 ### Colors to avoid
 

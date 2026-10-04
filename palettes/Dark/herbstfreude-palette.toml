@@ -1,0 +1,72 @@
+# Herbstfreude means autumn joy in German. A forest in October, in full
+# color. Backgrounds in the deep emerald of leaves that haven't turned yet,
+# with a sidebar of copper beech in the shade and a title bar of embers,
+# text in warm morning mist, an accent of blazing beech orange, and syntax
+# colors from the woods at their brightest: linden gold, copper beech, rowan
+# red, turning linden leaves, the alpine sky, sunlit peaks, slate blue and
+# pink sedum.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Herbstfreude"
+slug = "herbstfreude"
+
+[colors]
+# Backgrounds: darkest to lightest, and a copper sidebar
+bg_chrome = "#230101"          # activity bar, title bar, status bar: embers
+bg_minimap = "#38130c"
+bg = "#0c2a1b"                 # editor and terminal: deep emerald
+bg_sidebar = "#432414"         # copper beech in the shade
+bg_widget = "#153323"          # popups, hovers, notifications
+bg_line_highlight = "#123121"
+bg_hover = "#203e2e"           # hovered items, inputs
+bg_selected = "#2a4b39"        # inactive selection in lists
+bg_secondary_hover = "#385947" # hovered secondary buttons
+selection = "#644218"          # selected text: beech leaves in the shade
+
+# Lines
+guide = "#1e3428"              # indent guides, rulers
+whitespace = "#304439"         # rendered whitespace
+border = "#243b2e"
+
+# Text: castle stone and morning mist, faintest to brightest
+text_faint = "#6c655c"         # line numbers, ignored files
+text_muted = "#9f948a"         # comments, inactive tabs: weathered stone
+text_subtle = "#cfc5bb"        # sidebar text, punctuation
+text = "#f3ece4"               # warm morning mist
+text_bright = "#1c1815"        # text on the accent color: charcoal on orange
+text_strong = "#fffaf4"        # emphasized text: active tabs, selected items
+
+# Accent: beech leaves in the sun, and the castle's slate roofs
+accent = "#ff9a2e"             # blazing beech: cursor, focus, buttons, badges
+accent_hover = "#e38322"       # hovered buttons
+accent_soft = "#8fb0ff"        # slate blue: keywords, links
+accent_light = "#ffc76b"       # golden leaves: functions
+accent_pale = "#ffd3a8"        # sunlit peaks: properties
+
+# Syntax and status colors: the woods at their brightest
+red = "#ff5a4a"                # rowan berries: errors, deleted
+orange = "#ff7a2f"             # copper beech: numbers, parameters, attributes
+yellow = "#ffd21f"             # linden gold: warnings, regex
+green = "#c6d23c"              # turning linden leaf: strings, added
+cyan = "#6fc8f0"               # alpine sky: classes, types
+magenta = "#ff7fb0"            # pink sedum: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#23392d"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_soft"
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "text_subtle"
+term_bright_black = "text_faint"
+term_bright_red = "#ff8a7d"
+term_bright_green = "#dbe47a"
+term_bright_yellow = "#ffe36b"
+term_bright_blue = "#b5caff"
+term_bright_magenta = "#ffa8c9"
+term_bright_cyan = "#a3dcf6"
+term_bright_white = "text_strong"

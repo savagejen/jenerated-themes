@@ -7,6 +7,8 @@ Usage:
     ./jenerate.py path/to/my-palette.toml     # a palette file anywhere
     ./jenerate.py --remove sunset             # remove a palette's themes
     ./jenerate.py --list                      # show palettes, mark generated
+    ./jenerate.py --contrast                  # check every palette's text contrast
+    ./jenerate.py --contrast sunset           # just these palettes'
 
 A palette is named by its slug (palettes/Dark/<slug>-palette.toml or
 palettes/Light/<slug>-palette.toml) or given as a path to a .toml file. A
@@ -119,6 +121,7 @@ TARGETS = [
     ("app-themes/rizin-theme/theme.rz.tmpl", "app-themes/rizin-theme/jenerated-{slug}"),
     ("app-themes/gemini-theme/theme.json.tmpl", "app-themes/gemini-theme/jenerated-{slug}.json"),
     ("app-themes/pwsh-theme/colors.ps1.tmpl", "app-themes/pwsh-theme/jenerated-{slug}.ps1"),
+    ("app-themes/quassel-theme/stylesheet.qss.tmpl", "app-themes/quassel-theme/jenerated-{slug}.qss"),
     # Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
     # ("app-themes/veilamp-theme/theme.json.tmpl", "app-themes/veilamp-theme/jenerated-{slug}.json"),
 ]
@@ -296,14 +299,65 @@ def color_formats(key, value):
     }
 
 
-def scheme_of(color):
-    """ "light" for a background black text reads better on, else "dark"."""
+def luminance(color):
+    """A #rrggbb color's relative luminance, as WCAG defines it: 0 for black
+    to 1 for white."""
     channels = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
     linear = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
               for c in channels]
-    luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast(a, b):
+    """The WCAG contrast ratio of two #rrggbb colors, from 1 (the same) to 21
+    (black and white)."""
+    light, dark = sorted((luminance(a), luminance(b)), reverse=True)
+    return (light + 0.05) / (dark + 0.05)
+
+
+def scheme_of(color):
+    """ "light" for a background black text reads better on, else "dark"."""
     # The contrast with black beats the contrast with white.
-    return "light" if (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) else "dark"
+    return "light" if contrast(color, "#000000") > contrast(color, "#ffffff") else "dark"
+
+
+# The contrast recommended for text: WCAG's level for ordinary text. It's a
+# recommendation, not a rule; see "Text contrast" in CONTRIBUTING.md.
+CONTRAST_TARGET = 4.5
+# The colors people read, each with the backgrounds it's read on. Colors
+# meant to recede (text_faint, guides, borders, the bright terminal colors)
+# aren't here.
+READ_ON = [
+    (("text", "text_subtle", "text_muted", "accent", "accent_soft", "accent_light",
+      "accent_pale", "red", "orange", "yellow", "green", "cyan", "magenta"),
+     ("bg", "bg_line_highlight")),
+    (("text_bright",), ("accent",)),
+    (("text_strong",), ("bg", "bg_selected")),
+]
+
+
+def low_contrast(values):
+    """The pairs of a palette's colors (its template values) that fall short
+    of CONTRAST_TARGET, as (color, background, ratio) with the ratio rounded
+    down to 2 places, so a pair shown as 4.5 really reaches it."""
+    return [(key, background, int(ratio * 100) / 100)
+            for keys, backgrounds in READ_ON for key in keys for background in backgrounds
+            if (ratio := contrast(values[key], values[background])) < CONTRAST_TARGET]
+
+
+def report_contrast(names):
+    """Print, for each palette (by slug or path; every palette if none are
+    named), the text colors that fall short of CONTRAST_TARGET."""
+    paths = [palette_path(name) for name in names] if names else palette_files()
+    for path in paths:
+        values = load_palette(path)
+        low = low_contrast(values)
+        if not low:
+            print(f"{values['name']}: all text reaches {CONTRAST_TARGET}:1")
+            continue
+        print(f"{values['name']}: {len(low)} below the recommended {CONTRAST_TARGET}:1")
+        for key, background, ratio in low:
+            print(f"  {key} on {background}: {ratio:.2f}:1")
 
 
 def load_palette(path):
@@ -505,16 +559,22 @@ def main():
                         help="delete these palettes' generated themes")
     action.add_argument("--list", action="store_true",
                         help="list the palettes in palettes/")
+    action.add_argument("--contrast", action="store_true",
+                        help="report text colors below the recommended contrast "
+                             f"({CONTRAST_TARGET}:1), for these palettes or all of them")
     args = parser.parse_args()
+    names = [name.strip() for arg in args.palettes
+             for name in arg.split(",") if name.strip()]
 
     if args.list:
-        if args.palettes:
+        if names:
             parser.error("--list doesn't take palettes")
         list_palettes()
         return
+    if args.contrast:
+        report_contrast(names)
+        return
 
-    names = [name.strip() for arg in args.palettes
-             for name in arg.split(",") if name.strip()]
     if not names:
         parser.error("name at least one palette, e.g. ./jenerate.py "
                      "blue-purple (see ./jenerate.py --list)")

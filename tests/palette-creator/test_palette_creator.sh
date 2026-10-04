@@ -552,7 +552,8 @@ test_check_accepts_a_valid_palette() {
   start_server
   post /api/check "$(palette_body)"
   assert_code 200
-  assert_json 'd' "{'ok': True}"
+  assert_json 'd["ok"]' "True"
+  assert_json '"error" in d' "False"
 }
 
 # GIVEN colors that refer to each other in a loop
@@ -824,6 +825,35 @@ test_save_as_palette_reports_a_place_it_cant_save() {
   assert_code 200
   assert_json 'd["ok"]' "False"
   assert_json 'd["error"]' "couldn't save $SANDBOX/no such folder/forest-palette.toml: No such file or directory"
+}
+
+# GIVEN a palette whose button text on its accent is below 4.5:1 (white on
+#       #777777, 4.47:1 rounded down)
+# WHEN checking it, as the page does before "Save as palette"
+# THEN it passes, and the result lists that pair for the page to point out
+test_check_lists_text_below_the_recommended_contrast() {
+  start_server
+  post /api/check "$(palette_body "" "colors['text_bright']['value'] = '#ffffff'; colors['accent']['value'] = '#777777'")"
+  assert_json 'd["ok"]' "True"
+  assert_json 'd["contrast_target"]' "4.5"
+  assert_json '[c for c in d["low_contrast"] if c["color"] == "text_bright"]' \
+    "[{'color': 'text_bright', 'on': 'accent', 'ratio': 4.47}]"
+}
+
+# GIVEN a palette with text below the recommended contrast
+# WHEN saving it as a palette (after the page's warning), and saving the
+#      draft
+# THEN both are saved, and neither result lists the contrast again
+test_saving_doesnt_list_contrast() {
+  start_server
+  body="$(palette_body "" "$FOREST; b['filename'] = 'forest-palette.toml'; colors['accent']['value'] = '#777777'")"
+  post /api/save "$body"
+  assert_json 'd["ok"]' "True"
+  assert_json '"low_contrast" in d' "False"
+  assert_exists "$SANDBOX/repo/palettes/Dark/forest-palette.toml"
+  post /api/save "$(palette_body "")"
+  assert_json 'd["ok"]' "True"
+  assert_json '"low_contrast" in d' "False"
 }
 
 # --- Tests: the macOS dialog -------------------------------------------------

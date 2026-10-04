@@ -665,6 +665,32 @@ async function save(target, filename = undefined, overwrite = false) {
   }
 }
 
+// "Save as palette": first points out any text below the recommended
+// contrast, with OK to save anyway and Cancel to keep editing. It's a
+// recommendation, so OK always goes on to the save dialog.
+async function saveAsPalette() {
+  try {
+    const result = await post("/api/check", { palette });
+    if (!result.ok) return setStatus(result.error, "bad");
+    if (result.low_contrast.length && !confirm(contrastWarning(result))) {
+      return setStatus("Not saved.");
+    }
+  } catch {
+    return setStatus("Can't reach serve.py. Is it still running?", "bad");
+  }
+  save("palette");
+}
+
+function contrastWarning(result) {
+  const lines = result.low_contrast.map(
+    ({ color, on, ratio }) => `  ${color} on ${on}: ${ratio.toFixed(2)}:1`);
+  return `Some text may be hard to read: these colors are below the recommended ` +
+    `contrast of ${result.contrast_target}:1 against what they sit on.\n\n` +
+    `${lines.join("\n")}\n\n` +
+    `This is a recommendation, not a rule (see "Text contrast" in ` +
+    `CONTRIBUTING.md). Save anyway?`;
+}
+
 // --- Loading ------------------------------------------------------------------------
 
 function load(newPalette, message) {
@@ -743,7 +769,7 @@ $("description").addEventListener("input", (event) => {
   palette.description = event.target.value;
   changed();
 });
-$("publish").addEventListener("click", () => save("palette"));
+$("publish").addEventListener("click", saveAsPalette);
 window.addEventListener("beforeunload", (event) => {
   if (dirty) event.preventDefault();
 });
