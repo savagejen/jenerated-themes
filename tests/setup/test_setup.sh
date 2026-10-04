@@ -2969,8 +2969,9 @@ sys.exit(0 if {i: z.read(i) for i in z.namelist()} == files else 1)
 test_prep_commit_rebuilds_the_example_packages() {
   sed 's/"radius": 6/"radius": 9/' "$SANDBOX/repo/app-themes/vivaldi-theme/settings.json.tmpl" >"$SANDBOX/vivaldi.tmpl"
   cp "$SANDBOX/vivaldi.tmpl" "$SANDBOX/repo/app-themes/vivaldi-theme/settings.json.tmpl"
-  sed 's/"author": "Jenerated Themes"/"author": "Someone Else"/' "$SANDBOX/repo/app-themes/jetbrains-theme/theme.json.tmpl" >"$SANDBOX/theme.tmpl"
-  cp "$SANDBOX/theme.tmpl" "$SANDBOX/repo/app-themes/jetbrains-theme/theme.json.tmpl"
+  # Blue Purple is dark, so its JetBrains theme comes from the dark template.
+  sed 's/"author": "Jenerated Themes"/"author": "Someone Else"/' "$SANDBOX/repo/app-themes/jetbrains-theme/theme-dark.json.tmpl" >"$SANDBOX/theme.tmpl"
+  cp "$SANDBOX/theme.tmpl" "$SANDBOX/repo/app-themes/jetbrains-theme/theme-dark.json.tmpl"
   run_setup "" --prep-commit
   assert_status 0
   assert_contains "Rebuilt $EXAMPLE_ZIP"
@@ -2981,6 +2982,11 @@ test_prep_commit_rebuilds_the_example_packages() {
   case "$unzip_text" in
     *'"radius": 9'*) ;;
     *) fail "expected the rebuilt Vivaldi example to have the template's change" ;;
+  esac
+  unzip_text="$("$(find_python)" -c 'import sys, zipfile; print(zipfile.ZipFile(sys.argv[1]).read("jenerated-blue-purple.theme.json").decode())' "$SANDBOX/repo/$EXAMPLE_JAR")"
+  case "$unzip_text" in
+    *'"author": "Someone Else"'*) ;;
+    *) fail "expected the rebuilt JetBrains example to have the template's change" ;;
   esac
 }
 

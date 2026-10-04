@@ -342,6 +342,9 @@ same rule. Both use Perl, which comes with Linux and macOS.
 tests/run.sh
 ```
 
+It shows each test file's results as it goes, then the totals for all of
+them, naming any file with failures.
+
 Tests live in [tests/](tests/), with one folder per script:
 
 | Folder | Tests |

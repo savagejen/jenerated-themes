@@ -642,7 +642,8 @@ test_repo_in_a_folder_with_spaces() {
 # --- Tests: color formats --------------------------------------------------
 
 # render_colors placeholders... -> generates Sunset with a Slack template of
-# just those placeholders, separated by |, and sets RENDERED.
+# just those placeholders, separated by |, and sets RENDERED (empty if
+# generating stopped, which some tests expect).
 render_colors() {
   local template="" key
   for key in "$@"; do
@@ -650,7 +651,8 @@ render_colors() {
   done
   printf '%s\n' "$template" >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
   run_jenerate sunset
-  RENDERED="$(cat "$(slack_theme sunset)")"
+  RENDERED=""
+  if [ -f "$(slack_theme sunset)" ]; then RENDERED="$(cat "$(slack_theme sunset)")"; fi
 }
 
 # GIVEN a template using {{accent_rgb}}
