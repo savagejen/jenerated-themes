@@ -52,6 +52,11 @@ What you need:
   `(template, output)` pair. For VS Code it also rebuilds
   `app-themes/vs-code-theme/package.json` from `package.json.tmpl`, listing
   every generated theme.
+- **[setup.sh](setup.sh)** walks people through installing a theme, and
+  **[setup.py](setup.py)** is its Python version: the same menus, questions,
+  options and messages, function for function. The README only names
+  `./setup.sh`. Keep the two in step: a change to one goes in the other, and
+  the setup tests run against both.
 
 ### Template placeholders
 
@@ -198,7 +203,10 @@ takes.
    only runs on one). Add it to `setup.sh` too: an `add_app` line (its id, its
    name in the menu, its category, and optionally the apps it covers and
    other search words), an `install_<app>` function, and a line in the
-   `case` in `install_app`.
+   `case` in `install_app`. Then add the same to `setup.py`: an `add_app`
+   line in `add_apps`, an `install_<app>` function, a line in `INSTALLERS`,
+   and the app's entry in `APP_FINDERS` (or `MANUAL_APPS` and
+   `ONE_PALETTE_APPS`, as below).
 
    If the theme can't be installed from `setup.sh` (you install it in the
    app yourself, like the browsers and Slack), add the app's id to
@@ -350,7 +358,7 @@ Tests live in [tests/](tests/), with one folder per script:
 | Folder | Tests |
 |--------|-------|
 | `tests/jenerate/` | `jenerate.py` and the generated files |
-| `tests/setup/` | `setup.sh`, with a temporary home folder |
+| `tests/setup/` | `setup.sh`, with a temporary home folder; `test_setup_py.sh` runs the same tests against `setup.py` |
 | `tests/palette-creator/` | the Palette Creator's `serve.py` |
 | `tests/screenshots/` | the screenshot script, and its updates to `palettes/README.md` |
 | `tests/hooks/` | the git hooks in `.githooks/` |

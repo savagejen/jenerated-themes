@@ -10,6 +10,17 @@
 
 source "$(dirname "$0")/../lib.sh"
 
+# The script to test: setup.sh, or setup.py (its Python version, which
+# test_setup_py.sh tests with these same tests). SETUP_RUNNER is what runs it:
+# bash, or the Python found here, by its full path, so the tests that hide
+# Python from setup (fake_no_python, a PATH with only a few commands) don't
+# hide it from the test itself.
+SETUP_SCRIPT="${SETUP_SCRIPT:-setup.sh}"
+case "$SETUP_SCRIPT" in
+  *.py) SETUP_RUNNER="$(command -v "$(find_python)")" ;;
+  *) SETUP_RUNNER="$(command -v bash)" ;;
+esac
+
 # Every clipboard tool writes to a file, so tests never touch the real one.
 after_sandbox() {
   for tool in pbcopy wl-copy xclip xsel; do
@@ -40,7 +51,7 @@ fake_no_python() {
 # run_setup "1\nanswers" [options...] -> runs setup.sh with the options, feeding
 # it the answers (use \n between them), and sets OUTPUT and STATUS. It runs
 # from $RUN_FROM (default $SANDBOX), and runs $SETUP (default the sandbox
-# repository's setup.sh).
+# repository's $SETUP_SCRIPT).
 # Settings that point apps at other folders (ZDOTDIR, RSTUDIO_CONFIG_HOME,
 # SPYDER_CONFDIR, VEILAMP_DATA_DIR) are cleared, so the tests never touch your
 # real ones; a test that needs one set uses TEST_ZDOTDIR,
@@ -53,8 +64,17 @@ run_setup() {
     HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= XDG_DATA_HOME= XDG_CACHE_HOME= XDG_CONFIG_HOME= \
     ZDOTDIR="${TEST_ZDOTDIR:-}" RSTUDIO_CONFIG_HOME="${TEST_RSTUDIO_CONFIG_HOME:-}" \
     SPYDER_CONFDIR="${TEST_SPYDER_CONFDIR:-}" VEILAMP_DATA_DIR="${TEST_VEILAMP_DATA_DIR:-}" \
-      bash "${SETUP:-$SANDBOX/repo/setup.sh}" "$@" 2>&1)"
+      "$SETUP_RUNNER" "${SETUP:-$SANDBOX/repo/$SETUP_SCRIPT}" "$@" 2>&1)"
   STATUS=$?
+}
+
+# minbin_runner -> what runs the script with only $SANDBOX/minbin on PATH:
+# minbin's bash for setup.sh, or the full path of Python for setup.py.
+minbin_runner() {
+  case "$SETUP_SCRIPT" in
+    *.py) printf '%s' "$SETUP_RUNNER" ;;
+    *) printf '%s' "$SANDBOX/minbin/bash" ;;
+  esac
 }
 
 # sandbox_jenerate args... -> runs the sandbox repository's jenerate.py.
@@ -1079,7 +1099,7 @@ test_repo_in_a_folder_with_spaces() {
   mkdir -p "$SANDBOX/My Projects" "$SANDBOX/Notes/.obsidian"
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
-  SETUP="$repo/setup.sh"
+  SETUP="$repo/$SETUP_SCRIPT"
   run_setup "1\ntilix\n1\n2\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/app-themes/tilix-theme/sunset.json"
@@ -3054,7 +3074,7 @@ test_update_screenshots_needs_node() {
   done
   cp "$SANDBOX/repo/palettes/Screenshots/Dark/blue-purple.png" "$SANDBOX/before.png"
   OUTPUT="$(cd "$SANDBOX" && HOME="$SANDBOX/home" PATH="$SANDBOX/minbin" XDG_CACHE_HOME= \
-    "$SANDBOX/minbin/bash" "$SANDBOX/repo/setup.sh" --update-screenshots 2>&1)"
+    "$(minbin_runner)" "$SANDBOX/repo/$SETUP_SCRIPT" --update-screenshots 2>&1)"
   STATUS=$?
   assert_status 1
   assert_contains "--update-screenshots needs Node.js and npm (for Playwright)"
@@ -4181,7 +4201,7 @@ test_slack_without_a_clipboard_tool_still_prints_the_string() {
   fake_no_python
   OUTPUT="$(printf '1\nslack\n1\n1\n' |
     HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$SANDBOX/minbin" WAYLAND_DISPLAY= \
-      "$SANDBOX/minbin/bash" "$SANDBOX/repo/setup.sh" 2>&1)"
+      "$(minbin_runner)" "$SANDBOX/repo/$SETUP_SCRIPT" 2>&1)"
   STATUS=$?
   assert_status 0
   assert_contains "$(tr -d '\n' <"$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt")"
