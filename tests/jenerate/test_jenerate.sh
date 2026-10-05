@@ -85,8 +85,7 @@ rizin_theme() { printf '%s' "$SANDBOX/repo/app-themes/rizin-theme/jenerated-$1";
 gemini_theme() { printf '%s' "$SANDBOX/repo/app-themes/gemini-theme/jenerated-$1.json"; }
 pwsh_colors() { printf '%s' "$SANDBOX/repo/app-themes/pwsh-theme/jenerated-$1.ps1"; }
 quassel_qss() { printf '%s' "$SANDBOX/repo/app-themes/quassel-theme/jenerated-$1.qss"; }
-# Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
-# veilamp_theme() { printf '%s' "$SANDBOX/repo/app-themes/veilamp-theme/jenerated-$1.json"; }
+veilamp_skin() { printf '%s' "$SANDBOX/repo/app-themes/veilamp-theme/$1/skin.json"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -385,8 +384,7 @@ test_generates_every_app_theme() {
   assert_exists "$(gemini_theme sunset)"
   assert_exists "$(pwsh_colors sunset)"
   assert_exists "$(quassel_qss sunset)"
-  # Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
-  # assert_exists "$(veilamp_theme sunset)"
+  assert_exists "$(veilamp_skin sunset)"
 }
 
 # GIVEN the Sunset palette
@@ -417,7 +415,7 @@ test_fills_in_every_placeholder() {
     "$(libreoffice_theme sunset)/description.txt" "$(libreoffice_theme sunset)/META-INF/manifest.xml" \
     "$(wireshark_rules sunset)" "$(ghidra_theme sunset)" "$(caido_css sunset)" \
     "$(qtct_scheme sunset)" "$(r2_theme sunset)" "$(rizin_theme sunset)" "$(gemini_theme sunset)" \
-    "$(pwsh_colors sunset)" "$(quassel_qss sunset)"; do # Veilamp is switched off; add "$(veilamp_theme sunset)" back then.
+    "$(pwsh_colors sunset)" "$(quassel_qss sunset)" "$(veilamp_skin sunset)"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -550,8 +548,7 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/qtct-theme/jenerated-blue-purple.conf \
     app-themes/radare2-theme/jenerated-blue-purple app-themes/rizin-theme/jenerated-blue-purple \
     app-themes/gemini-theme/jenerated-blue-purple.json app-themes/pwsh-theme/jenerated-blue-purple.ps1 \
-    app-themes/quassel-theme/jenerated-blue-purple.qss; do
-    # (Veilamp is switched off; add app-themes/veilamp-theme/jenerated-blue-purple.json back then.)
+    app-themes/quassel-theme/jenerated-blue-purple.qss app-themes/veilamp-theme/blue-purple/skin.json; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -3135,24 +3132,23 @@ test_wireshark_rules_keep_the_default_filters() {
   assert_file_contains "$(wireshark_rules sunset)" "@HTTP@http || tcp.port == 80 || http2 || http3@"
 }
 
-# Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
-# # --- Tests: Veilamp -----------------------------------------------------------
-#
-# # GIVEN the Sunset palette
-# # WHEN generating its Veilamp theme
-# # THEN it's valid JSON with the name, and string vars, which Veilamp needs to
-# #      import it; its main highlight color is Sunset's accent and its text is
-# #      Sunset's text
-# test_veilamp_theme_follows_the_palette() {
-#   run_jenerate sunset
-#   OUTPUT="$("$PYTHON" -c '
-# import json, sys
-# t = json.load(open(sys.argv[1]))
-# v = t["vars"]
-# print(t["name"], v["--cyan"], v["--text"], all(isinstance(x, str) for x in v.values()))
-# ' "$(veilamp_theme sunset)")"
-#   assert_contains "Jenerated Sunset $(color accent) $(color text) True"
-# }
+# --- Tests: Veilamp -----------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating its Veilamp skin
+# THEN it's valid JSON with the name, and string vars, which Veilamp needs to
+#      load it; its main highlight color is Sunset's accent and its text is
+#      Sunset's text
+test_veilamp_skin_follows_the_palette() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import json, sys
+t = json.load(open(sys.argv[1]))
+v = t["vars"]
+print(t["name"], v["--cyan"], v["--text"], all(isinstance(x, str) for x in v.values()))
+' "$(veilamp_skin sunset)")"
+  assert_contains "Jenerated Sunset $(color accent) $(color text) True"
+}
 
 # --- Tests: PowerShell -------------------------------------------------------
 

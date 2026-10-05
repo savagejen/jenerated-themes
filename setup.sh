@@ -404,7 +404,7 @@ add_app() {
 
 # Apps setup.sh can't install a theme into: it makes the theme and explains
 # what to do in the app. ALL THE APPS leaves them out.
-MANUAL_APPS=" firefox vivaldi chromium slack mattermost jellyfin caido veilamp "
+MANUAL_APPS=" firefox vivaldi chromium slack mattermost jellyfin caido "
 # Apps that use one palette at a time: installing one switches the app to it.
 # ALL THE PALETTES isn't offered for them (or for the manual apps). Every
 # other app keeps each palette's theme side by side, to choose in the app.
@@ -516,6 +516,7 @@ app_present() {
     rizin) found="cmd:rizin" ;;
     gemini) found="cmd:gemini" ;;
     pwsh) found="cmd:pwsh" ;;
+    veilamp) found="cmd:veilamp mac:veilamp" ;;
     quassel) found="cmd:quasselclient cmd:quassel flatpak:org.quassel_irc.QuasselClient mac:Quassel_Client mac:Quassel" ;;
     qterminal) found="cmd:qterminal" ;;
     wireshark) found="cmd:wireshark flatpak:org.wireshark.Wireshark mac:Wireshark" ;;
@@ -641,8 +642,7 @@ fi
 add_app jellyfin "Jellyfin (media server)" entertainment "" "media server movies tv streaming plex emby"
 add_app mpv "mpv (media player)" entertainment "" "video music"
 add_app obs "OBS Studio (streaming and recording)" entertainment "" "obs streaming recording screen capture twitch youtube"
-# Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
-# add_app veilamp "Veilamp (music player)" entertainment "" "music audio player winamp veilid"
+add_app veilamp "Veilamp (music player)" entertainment "" "music audio player winamp veilid"
 add_app krita "Krita (painting)" art "" "paint painting drawing illustration art"
 add_app caido "Caido (web security testing)" hacking "" "proxy burp pentest pentesting web security http intercept"
 add_app ghidra "Ghidra (reverse engineering)" hacking "" "reverse engineering disassembler decompiler binary nsa"
@@ -2954,23 +2954,41 @@ install_r2_theme() {
   say "After changing the palette, run ./jenerate.py $SLUG and start $tool again."
 }
 
-# Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
-# # Veilamp keeps imported palettes in its own storage, so the theme file is
-# # imported from inside the app.
-# install_veilamp() {
-#   local file="$ROOT/app-themes/veilamp-theme/jenerated-$SLUG.json"
-#
-#   step "Your Veilamp theme"
-#   say "It's in $file"
-#
-#   step "Done! To turn the theme on (Veilamp imports themes from inside the app):"
-#   say "1. In Veilamp, open the Skins tab (\"Skins\" in the top bar)."
-#   say "2. Under Palette, choose Import, and pick the file above."
-#   say "3. Choose \"Jenerated $NAME\" as the palette, with the Modern, Circular or"
-#   say "   Sci-fi HUD layout. (Winamp Classic keeps its own colors.)"
-#   say "After changing the palette, run ./jenerate.py $SLUG and import it again;"
-#   say "it replaces the one you imported before."
-# }
+# Veilamp's skins folder: <data>/skins, where <data> is VEILAMP_DATA_DIR if
+# set, or else Veilamp's data folder. Veilamp lists every folder there with a
+# skin.json in it each time it starts, as it does the skin packages imported
+# from its settings.
+veilamp_skins_dir() {
+  if [ -n "${VEILAMP_DATA_DIR:-}" ]; then
+    printf '%s' "$VEILAMP_DATA_DIR/skins"
+  elif [ "$OS" = "Darwin" ]; then
+    printf '%s' "$HOME/Library/Application Support/com.veilamp.app/skins"
+  else
+    printf '%s' "${XDG_DATA_HOME:-$HOME/.local/share}/com.veilamp.app/skins"
+  fi
+}
+
+# The skin goes in as jenerated-<slug>, the folder Veilamp itself would make
+# when importing it, so importing it from Veilamp later replaces it rather
+# than adding a second copy.
+install_veilamp() {
+  local skins
+  skins="$(veilamp_skins_dir)"
+
+  plan_link "$skins/jenerated-$SLUG" "$ROOT/app-themes/veilamp-theme/$SLUG"
+  run_install_plan "the Veilamp skin"
+
+  step "Done! To turn the skin on:"
+  say "1. Restart Veilamp if it's open; it looks for skins when it starts."
+  say "2. Open the Skins tab (\"Skins\" in the top bar), and choose"
+  say "   \"Jenerated $NAME\" as the palette, with the Modern, Circular or Sci-fi"
+  say "   HUD layout. (Winamp Classic keeps its own colors.)"
+  say "After changing the palette, run ./jenerate.py $SLUG and restart Veilamp."
+  if [ "$INSTALL_MODE" = link ]; then
+    say "Veilamp can't remove a linked skin itself (its remove button shows an"
+    say "error); to remove it, delete $(shell_quote "$skins/jenerated-$SLUG")"
+  fi
+}
 
 # Caido keeps its custom CSS in its own settings, so it's pasted in.
 install_caido() {
@@ -3119,8 +3137,7 @@ install_app() {
     wireshark) install_wireshark ;;
     ghidra) install_ghidra ;;
     caido) install_caido ;;
-    # Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
-    # veilamp) install_veilamp ;;
+    veilamp) install_veilamp ;;
     qtct) install_qtct ;;
     radare2) install_r2_theme radare2 ;;
     rizin) install_r2_theme rizin ;;

@@ -1,17 +1,14 @@
 # Jenerated Themes for Veilamp
 
-> **Switched off for now.** Importing any palette (even Veilamp's own
-> template) sends Veilamp into a loop that restarts the app over and over
-> until it crashes
+Skins for [Veilamp](https://veilamp.com/), the Winamp-inspired music player
+(0.3.4 or later, which added skin packages). [jenerate.py](../../jenerate.py)
+writes one skin for each palette you generate, as a `skin.json` in a folder
+named after the palette, for example `blue-purple/skin.json`. Each shows up in
+Veilamp as "Jenerated" plus the palette's name.
 
-Palettes for [Veilamp](https://veilamp.com/), the Winamp-inspired music
-player. [jenerate.py](../../jenerate.py) writes one `jenerated-<slug>.json`
-theme file for each palette you generate, for example
-`jenerated-blue-purple.json`, named "Jenerated" plus the palette's name.
-
-Veilamp's skins have two parts: a layout and a palette. These themes are
+Veilamp's skins have two parts: a layout and a palette. These skins are
 palettes, so they recolor the Modern, Circular and Sci-fi HUD layouts; the
-Winamp Classic layout keeps its own colors. The theme sets:
+Winamp Classic layout keeps its own colors. The skin sets:
 
 - **Its three accent colors** from the palette's accent (Veilamp's main
   highlight color), soft accent and light accent, with dimmer shades mixed
@@ -29,23 +26,41 @@ The files are generated from `theme.json.tmpl`. To change colors, see
 
 ## Install
 
-Veilamp keeps imported palettes in its own settings, so the theme is imported
-from inside the app. `./setup.sh` from the repository root (choose Veilamp)
-shows where the file is. Then, in Veilamp:
+The easiest way is `./setup.sh` from the repository root: choose Veilamp. It
+links the skin's folder into Veilamp's `skins` folder, where Veilamp finds it
+the next time it starts.
 
-1. Open the **Skins** tab ("Skins" in the top bar).
-2. Under **Palette**, choose **Import**, and pick
-   `app-themes/veilamp-theme/jenerated-blue-purple.json` (or your palette's
-   file).
-3. Choose **Jenerated Blue Purple** as the palette, with the Modern,
-   Circular or Sci-fi HUD layout.
+To install by hand, either:
 
-After changing the palette, run `./jenerate.py <slug>` and import it again; it
-replaces the one you imported before.
+- **Link it into Veilamp's skins folder**, so later changes to the palette
+  show up after you restart Veilamp. The folder is
+  `~/.local/share/com.veilamp.app/skins` on Linux and
+  `~/Library/Application Support/com.veilamp.app/skins` on macOS (or `skins`
+  in `VEILAMP_DATA_DIR`, if you set it). Run this from the folder where you
+  ran `git clone`:
 
-## Theme file format
+  ```bash
+  mkdir -p ~/.local/share/com.veilamp.app/skins
+  ln -s "$PWD/jenerated-themes/app-themes/veilamp-theme/blue-purple" ~/.local/share/com.veilamp.app/skins/jenerated-blue-purple
+  ```
 
-A Veilamp theme is a JSON file with a `name`, an optional `author`, and a
-`vars` map of the CSS custom properties it changes (`--cyan`, `--bg-1`,
-`--text` and so on). Veilamp ignores any it doesn't know, and uses its
-default for any left out.
+  Veilamp can't remove a linked skin itself (its remove button shows an
+  error), so to remove it, delete the link. Or:
+- **Import it in Veilamp:** open the **Skins** tab ("Skins" in the top bar),
+  and under **Palette**, choose **Import theme...** and pick
+  `jenerated-themes/app-themes/veilamp-theme/blue-purple/skin.json`.
+  Importing copies the skin, so import it again after changing the palette;
+  it replaces the one you imported before.
+
+Then restart Veilamp if it's open, open the **Skins** tab, and choose
+**Jenerated Blue Purple** as the palette, with the Modern, Circular or Sci-fi
+HUD layout.
+
+## Skin format
+
+A Veilamp skin is a JSON file with a `name`, an optional `author` and
+`description`, and a `vars` map of the CSS custom properties it changes
+(`--cyan`, `--bg-1`, `--text` and so on). Veilamp ignores any it doesn't know,
+and uses its default for any left out. A folder with a `skin.json` in it is a
+skin package, which can also hold fonts and images; these skins don't need
+any.

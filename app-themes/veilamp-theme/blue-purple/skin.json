@@ -1,6 +1,7 @@
 {
   "name": "Jenerated Blue Purple",
   "author": "Jenerated Themes",
+  "description": "The Blue Purple palette, from Jenerated Themes.",
   "vars": {
     "--bg-0": "#0a0b13",
     "--bg-1": "#12131c",

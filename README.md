@@ -69,10 +69,7 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 - [Jellyfin (media server)](app-themes/jellyfin-theme/)
 - [mpv (media player)](app-themes/mpv-theme/)
 - [OBS Studio (streaming and recording)](app-themes/obs-theme/)
-<!-- Veilamp is switched off until it fixes the crash when importing a palette
-     (see app-themes/veilamp-theme/README.md).
 - [Veilamp (music player)](app-themes/veilamp-theme/)
--->
 
 ### Art and design
 

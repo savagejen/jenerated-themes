@@ -42,16 +42,17 @@ fake_no_python() {
 # from $RUN_FROM (default $SANDBOX), and runs $SETUP (default the sandbox
 # repository's setup.sh).
 # Settings that point apps at other folders (ZDOTDIR, RSTUDIO_CONFIG_HOME,
-# SPYDER_CONFDIR) are cleared, so the tests never touch your real ones; a test
-# that needs one set uses TEST_ZDOTDIR, TEST_RSTUDIO_CONFIG_HOME or
-# TEST_SPYDER_CONFDIR instead.
+# SPYDER_CONFDIR, VEILAMP_DATA_DIR) are cleared, so the tests never touch your
+# real ones; a test that needs one set uses TEST_ZDOTDIR,
+# TEST_RSTUDIO_CONFIG_HOME, TEST_SPYDER_CONFDIR or TEST_VEILAMP_DATA_DIR
+# instead.
 run_setup() {
   local answers="$1"
   shift
   OUTPUT="$(cd "${RUN_FROM:-$SANDBOX}" && printf '%b' "$answers" |
     HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= XDG_DATA_HOME= XDG_CACHE_HOME= XDG_CONFIG_HOME= \
     ZDOTDIR="${TEST_ZDOTDIR:-}" RSTUDIO_CONFIG_HOME="${TEST_RSTUDIO_CONFIG_HOME:-}" \
-    SPYDER_CONFDIR="${TEST_SPYDER_CONFDIR:-}" \
+    SPYDER_CONFDIR="${TEST_SPYDER_CONFDIR:-}" VEILAMP_DATA_DIR="${TEST_VEILAMP_DATA_DIR:-}" \
       bash "${SETUP:-$SANDBOX/repo/setup.sh}" "$@" 2>&1)"
   STATUS=$?
 }
@@ -85,7 +86,7 @@ test_app_menu_on_linux_groups_the_apps() {
   3) Editors: code, text and notes (13 apps)
   4) Terminals and command-line tools (8 apps)
   5) Linux desktops (4 apps)
-  6) Entertainment (3 apps)
+  6) Entertainment (4 apps)
   7) Art and design (1 app)
   8) Hacking and testing tools (6 apps)
   9) ALL THE APPS
@@ -107,7 +108,7 @@ test_app_menu_on_macos_leaves_out_linux_apps() {
   2) Communication (4 apps)
   3) Editors: code, text and notes (13 apps)
   4) Terminals and command-line tools (5 apps)
-  5) Entertainment (3 apps)
+  5) Entertainment (4 apps)
   6) Art and design (1 app)
   7) Hacking and testing tools (6 apps)
   8) ALL THE APPS
@@ -172,6 +173,7 @@ test_each_category_lists_its_apps() {
   1) Jellyfin (media server)
   2) mpv (media player)
   3) OBS Studio (streaming and recording)
+  4) Veilamp (music player)
   0) Back"
   assert_contains "Art and design:
   1) Krita (painting)
@@ -3439,32 +3441,61 @@ test_qtct_is_linux_only() {
   assert_not_contains "Qt apps outside KDE Plasma"
 }
 
-# Veilamp is switched off until it fixes the crash when importing a palette (see app-themes/veilamp-theme/README.md); uncomment to switch it back on.
-# # --- Tests: Veilamp -----------------------------------------------------------
-#
-# # GIVEN Linux
-# # WHEN choosing Veilamp and Blue Purple
-# # THEN it shows where the theme file is, and explains importing it in the
-# #      Skins tab, with a layout other than Winamp Classic
-# test_veilamp_explains_importing_the_theme() {
-#   fake_os Linux
-#   run_setup "1\nveilamp\n1\n1\n"
-#   assert_status 0
-#   assert_contains "It's in $SANDBOX/repo/app-themes/veilamp-theme/jenerated-blue-purple.json"
-#   assert_contains "Under Palette, choose Import"
-#   assert_contains "Winamp Classic keeps its own colors"
-# }
-#
-# # GIVEN ALL THE APPS
-# # WHEN it lists what it leaves out
-# # THEN Veilamp is among the manual installs
-# test_veilamp_is_a_manual_install() {
-#   fake_os Linux
-#   export SETUP_FOUND_APPS="tilix"
-#   run_setup "1\n9\n1\nn\n1\nslack\n1\n1\n"
-#   assert_contains "  - Veilamp (music player)"
-#   assert_not_contains "ALL THE APPS: Veilamp"
-# }
+# --- Tests: Veilamp -----------------------------------------------------------
+
+VEILAMP_SKIN_DIR=".local/share/com.veilamp.app/skins/jenerated-blue-purple"
+
+# GIVEN Linux
+# WHEN choosing Veilamp and Blue Purple
+# THEN Blue Purple's skin folder is linked into Veilamp's skins folder as
+#      jenerated-blue-purple (the folder Veilamp's own import would make), and
+#      it says to restart Veilamp and choose the palette, and how to remove a
+#      linked skin
+test_veilamp_links_the_skin_package() {
+  fake_os Linux
+  run_setup "1\nveilamp\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/$VEILAMP_SKIN_DIR" "$SANDBOX/repo/app-themes/veilamp-theme/blue-purple"
+  assert_exists "$SANDBOX/home/$VEILAMP_SKIN_DIR/skin.json"
+  assert_contains "Restart Veilamp"
+  assert_contains '"Jenerated Blue Purple" as the palette'
+  assert_contains "Winamp Classic keeps its own colors"
+  assert_contains "Veilamp can't remove a linked skin itself"
+}
+
+# GIVEN a Mac
+# WHEN choosing Veilamp and Blue Purple
+# THEN the skin goes in Veilamp's folder in Application Support
+test_veilamp_on_macos_uses_application_support() {
+  fake_os Darwin
+  run_setup "1\nveilamp\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/Application Support/com.veilamp.app/skins/jenerated-blue-purple" \
+    "$SANDBOX/repo/app-themes/veilamp-theme/blue-purple"
+}
+
+# GIVEN VEILAMP_DATA_DIR is set, pointing Veilamp at another data folder
+# WHEN choosing Veilamp and Blue Purple
+# THEN the skin goes in that folder's skins folder instead
+test_veilamp_follows_its_data_dir_setting() {
+  fake_os Linux
+  TEST_VEILAMP_DATA_DIR="$SANDBOX/home/veilamp-data" run_setup "1\nveilamp\n1\n1\ny\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/veilamp-data/skins/jenerated-blue-purple" \
+    "$SANDBOX/repo/app-themes/veilamp-theme/blue-purple"
+  assert_missing "$SANDBOX/home/.local/share/com.veilamp.app"
+}
+
+# GIVEN Veilamp found
+# WHEN installing ALL THE APPS
+# THEN Veilamp is installed with the rest, not left out as a manual install
+test_veilamp_is_installed_by_all_the_apps() {
+  fake_os Linux
+  export SETUP_FOUND_APPS="veilamp tilix"
+  run_setup "1\n9\n1\ny\n"
+  assert_contains "ALL THE APPS: Veilamp (music player)"
+  assert_link "$SANDBOX/home/$VEILAMP_SKIN_DIR" "$SANDBOX/repo/app-themes/veilamp-theme/blue-purple"
+}
 
 # --- Tests: Caido -------------------------------------------------------------
 
