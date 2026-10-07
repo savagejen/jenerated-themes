@@ -2,14 +2,16 @@
 # Refuses a commit while:
 # - any palette in palettes/ (filed in palettes/Dark or palettes/Light, or not
 #   filed yet) uses a color listed in palettes/avoid-these.txt: exact colors
-#   too iconic to publish;
+#   too iconic to publish
 # - the name of any file being committed, or any line of a text file being
 #   committed, has a character outside ASCII that isn't a letter: a
 #   typographic dash, ellipsis, arrow, curly quote, emoji, invisible space
 #   and so on (see "Symbols stay ASCII" in CONTRIBUTING.md). Letters in any
-#   language, including the Scandinavian ones, are fine. The contents of
-#   binary files, like the screenshots, are skipped.
-# Both check what's staged, the version the commit will hold, and both are
+#   language are fine. The contents of binary files are skipped.
+# - a file being added has an underscore in its name or its folders' names:
+#   names separate words with dashes (see "File names" in CONTRIBUTING.md),
+#   except in jenerate_themes/, where Python needs underscores.
+# Each checks what's staged, the version the commit will hold, and all are
 # checked, so one commit attempt reports everything.
 #
 # Turn it on once per clone:  git config core.hooksPath .githooks
@@ -108,6 +110,26 @@ if [ -n "$found" ]; then
   printf 'Letters in any language are fine, but write symbols as plain text: "..."\n' >&2
   printf 'for an ellipsis, "-" for a dash, "->" for an arrow, a word instead of an\n' >&2
   printf 'icon. See "Symbols stay ASCII" in CONTRIBUTING.md.\n' >&2
+  status=1
+fi
+
+# --- Dashes in file names ---------------------------------------------------
+
+# Every file being added (a renamed file counts as added under its new
+# name), by its whole path, so a new folder's name is checked too. Python
+# needs underscores in the names of the package and the modules it loads, so
+# jenerate_themes/ is left out.
+found="$(
+  git -c core.quotepath=off diff --cached --name-only --no-renames --diff-filter=A 2>/dev/null |
+    grep '_' | grep -v '^jenerate_themes/' | sed 's/^/  /'
+)"
+
+if [ -n "$found" ]; then
+  [ "$status" -eq 0 ] || printf '\n' >&2
+  printf 'These file names have underscores:\n\n%s\n\n' "$found" >&2
+  printf 'Separate the words in file and folder names with dashes instead, like\n' >&2
+  printf 'prep-commit.py. Only jenerate_themes/ uses underscores, since Python\n' >&2
+  printf 'needs them there. See "File names" in CONTRIBUTING.md.\n' >&2
   status=1
 fi
 

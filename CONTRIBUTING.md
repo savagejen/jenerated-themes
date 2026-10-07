@@ -25,7 +25,9 @@ using the themes, see the [README](README.md).
    [palettes/avoid-these.txt](palettes/avoid-these.txt) (see
    [Colors to avoid](#colors-to-avoid)), or while a file being committed
    has a symbol outside plain ASCII in its name or, for a text file, its
-   contents (see [Symbols stay ASCII](#symbols-stay-ascii)). It checks what's
+   contents (see [Symbols stay ASCII](#symbols-stay-ascii)), or while a file
+   being added has an underscore in its name (see
+   [File names](#file-names)). It checks what's
    staged, the version the commit will hold. The tests check the same
    things, so nothing slips through on a clone without it.
 
@@ -48,15 +50,20 @@ What you need:
   placeholders where the colors go.
 - **[jenerate.py](jenerate.py)** fills in every template for each palette
   you name and writes the results next to the templates, named after the
-  palette's slug. `TARGETS` at the top of the file lists each
-  `(template, output)` pair. For VS Code it also rebuilds
+  palette's slug. For VS Code it also rebuilds
   `app-themes/vs-code-theme/package.json` from `package.json.tmpl`, listing
-  every generated theme.
-- **[setup.sh](setup.sh)** walks people through installing a theme, and
-  **[setup.py](setup.py)** is its Python version: the same menus, questions,
-  options and messages, function for function. The README only names
-  `./setup.sh`. Keep the two in step: a change to one goes in the other, and
-  the setup tests run against both.
+  every generated theme. Its code is in the
+  [jenerate_themes](jenerate_themes/) package: palettes in `palettes.py`,
+  color forms and contrast in `colors.py`, templates in `render.py`, and the
+  `(template, output)` pairs in `TARGETS`, in `targets.py`.
+- **[jenerate](jenerate)** is the app: run with no command, it walks people
+  through installing a theme (pick an app, pick a palette); `./jenerate
+  --help` lists its commands. Its code is in `jenerate_themes` too: the
+  menus in `menus.py`, the command line in `cli.py`, and each app in its own
+  module in [jenerate_themes/apps](jenerate_themes/apps/).
+- **[setup.sh](setup.sh)** is what the README tells people to run. With
+  Python 3.11 or later it hands over to `jenerate`; without it, the rest of
+  `setup.sh` does the same in bash.
 
 ### Template placeholders
 
@@ -124,7 +131,7 @@ Don't edit generated files by hand; change the palette or template and run
 ## Adding a palette
 
 Design it in the [Palette Creator](palette-creator/)
-(`./palette-creator/serve.py`), or copy an existing palette to
+(`./jenerate design`), or copy an existing palette to
 `palettes/Dark/<slug>-palette.toml` or `palettes/Light/<slug>-palette.toml`
 and edit it. (A palette saved straight in `palettes/`, or in the wrong one of
 the two, still works, and [updating the screenshots](#screenshots) files it.) Every color the templates use
@@ -190,7 +197,8 @@ takes.
    with a template (`<something>.tmpl`) that uses the palette's color names.
    Start the template with a comment saying it's generated and not to edit
    it, where the format allows comments.
-2. Add a `(template, output)` pair to `TARGETS` in `jenerate.py`. Use
+2. Add a `(template, output)` pair to `TARGETS` in
+   `jenerate_themes/targets.py`. Use
    `{slug}` in the output path so each palette gets its own file. An app
    that needs several files per theme can use `{slug}` as a folder, like
    Obsidian's `app-themes/obsidian-theme/{slug}/theme.css`.
@@ -203,10 +211,10 @@ takes.
    only runs on one). Add it to `setup.sh` too: an `add_app` line (its id, its
    name in the menu, its category, and optionally the apps it covers and
    other search words), an `install_<app>` function, and a line in the
-   `case` in `install_app`. Then add the same to `setup.py`: an `add_app`
-   line in `add_apps`, an `install_<app>` function, a line in `INSTALLERS`,
-   and the app's entry in `APP_FINDERS` (or `MANUAL_APPS` and
-   `ONE_PALETTE_APPS`, as below).
+   `case` in `install_app`. Then add it to the `jenerate` app: a module in
+   `jenerate_themes/apps/` (like `tilix.py`) with an `install(theme)`
+   function and an `APP` describing it, and its name in `ORDER` in
+   `jenerate_themes/apps/__init__.py`, under its category.
 
    If the theme can't be installed from `setup.sh` (you install it in the
    app yourself, like the browsers and Slack), add the app's id to
@@ -219,8 +227,8 @@ takes.
    (the tests set `SETUP_FOUND_APPS` to decide which apps count as found). 
    In either ALL option, `ask_yes` answers yes and `choose` picks the first 
    choice, so keep the first choice the safe, usual one, and don't make the 
-   install wait for anything else (check `AUTO_ANSWER` and stop with `die` 
-   instead, saying how to finish, like Obsidian's vault path).
+   install wait for anything else (check `state.current.auto` and stop with
+   `stop()` instead, saying how to finish, like Obsidian's vault path).
 
    `setup.sh` groups apps into categories (`CATEGORY_IDS` and
    `CATEGORY_NAMES`), so the menu stays short however many apps there are.
@@ -242,18 +250,20 @@ takes.
      under the theme's name.
    - **words:** other words someone might search for, such as "chat" for
      Slack. They aren't shown.
-6. Add tests: in `tests/jenerate/` for the generated files (that they exist,
-   use the palette's colors, are valid for the app's format, and are removed
-   with the palette), and in `tests/setup/` for the install. Add the new
-   files to the lists in `test_generates_every_app_theme`,
-   `test_fills_in_every_placeholder` and
-   `test_blue_purple_matches_the_committed_files`.
+6. Add tests: copy the test file of an app like yours in `tests/apps/` to
+   `tests/apps/test-<your app's id>.sh`, and change the paths and expected
+   text. Test the generated files (that they use the palette's colors and
+   are valid for the app's format) and the install (where the files go, and
+   what it says). `tests/apps/test-every-app.sh` already tests every app's
+   basics, new ones included: that its theme is made with nothing left
+   unfilled, and that installing it works or stops with a reason.
 7. [Prepare for the commit](#before-you-commit), which generates Blue
    Purple's files for the new app.
 
 If the app installs a packaged file (like Vivaldi's `.zip`), add Blue
-Purple's package to `EXAMPLE_PACKAGES` in `setup.sh`, so it's rebuilt with
-the other defaults.
+Purple's package to `EXAMPLE_PACKAGES` in
+[maintainer-tools/prep-commit.py](maintainer-tools/prep-commit.py), so it's
+rebuilt with the other defaults.
 
 ## Changing a template or Blue Purple
 
@@ -274,7 +284,8 @@ tests check that they match.
    updating them for any template change), rebuilds `package.json` listing
    only Blue Purple, and rebuilds the Blue Purple packages. Your other
    generated themes stay on disk, since git ignores them; it prints the
-   command to list them in VS Code again afterward.
+   command to list them in VS Code again afterward. (It runs
+   [maintainer-tools/prep-commit.py](maintainer-tools/prep-commit.py).)
 
 2. Run the tests:
 
@@ -283,7 +294,8 @@ tests check that they match.
    ```
 
 3. Commit. The pre-commit hook checks the palettes against the colors to
-   avoid, and what you're committing for symbols outside plain ASCII.
+   avoid, what you're committing for symbols outside plain ASCII, and new
+   files' names for underscores.
 
 ## Screenshots
 
@@ -319,14 +331,14 @@ one they don't want. Text you've written in the README is left alone.
 To file the palettes and update the README without taking screenshots:
 
 ```bash
-./palette-creator/screenshots.py --readme-only
+./maintainer-tools/update-screenshots.py --readme-only
 ```
 
 The first run installs Playwright and its browser into
 `~/.cache/jenerated-themes/playwright`, outside the repository, which needs a
 network connection. See
-[palette-creator/screenshots.py](palette-creator/screenshots.py) for the
-details.
+[maintainer-tools/update-screenshots.py](maintainer-tools/update-screenshots.py)
+for the details.
 
 ## Symbols stay ASCII
 
@@ -344,6 +356,20 @@ refuses a commit that adds anything else, naming each file and line, and a
 test in `tests/repo/` checks the whole repository. File names follow the
 same rule. Both use Perl, which comes with Linux and macOS.
 
+## File names
+
+File and folder names separate words with dashes: `prep-commit.py`,
+`test-every-app.sh`, `blue-purple-palette.toml`, `app-themes/`. The one
+exception is the Python package, `jenerate_themes/`, and the files in it:
+Python loads a module by its name, and a name with a dash can't be loaded,
+so they use underscores. Names inside the code (functions, variables, test
+names like `test_quassel_links_the_stylesheet`) use underscores too, since
+neither shell nor Python allows dashes there.
+
+The pre-commit hook refuses a commit that adds a file with an underscore in
+its name or its folders' names, outside `jenerate_themes/`, and a test in
+`tests/repo/` checks the whole repository.
+
 ## Running the tests
 
 ```bash
@@ -351,22 +377,32 @@ tests/run.sh
 ```
 
 It shows each test file's results as it goes, then the totals for all of
-them, naming any file with failures.
+them, naming any file with failures. To run one file's tests, run the file;
+to run only some of them, add part of their names:
 
-Tests live in [tests/](tests/), with one folder per script:
+```bash
+tests/apps/test-quassel.sh
+tests/apps/test-quassel.sh flatpak
+```
+
+Tests live in [tests/](tests/):
 
 | Folder | Tests |
 |--------|-------|
-| `tests/jenerate/` | `jenerate.py` and the generated files |
-| `tests/setup/` | `setup.sh`, with a temporary home folder; `test_setup_py.sh` runs the same tests against `setup.py` |
-| `tests/palette-creator/` | the Palette Creator's `serve.py` |
-| `tests/screenshots/` | the screenshot script, and its updates to `palettes/README.md` |
+| `tests/apps/` | each app, one file per app: making its theme, and installing it; plus `test-every-app.sh`, the basics for every app |
+| `tests/menus/` | the menus: choosing an app and a palette, searching, ALL THE APPS and ALL THE PALETTES |
+| `tests/generate/` | making themes for every app at once: palettes and their mistakes, colors, contrast, light and dark, listing and removing (through `jenerate.py`) |
+| `tests/setup/` | `setup.sh` itself: handing over to `jenerate`, Blue Purple without Python, and its options |
+| `tests/maintainer-tools/` | the scripts in `maintainer-tools/`: prep-commit, and updating the screenshots and `palettes/README.md` |
+| `tests/cli/` | the `jenerate` command's subcommands |
+| `tests/palette-creator/` | the Palette Creator (`jenerate_themes/creator/serve.py`) |
 | `tests/hooks/` | the git hooks in `.githooks/` |
 | `tests/repo/` | the repository as a whole, such as symbols staying plain ASCII |
 
 Each test runs against a temporary copy of the repository, so the tests
 don't touch your generated or installed themes. Tests that need Python 3.11
-or `curl` are skipped without them. Shared helpers are in `tests/lib.sh`.
+or `curl` are skipped without them. Shared helpers are in `tests/lib.sh`,
+and the app tests' own (`install_app`, `generate`) in `tests/apps/apps.sh`.
 
 Tests are shell functions named `test_...`, each with a comment above it in
 the form:

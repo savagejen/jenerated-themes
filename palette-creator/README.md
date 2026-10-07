@@ -9,16 +9,21 @@ it as you edit.
 
 Needs Python 3.11 or later. Run `./setup.sh` from the repository root and
 choose **Design a new palette**; it explains the steps below, then starts
-the Palette Creator. Or start it directly:
+the Palette Creator. Or go straight to it:
 
 ```bash
-./palette-creator/serve.py
+./setup.sh --design
 ```
 
-It opens the page in your browser (use `--no-browser` to just print the
-address, or `--port` to pick a port). Press `Ctrl+C` in the terminal to stop
-it. The page only works while `serve.py` is running, and only from this
-computer.
+It opens the page in your browser. Press `Ctrl+C` in the terminal to stop
+it. The page only works while the Palette Creator is running, and only from
+this computer.
+
+The Palette Creator's code is in
+[jenerate_themes/creator](../jenerate_themes/creator/): `serve.py` and the
+page, `palette-creator.html`. To start it with options (`--no-browser` to
+just print the address, or `--port` to pick a port), run it from the
+repository root as `python3 -m jenerate_themes.creator.serve --no-browser`.
 
 It uses port 8765, or the next free one if another program has it. If the
 Palette Creator is already running there from this folder (left open in
@@ -31,8 +36,8 @@ repository, so the page and the server are the new versions.
 - **Your draft:** the page edits `work-in-progress-palette.toml` in this
   folder, and saves it automatically as you go (whenever the palette is
   valid; if it isn't, the draft is kept as it was until you fix it). It's
-  created from Blue Purple the first time you start `serve.py`, and git
-  ignores it, so your drafts stay yours.
+  created from Blue Purple the first time you start the Palette Creator, and
+  git ignores it, so your drafts stay yours.
 - **Description:** the comment at the top of the palette file: what the
   palette is and where its colors come from. Blank lines separate
   paragraphs. It's wrapped to fit the file when saved, and the file's usual

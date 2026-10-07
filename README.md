@@ -100,7 +100,9 @@ cd jenerated-themes
 ```
 
 The setup script asks which app and which theme you want (dark or light, then which one) 
-and it can also open the palette previews in your browser. 
+and it can also open the palette previews in your browser. It needs Python 3.11 or later
+(`python3 --version` to check); without it, it offers to install the Blue Purple theme
+into the apps where that only takes linking a few files into place.
 
 It is designed to work on Linux or macOS, but some of the themes function on other 
 platforms and users on those platforms can use the `jenerate.py` python script instead. See [Setting up by hand](#setting-up-by-hand) below.
@@ -198,7 +200,7 @@ You can also keep a palette outside this repository and pass its path:
 
 The easiest way is the [Palette Creator](palette-creator/): run
 `./setup.sh` and choose **Design a new palette**, or run
-`./palette-creator/serve.py`. It shows a preview in your browser that
+`./setup.sh --design`. It shows a preview in your browser that
 recolors as you edit. Save the palette (it goes in `palettes/Dark` or
 `palettes/Light`, to match it), then generate its themes with
 `./jenerate.py <slug>`.

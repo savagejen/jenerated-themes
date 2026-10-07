@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs every test file (tests/<script>/test_*.sh), then sums up: how many
+# Runs every test file (tests/<folder>/test-*.sh), then sums up: how many
 # tests passed and failed in all, and which files had failures.
 #
 # Usage: tests/run.sh
@@ -15,7 +15,7 @@ failed_files=()
 log="$(mktemp "${TMPDIR:-/tmp}/jenerated-run.XXXXXX")"
 trap 'rm -f "$log"' EXIT
 
-for file in */test_*.sh; do
+for file in */test-*.sh; do
   [ -f "$file" ] || continue
   printf '\n### %s\n\n' "$file"
   # Shown as it runs, and kept to read the file's "N passed, M failed" line.
