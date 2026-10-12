@@ -21,7 +21,7 @@ Development Host with the themes available immediately.
 ## Install locally
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
-   see [Getting started](../../README.md#getting-started).
+   see [Setting up by hand](../../README.md#setting-up-by-hand).
 
    ```bash
    git clone https://github.com/savagejen/jenerated-themes jenerated-themes

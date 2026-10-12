@@ -13,7 +13,8 @@ install it in any app without running anything.
 
 Each app has its own folder with a template and install instructions. They're
 grouped the same way as in `./setup.sh`, which can also search for an app by
-name. Apps marked (Linux) or (macOS) are only offered on that system.
+name. Apps marked (Linux) or (macOS), and the Linux desktops, are only
+offered on that system.
 
 ### Web browsers
 
@@ -102,14 +103,15 @@ cd jenerated-themes
 The setup script asks which app and which theme you want (dark or light, then which one) 
 and it can also open the palette previews in your browser. It needs Python 3.11 or later
 (`python3 --version` to check); without it, it offers to install the Blue Purple theme
-into the apps where that only takes linking a few files into place.
+into the apps where that only takes linking a few files into place, or
+pasting a theme in.
 
 It is designed to work on Linux or macOS, but some of the themes function on other 
 platforms and users on those platforms can use the `jenerate.py` python script instead. See [Setting up by hand](#setting-up-by-hand) below.
-For most apps, the startup script first shows the commands that install the theme, 
+For most apps, the setup script first shows the commands that install the theme, 
 then offers to run them for you, linking the files (so they follow
 palette changes) or copying them. It can also start the [Palette
-Creator](palette-creator/), for designing a palette of your own:
+Creator](palette-creator/), for designing a palette of your own.
 
 `./setup.sh --help` lists the setup shortcuts, like going straight to installing a
 particular palette into a particular app, or straight to the Palette
@@ -119,7 +121,7 @@ To theme everything at once, choose **ALL THE APPS** in the app menu: it
 installs one palette into every app it finds on your computer that it can
 install into by itself, without asking anything else once you've said yes.
 Apps it doesn't find are left out, and listed. (Apps whose
-themes are installed by hand, like the browsers and Slack, are left out and
+themes are installed by hand, like most browsers and Slack, are left out and
 listed.) Or, for one app that keeps several themes to choose from (VS Code,
 Vim, the terminals and most editors), choose **ALL THE PALETTES** at the dark
 or light question, to install every palette into it.
@@ -178,7 +180,9 @@ VS Code and Firefox mark the theme dark or light, JetBrains themes build on
 the IDE's dark or light theme, GTK3 themes on Adwaita's dark or light
 version, Obsidian and Vim tell the app which it is, Godot uses its own
 contrast setting for dark or light, and Chromium picks matching search
-logos for the new tab page. The other apps just use the palette's colors.
+logos for the new tab page. Several others (among them Element, Mattermost,
+Zen and the GNOME text editors) also mark the theme dark or light or adjust
+a few details to match. The rest just use the palette's colors.
 
 Two text colors matter most for light palettes: `text_bright` is text on the
 accent color (buttons, badges, selected menu items), and `text_strong` is
@@ -199,8 +203,8 @@ You can also keep a palette outside this repository and pass its path:
 ## Adding a palette
 
 The easiest way is the [Palette Creator](palette-creator/): run
-`./setup.sh` and choose **Design a new palette**, or run
-`./setup.sh --design`. It shows a preview in your browser that
+`./setup.sh` and choose **Design a new palette** (`./setup.sh --help` lists
+a shortcut straight to it). It shows a preview in your browser that
 recolors as you edit. Save the palette (it goes in `palettes/Dark` or
 `palettes/Light`, to match it), then generate its themes with
 `./jenerate.py <slug>`.

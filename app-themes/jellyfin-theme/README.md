@@ -9,7 +9,7 @@ apps with their own design, like the ones for TVs, don't.
 [jenerate.py](../../jenerate.py) writes one CSS file for each palette you
 generate, for example `jenerated-blue-purple.css`. Blue Purple is included;
 to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 Jellyfin takes its colors from a set of CSS variables, so the CSS sets those
 to the palette's colors, whichever of Jellyfin's themes is chosen:

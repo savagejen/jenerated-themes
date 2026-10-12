@@ -9,7 +9,7 @@ colors that shells and compilation output use inside Emacs.
 [jenerate.py](../../jenerate.py) writes one theme for each palette you
 generate, for example `jenerated-blue-purple-theme.el`, a standard Emacs
 custom theme named `jenerated-blue-purple`. Blue Purple is included; to add
-other palettes, see [Getting started](../../README.md#getting-started).
+other palettes, see [Setting up by hand](../../README.md#setting-up-by-hand).
 
 The theme also sets faces for built-in packages Emacs loads on demand, such
 as diffs and tab bars; Emacs keeps them until those packages load. It works

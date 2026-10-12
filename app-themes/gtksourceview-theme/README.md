@@ -10,7 +10,7 @@ scheme.
 
 [jenerate.py](../../jenerate.py) writes one folder for each palette you
 generate, for example `blue-purple/`. Blue Purple is included; to add other
-palettes, see [Getting started](../../README.md#getting-started).
+palettes, see [Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## Three versions of one scheme
 

@@ -12,7 +12,7 @@ it alongside the color scheme themes the whole window.
 [jenerate.py](../../jenerate.py) writes one color scheme for each palette
 you generate, for example `jenerated-blue-purple.sublime-color-scheme`.
 Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 The files are generated from `color-scheme.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see

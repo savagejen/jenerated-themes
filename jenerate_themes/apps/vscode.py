@@ -27,7 +27,7 @@ def install(theme):
     dirs = vscode_extension_dirs()
 
     for extensions in dirs:
-        plan_link(extensions / "jenerated-themes", source)
+        plan_link(extensions / "jenerated-themes", source, shared="VS Code")
     run_install_plan("the VS Code extension")
 
     for extensions in dirs:

@@ -176,7 +176,7 @@ test_godot_asks_before_replacing_an_old_link() {
   ln -s "$SANDBOX/old/Jenerated-blue-purple.tet" "$SANDBOX/home/$GODOT_CFG/text_editor_themes/Jenerated-blue-purple.tet"
   install_app godot blue-purple "y\nn\n"
   assert_status 0
-  assert_contains "Replace it with a link to this folder?"
+  assert_contains "Replace it with a link to $SANDBOX/repo?"
   assert_link "$SANDBOX/home/$GODOT_CFG/text_editor_themes/Jenerated-blue-purple.tet" \
     "$SANDBOX/repo/app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet"
 }

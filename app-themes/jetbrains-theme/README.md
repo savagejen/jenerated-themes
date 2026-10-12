@@ -33,11 +33,11 @@ generate, for example `blue-purple/`, holding the plugin's files:
 - `jenerated-<slug>.xml`, the editor color scheme.
 
 Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
-The files are generated from `plugin.xml.tmpl`, `theme.json.tmpl` and
-`editor-scheme.xml.tmpl` by [jenerate.py](../../jenerate.py). To change
-colors, see [Changing colors](../../README.md#changing-colors).
+The files are generated from `plugin.xml.tmpl`, `theme-dark.json.tmpl` or
+`theme-light.json.tmpl` (to match the palette) and `editor-scheme.xml.tmpl`
+by [jenerate.py](../../jenerate.py). To change colors, see [Changing colors](../../README.md#changing-colors).
 
 ## How the colors are used
 

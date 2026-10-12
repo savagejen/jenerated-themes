@@ -10,7 +10,8 @@ START_DIR = ""
 
 # The command people use to run it again, for messages like "run ./setup.sh
 # again": ./setup.sh when setup.sh started it, ./jenerate from a clone, or
-# jenerate once it's installed. Set by cli.
+# jenerate once it's installed. Set by cli (and to ./jenerate.py by
+# jenerate.py).
 COMMAND = "jenerate"
 
 
@@ -24,8 +25,8 @@ class Install:
     mode  how its files are put in place: "link" (to this folder, so they
           update when the palette is regenerated), "copy", or "manual" (you
           run the commands yourself); see install.run_install_plan
-    plan  the (target, source) files install.run_install_plan will show and
-          offer to put in place
+    plan  the (target, source, shared) files install.run_install_plan will
+          show and offer to put in place (see install.plan_link)
     """
     auto: bool = False
     mode: str = "link"
@@ -50,10 +51,21 @@ def separate_install(auto=False):
         current = outer
 
 
+# The commands that name jenerate.py's options in their messages, rather
+# than the jenerate subcommands.
+OLD_STYLE = ("./setup.sh", "./jenerate.py")
+
+
 def generate():
     """The command that generates themes: ./jenerate.py when started from
-    setup.sh (as setup.sh has always said), or the generate subcommand."""
-    return "./jenerate.py" if COMMAND == "./setup.sh" else f"{COMMAND} generate"
+    setup.sh (as setup.sh has always said) or from jenerate.py, or the
+    generate subcommand."""
+    return "./jenerate.py" if COMMAND in OLD_STYLE else f"{COMMAND} generate"
+
+
+def list_palettes():
+    """The command that lists the palettes."""
+    return "./jenerate.py --list" if COMMAND in OLD_STYLE else f"{COMMAND} list"
 
 
 def regenerate(slug):

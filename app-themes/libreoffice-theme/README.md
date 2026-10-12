@@ -15,7 +15,7 @@ palette. Each theme colors:
 palette you generate, for example `blue-purple/`; `setup.sh` packages it as
 `jenerated-blue-purple.oxt`. Blue Purple's `.oxt` is included, ready to
 install; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 Which palette colors go where:
 

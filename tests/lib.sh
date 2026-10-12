@@ -200,6 +200,39 @@ print("stub server running")
 EOF
 }
 
+# --- An installed copy -------------------------------------------------------
+
+# make_installed -> builds an installed copy of jenerate in $SANDBOX/site, laid
+# out as the package build lays it out: the jenerate_themes package, with the
+# sandbox repository's app-themes/ and palettes/ (templates, bundled
+# palettes and Blue Purple's pre-made themes) in its data/ folder. It's
+# read-only, as an installed copy is, and $SANDBOX/bin/jenerate runs it, as
+# the jenerate command on PATH. What it writes goes in the sandbox home's
+# $INSTALLED_DATA_PATH.
+make_installed() {
+  mkdir -p "$SANDBOX/site/jenerate_themes/data" "$SANDBOX/elsewhere"
+  (cd "$SANDBOX/repo" && cp -R jenerate_themes "$SANDBOX/site/" &&
+    cp -R app-themes palettes "$SANDBOX/site/jenerate_themes/data/")
+  find "$SANDBOX/site" -name __pycache__ -prune -exec rm -rf {} +
+  chmod -R a-w "$SANDBOX/site"
+  printf '#!%s\nimport sys\nsys.path.insert(0, "%s")\nfrom jenerate_themes.cli import main\nmain()\n' \
+    "$(command -v "$(find_python)")" "$SANDBOX/site" >"$SANDBOX/bin/jenerate"
+  chmod +x "$SANDBOX/bin/jenerate"
+}
+INSTALLED_DATA_PATH=".local/share/jenerate-themes"
+
+# run_installed "answers" args... -> runs the installed copy's jenerate with
+# the answers on its input, from $RUN_FROM (default $SANDBOX/elsewhere, a
+# folder that's neither the repository nor the data folder), and sets OUTPUT
+# and STATUS.
+run_installed() {
+  local answers="$1"
+  shift
+  OUTPUT="$(cd "${RUN_FROM:-$SANDBOX/elsewhere}" && printf '%b' "$answers" |
+    in_sandbox env PYTHONDONTWRITEBYTECODE=1 jenerate "$@" 2>&1)"
+  STATUS=$?
+}
+
 # --- Palettes and colors ----------------------------------------------------
 
 # dawn_palette [folder] -> adds Dawn, a light copy of Sunset, to palettes/ (or
@@ -262,7 +295,9 @@ run_tests() {
     case "$test" in *"$TEST_FILTER"*) ;; *) continue ;; esac
     if (
       make_sandbox
-      trap 'rm -rf "$SANDBOX"' EXIT
+      # An installed copy is read-only (see make_installed); make it
+      # writable again so it can be deleted.
+      trap 'chmod -R u+w "$SANDBOX" 2>/dev/null; rm -rf "$SANDBOX"' EXIT
       if declare -F after_sandbox >/dev/null; then after_sandbox; fi
       OUTPUT=""
       "$test"

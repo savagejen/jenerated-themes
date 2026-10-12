@@ -123,6 +123,28 @@ test_contrast_matches_jenerate_py() {
   [ "$OUTPUT" = "$(old_jenerate --contrast sunset)" ] || fail "expected jenerate contrast to match ./jenerate.py --contrast"
 }
 
+# GIVEN a palette file in a folder outside the repository
+# WHEN running the repository's jenerate from that folder, naming the palette
+#      by its relative path to generate and check it
+# THEN it's found in that folder
+test_palette_paths_are_taken_from_where_it_runs() {
+  [ -n "$PYTHON" ] || return 0
+  mkdir -p "$SANDBOX/elsewhere"
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/elsewhere/forest-palette.toml"
+  OUTPUT="$(cd "$SANDBOX/elsewhere" && HOME="$SANDBOX/home" JENERATE_COMMAND= \
+    "$PYTHON" "$SANDBOX/repo/jenerate" generate ./forest-palette.toml 2>&1)"
+  STATUS=$?
+  assert_status 0
+  assert_contains "Generated Forest (forest)"
+  assert_exists "$SANDBOX/repo/app-themes/tilix-theme/forest.json"
+  OUTPUT="$(cd "$SANDBOX/elsewhere" && HOME="$SANDBOX/home" JENERATE_COMMAND= \
+    "$PYTHON" "$SANDBOX/repo/jenerate" contrast forest-palette.toml 2>&1)"
+  STATUS=$?
+  assert_status 0
+  assert_contains "Forest:"
+}
+
 # --- Tests: install --------------------------------------------------------------
 
 # GIVEN the jenerate command

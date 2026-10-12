@@ -6,7 +6,7 @@ sidebars, tooltips, scrollbars, switches, checkboxes, sliders and progress
 bars. [jenerate.py](../../jenerate.py) writes one theme folder for each
 palette you generate, for example `blue-purple/`, holding `gtk-3.0/gtk.css`
 and `index.theme`. Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## Which apps
 

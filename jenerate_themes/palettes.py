@@ -6,9 +6,9 @@ import tomllib
 import uuid
 from pathlib import Path
 
+from . import paths, state
 from .colors import HEX, color_formats, contrast, scheme_of
 from .errors import JenerateError
-from .paths import PALETTES, ROOT
 
 # Palettes are filed by scheme, in palettes/Dark and palettes/Light.
 SCHEME_FOLDERS = {"dark": "Dark", "light": "Light"}
@@ -35,27 +35,53 @@ def check_slug(slug, source):
     return slug
 
 
-def palette_folder(scheme):
-    """Where palettes of a scheme ("dark" or "light") are filed."""
-    return PALETTES / SCHEME_FOLDERS[scheme]
+def palette_folder(scheme, root=None):
+    """Where palettes of a scheme ("dark" or "light") are filed: among your
+    palettes (paths.PALETTES), or under root."""
+    return (root or paths.PALETTES) / SCHEME_FOLDERS[scheme]
+
+
+def own_palette_folders():
+    """The folders your palettes are found in: palettes/Dark,
+    palettes/Light, and palettes/ itself, for a palette not filed yet. In a
+    clone, these are the repository's palettes."""
+    return [palette_folder(scheme) for scheme in SCHEMES] + [paths.PALETTES]
+
+
+def bundled_palette_folders():
+    """The folders of the palettes an installed copy comes with (none in a
+    clone, where they're the repository's own)."""
+    if not paths.INSTALLED:
+        return []
+    return [palette_folder(scheme, paths.BUNDLED_PALETTES) for scheme in SCHEMES]
 
 
 def palette_folders():
-    """Every folder palettes are found in: palettes/Dark, palettes/Light,
-    and palettes/ itself, for a palette not filed yet."""
-    return [palette_folder(scheme) for scheme in SCHEMES] + [PALETTES]
+    """Every folder palettes are found in, yours first."""
+    return own_palette_folders() + bundled_palette_folders()
 
 
 def in_palettes(path):
     """Whether a file is in one of the palette folders."""
-    return path.resolve().parent in palette_folders()
+    return path.resolve().parent in [folder.resolve() for folder in palette_folders()]
 
 
 def palette_files():
-    """Every palette file in the palette folders, in order of file name."""
-    return sorted((path for folder in palette_folders()
-                   for path in folder.glob("*-palette.toml")),
-                  key=lambda path: path.name)
+    """Every palette file in the palette folders, in order of file name. A
+    palette of yours replaces a bundled one with the same file name."""
+    found = {}
+    for folder in palette_folders():
+        for path in folder.glob("*-palette.toml"):
+            found.setdefault(path.name, []).append(path)
+    # Yours come first, so a bundled palette is only listed when you have
+    # none by its name. Two of yours with one name are both listed, for
+    # palette_path to stop at.
+    bundled = [folder.resolve() for folder in bundled_palette_folders()]
+    listed = []
+    for name, found_paths in found.items():
+        own = [path for path in found_paths if path.parent.resolve() not in bundled]
+        listed += own or found_paths[:1]
+    return sorted(listed, key=lambda path: path.name)
 
 
 def palette_path(arg):
@@ -66,15 +92,18 @@ def palette_path(arg):
             raise JenerateError(f"No palette file at {path}.")
         return path
     name = f"{check_slug(arg, 'palette')}-palette.toml"
-    found = [folder / name for folder in palette_folders() if (folder / name).is_file()]
+    found = [folder / name for folder in own_palette_folders() if (folder / name).is_file()]
     if len(found) > 1:
         raise JenerateError(f"The palette {arg!r} is in more than one place: "
-                 f"{', '.join(str(p.relative_to(ROOT)) for p in found)}. "
+                 f"{', '.join(paths.shown(p) for p in found)}. "
                  f"Keep one of them.")
+    # Yours, or else the bundled one.
+    found = found or [folder / name for folder in bundled_palette_folders()
+                      if (folder / name).is_file()]
     if not found:
-        raise JenerateError(f"No palette named {arg!r} (looked for {name} in palettes/Dark "
-                 f"and palettes/Light). Run ./jenerate.py --list to see the "
-                 f"available palettes.")
+        raise JenerateError(f"No palette named {arg!r} (looked for {name} in palettes/Dark, "
+                 f"palettes/Light and palettes/). Run {state.list_palettes()} to see "
+                 f"the available palettes.")
     return found[0]
 
 
@@ -92,7 +121,8 @@ def palette_scheme(path):
         value = colors[value]
     if isinstance(value, str) and HEX.fullmatch(value):
         return scheme_of(value)
-    folder = {PALETTES / name: scheme for scheme, name in SCHEME_FOLDERS.items()}
+    folder = {palette_folder(scheme, root).resolve(): scheme for scheme in SCHEMES
+              for root in (paths.PALETTES, paths.BUNDLED_PALETTES)}
     return folder.get(path.resolve().parent, "dark")
 
 

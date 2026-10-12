@@ -23,7 +23,7 @@ sys.path.insert(0, str(HERE.parent))
 
 from jenerate_themes.errors import JenerateError  # noqa: E402
 from jenerate_themes.palettes import palette_files, palette_scheme, read_palette_file  # noqa: E402
-from jenerate_themes.paths import ROOT  # noqa: E402
+from jenerate_themes.paths import SOURCE as ROOT  # noqa: E402  (a clone: the repository)
 from jenerate_themes.render import add, output_path  # noqa: E402
 from jenerate_themes.system import zip_folder  # noqa: E402
 from jenerate_themes.targets import TARGETS  # noqa: E402

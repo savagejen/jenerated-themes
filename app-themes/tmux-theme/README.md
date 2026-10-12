@@ -9,7 +9,7 @@ numbers. What runs inside the panes keeps your terminal's colors.
 [jenerate.py](../../jenerate.py) writes one folder for each palette you
 generate, for example `blue-purple/`, holding `jenerated-blue-purple.conf`.
 Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How the colors are used
 

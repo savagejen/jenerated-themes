@@ -11,7 +11,7 @@ rather than as separate files. [jenerate.py](../../jenerate.py) writes one
 file for each palette you generate, for example
 `jenerated-blue-purple.ini`, holding that theme's settings in Spyder's own
 format, ready to be added. Blue Purple is included; to add other palettes,
-see [Getting started](../../README.md#getting-started).
+see [Setting up by hand](../../README.md#setting-up-by-hand).
 
 Spyder's interface follows its own dark or light UI theme, which it picks
 to match the syntax theme when **Interface theme** is set to **Automatic**

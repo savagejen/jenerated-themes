@@ -17,7 +17,7 @@ generate, for example `blue-purple/`, holding `jenerated-blue-purple.zsh`
 (for zsh-syntax-highlighting and zsh-autosuggestions) and
 `jenerated-blue-purple.ini` (a fast-syntax-highlighting theme). Blue Purple is
 included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How the colors are used
 

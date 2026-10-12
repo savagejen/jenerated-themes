@@ -13,8 +13,9 @@ and start a fresh one; Back exits with status 3, which setup.sh takes as a
 way back to its menu.
 
 Serves palette-creator.html on 127.0.0.1 (this computer only). The page edits
-palette-creator/work-in-progress-palette.toml, which is created from Blue
-Purple the first time. "Load from" copies a palette over it, and "Save as palette" saves it as
+palette-creator/work-in-progress-palette.toml (in the data folder, for an
+installed copy; see paths.py), which is created from Blue Purple the first
+time. "Load from" copies a palette over it, and "Save as palette" saves it as
 a palette; both open this computer's file dialog (zenity or kdialog on Linux,
 AppleScript on macOS, or Tk), saving in palettes/Dark or palettes/Light to
 match the palette. Without a dialog, the page asks for a file name.
@@ -24,7 +25,8 @@ keep the file's comments and layout.
 Set PALETTE_CREATOR_DIALOG=none to always name the file in the page instead
 (the tests do this), and PALETTE_CREATOR_PORT to start from another port than
 8765 (the tests do this too, so they never meet a Palette Creator you have
-running).
+running). JENERATE_COMMAND, set by jenerate when it starts this, is the
+command its messages say to generate themes with.
 """
 
 import argparse
@@ -49,13 +51,13 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .. import palettes, paths, render, targets
+from .. import palettes, paths, render, state, targets
 from ..errors import JenerateError
 
 HERE = Path(__file__).resolve().parent
 PAGE = HERE / "palette-creator.html"
 WIP = paths.DRAFTS / "work-in-progress-palette.toml"
-STARTER = palettes.palette_folder("dark") / "blue-purple-palette.toml"
+STARTER = palettes.palette_folder("dark", paths.BUNDLED_PALETTES) / "blue-purple-palette.toml"
 
 # A color line: key = "value"  # note
 COLOR_LINE = re.compile(
@@ -364,20 +366,26 @@ def typed_path(filename, folder=None):
     if folder is not None:
         if len(parts) != 1 or parts[0] != filename:
             raise PaletteError(f"type just a file name; it's saved in "
-                               f"{folder.relative_to(paths.ROOT)}/")
+                               f"{paths.shown(folder)}/")
         return folder / filename
     if not (len(parts) == 1 or (len(parts) == 2 and parts[0] in folders)) \
             or "/".join(parts) != filename:
         raise PaletteError("type a file name from the list of palettes")
     if len(parts) == 2:
-        return paths.PALETTES / filename
+        roots = [paths.PALETTES] + ([paths.BUNDLED_PALETTES] if paths.INSTALLED else [])
+        found = [root / filename for root in roots if (root / filename).is_file()]
+        return found[0] if found else paths.PALETTES / filename
     found = [f / filename for f in palettes.palette_folders() if (f / filename).is_file()]
     return found[0] if found else paths.PALETTES / filename
 
 
 def listed_name(path):
-    """A palette file's name as the page lists it: relative to palettes/."""
-    return path.relative_to(paths.PALETTES).as_posix()
+    """A palette file's name as the page lists it: relative to palettes/
+    (yours, or the bundled ones)."""
+    for root in (paths.PALETTES, paths.BUNDLED_PALETTES):
+        if path.resolve().is_relative_to(root.resolve()):
+            return path.resolve().relative_to(root.resolve()).as_posix()
+    return path.name
 
 
 def check_save_path(path, slug):
@@ -400,7 +408,7 @@ def save_palette(palette, target, filename=None, overwrite=False):
     text, values = check_palette(palette)
     if target == "wip":
         WIP.write_text(text, encoding="utf-8")
-        return {"ok": True, "message": f"Saved {WIP.relative_to(paths.ROOT)}"}
+        return {"ok": True, "message": f"Saved {paths.shown(WIP)}"}
     if target != "palette":
         raise PaletteError(f"can't save to {target!r}")
 
@@ -413,7 +421,7 @@ def save_palette(palette, target, filename=None, overwrite=False):
             return {"ok": False, "cancelled": True, "message": "Not saved."}
         if path is NO_DIALOG:
             return {"ok": False, "choose_name": True, "default": default.name,
-                    "folder": str(default.parent.relative_to(paths.ROOT))}
+                    "folder": paths.shown(default.parent)}
     else:
         path = typed_path(filename, default.parent)
 
@@ -423,17 +431,17 @@ def save_palette(palette, target, filename=None, overwrite=False):
     if (filename is not None and path.exists() and not overwrite
             and path.read_text(encoding="utf-8") != text):
         return {"ok": False, "exists": True,
-                "message": f"{path.relative_to(paths.ROOT)} already exists"}
+                "message": f"{paths.shown(path)} already exists"}
     try:
         path.write_text(text, encoding="utf-8")
     except OSError as error:
         raise PaletteError(f"couldn't save {path}: {error.strerror}") from None
     if palettes.in_palettes(path):
-        shown, generate = path.relative_to(paths.ROOT), slug
+        shown, generate = paths.shown(path), slug
     else:
         shown = generate = path
     return {"ok": True, "message": f"Saved {shown}. Generate its themes with: "
-                                   f"./jenerate.py {generate}"}
+                                   f"{state.regenerate(generate)}"}
 
 
 def load_palette(filename=None):
@@ -443,6 +451,7 @@ def load_palette(filename=None):
     for it. A palette jenerate.py would reject leaves the work in progress
     alone."""
     if filename is None:
+        paths.PALETTES.mkdir(parents=True, exist_ok=True)
         path = ask_path("open", paths.PALETTES)
         if path is CANCELLED:
             return {"ok": False, "cancelled": True, "message": "Nothing loaded."}
@@ -458,8 +467,7 @@ def load_palette(filename=None):
 
     # The work in progress is an exact copy, so it reads as `palette` does.
     WIP.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-    shown = (path.relative_to(paths.ROOT)
-             if path.resolve().is_relative_to(paths.ROOT) else path)
+    shown = paths.shown(path)
     return {"ok": True, "palette": palette,
             "message": f"Loaded {shown} into the work-in-progress palette."}
 
@@ -527,14 +535,14 @@ class Handler(BaseHTTPRequestHandler):
         elif url.path == "/api/info":
             # What a later serve.py asks, to tell this Palette Creator apart
             # from another program on the port.
-            self.send(HTTPStatus.OK, {"app": "palette-creator", "root": str(paths.ROOT),
+            self.send(HTTPStatus.OK, {"app": "palette-creator", "root": str(paths.DATA),
                                       "pid": os.getpid(), "started": STARTED})
         else:
             self.send(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
     def get_palette(self):
         """Send the work-in-progress palette."""
-        source = WIP.relative_to(paths.ROOT)
+        source = paths.shown(WIP)
         try:
             palette = read_palette(WIP)
         except PaletteError as error:
@@ -636,7 +644,7 @@ def running_here(port):
         if (info.get("app") == "palette-creator"
                 and type(info.get("pid")) is int and info["pid"] != os.getpid()
                 and type(info.get("started")) in (int, float)
-                and Path(info["root"]).resolve() == paths.ROOT.resolve()):
+                and Path(info["root"]).resolve() == paths.DATA.resolve()):
             return info
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         pass
@@ -718,9 +726,15 @@ def main():
                         help="don't open the page, just print its address")
     args = parser.parse_args()
 
+    # The command its messages say to generate themes with: the one that
+    # started it, or else the usual one for this copy.
+    state.COMMAND = os.environ.get("JENERATE_COMMAND") or (
+        "jenerate" if paths.INSTALLED else "./jenerate.py")
+
     if not WIP.exists():
+        WIP.parent.mkdir(parents=True, exist_ok=True)
         WIP.write_text(STARTER.read_text(encoding="utf-8"), encoding="utf-8")
-        print(f"Created {WIP.relative_to(paths.ROOT)} from Blue Purple")
+        print(f"Created {paths.shown(WIP)} from Blue Purple")
 
     if args.port is None:
         running = running_here(DEFAULT_PORT)

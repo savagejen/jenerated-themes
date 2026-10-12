@@ -47,6 +47,7 @@ ones, and {scheme} in a template's path picks a template for each.
 import argparse
 import sys
 
+from jenerate_themes import state
 from jenerate_themes.errors import JenerateError
 from jenerate_themes.palettes import CONTRAST_TARGET, report_contrast
 from jenerate_themes.render import add, list_palettes, remove
@@ -54,6 +55,8 @@ from jenerate_themes.vscode import write_vscode_package
 
 
 def main():
+    # Its messages name ./jenerate.py and its options.
+    state.COMMAND = "./jenerate.py"
     parser = argparse.ArgumentParser(
         description=__doc__.split("\n")[0],
         epilog="Separate several palettes with commas or spaces.")

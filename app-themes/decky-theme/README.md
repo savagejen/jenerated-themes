@@ -9,7 +9,7 @@ plugins to Gaming Mode, and its **CSS Loader** plugin applies themes.
 [jenerate.py](../../jenerate.py) writes one CSS Loader theme folder for each
 palette you generate, for example `blue-purple/`, holding `theme.json` and
 `shared.css`. Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How it works
 

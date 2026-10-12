@@ -6,7 +6,7 @@ colors, and the same 16 colors in the built-in terminal as the Ptyxis and
 Tilix themes. [jenerate.py](../../jenerate.py) writes one colorscheme for each
 palette you generate, named `jenerated-<slug>`, in `colors/`, for example
 `colors/jenerated-blue-purple.vim`. Blue Purple is included; to add other
-palettes, see [Getting started](../../README.md#getting-started).
+palettes, see [Setting up by hand](../../README.md#setting-up-by-hand).
 
 The colorschemes use the palette's exact colors in GUI Vim, and in terminals
 with `termguicolors` set. Without it, they fall back to the terminal's 16

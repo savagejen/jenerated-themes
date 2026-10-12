@@ -54,8 +54,9 @@ What you need:
   `app-themes/vs-code-theme/package.json` from `package.json.tmpl`, listing
   every generated theme. Its code is in the
   [jenerate_themes](jenerate_themes/) package: palettes in `palettes.py`,
-  color forms and contrast in `colors.py`, templates in `render.py`, and the
-  `(template, output)` pairs in `TARGETS`, in `targets.py`.
+  color forms and contrast in `colors.py`, templates in `render.py`, and
+  each app's `(template, output)` pairs in its `templates`, gathered into
+  `TARGETS` in `targets.py`.
 - **[jenerate](jenerate)** is the app: run with no command, it walks people
   through installing a theme (pick an app, pick a palette); `./jenerate
   --help` lists its commands. Its code is in `jenerate_themes` too: the
@@ -63,7 +64,30 @@ What you need:
   module in [jenerate_themes/apps](jenerate_themes/apps/).
 - **[setup.sh](setup.sh)** is what the README tells people to run. With
   Python 3.11 or later it hands over to `jenerate`; without it, the rest of
-  `setup.sh` does the same in bash.
+  `setup.sh` can still install Blue Purple, in bash, into the apps where
+  that only means linking files into place or showing a theme to paste in.
+
+### A clone and an installed copy
+
+`jenerate` runs from a clone like yours, or from an installed copy (pipx,
+or a `.deb`, `.rpm` or Arch package). [paths.py](jenerate_themes/paths.py)
+decides which, and where files go:
+
+- `paths.SOURCE` is where templates, bundled palettes and Blue Purple's
+  pre-made themes are read from: the repository in a clone, the package's
+  read-only `data/` folder when installed.
+- `paths.DATA` is where generated themes, people's own palettes and the
+  Palette Creator's draft are written: the repository in a clone,
+  `~/.local/share/jenerate-themes` (or `$XDG_DATA_HOME/jenerate-themes`)
+  on Linux and `~/Library/Application Support/jenerate-themes` on macOS
+  when installed, laid out like the repository.
+
+In a clone the two are the same folder, so everything works as described
+here. An installed copy comes with Blue Purple's themes already made: they
+are copied into the data folder when first needed, and refreshed after an
+upgrade. A palette of someone's own replaces a bundled one with its slug.
+The package build includes `app-themes/` and `palettes/` whole, so new
+templates and palettes are packaged with nothing more to do.
 
 ### Template placeholders
 
@@ -92,7 +116,7 @@ What you need:
 - `{{scheme}}` is `dark` or `light`, and
   `{{scheme: "text for dark" | "text for light"}}` picks one of two texts. A
   template whose dark and light versions differ too much for that can have
-  `{scheme}` in its path in `TARGETS`, like JetBrains'
+  `{scheme}` in its path in its app's `templates`, like JetBrains'
   `theme-{scheme}.json.tmpl`.
 
 `jenerate.py` works out whether a palette is dark or light from its editor
@@ -118,8 +142,8 @@ Generated files are ignored by git (see [.gitignore](.gitignore)), so each
 person's copy holds only the palettes they chose. The exception is Blue
 Purple, the default: its generated files are committed, along with a
 `package.json` that lists only it, so the themes work without running
-anything. The Vivaldi `.zip` and JetBrains `.jar` of Blue Purple are
-committed too, ready to install.
+anything. The Vivaldi `.zip`, JetBrains `.jar` and LibreOffice `.oxt` of
+Blue Purple are committed too, ready to install.
 
 Generating other palettes changes `package.json` in your copy. Don't commit
 that; [prepare for the commit](#before-you-commit) instead, which puts it
@@ -197,52 +221,55 @@ takes.
    with a template (`<something>.tmpl`) that uses the palette's color names.
    Start the template with a comment saying it's generated and not to edit
    it, where the format allows comments.
-2. Add a `(template, output)` pair to `TARGETS` in
-   `jenerate_themes/targets.py`. Use
-   `{slug}` in the output path so each palette gets its own file. An app
-   that needs several files per theme can use `{slug}` as a folder, like
-   Obsidian's `app-themes/obsidian-theme/{slug}/theme.css`.
+2. Add a module for the app in `jenerate_themes/apps/`, like `tilix.py`,
+   with an `install(theme)` function and an `APP` describing it (the fields
+   are explained in `App`, in `jenerate_themes/apps/__init__.py`). Every
+   module there is found by itself. List the app's `(template, output)` pairs
+   in its `templates`. Use `{slug}` in the output path so each palette gets
+   its own file. An app that needs several files per theme can use `{slug}`
+   as a folder, like Obsidian's `app-themes/obsidian-theme/{slug}/theme.css`.
 3. Add the output pattern to `.gitignore`, with a `!` line keeping Blue
    Purple's files, like the other apps.
 4. Write a README for the app: what it themes, which palette colors go
    where, and how to install it (with `./setup.sh`, and by hand).
-5. Add the app to the list in the main [README](README.md), under the same
-   category heading as in `setup.sh` (and marked (Linux) or (macOS) if it
-   only runs on one). Add it to `setup.sh` too: an `add_app` line (its id, its
-   name in the menu, its category, and optionally the apps it covers and
-   other search words), an `install_<app>` function, and a line in the
-   `case` in `install_app`. Then add it to the `jenerate` app: a module in
-   `jenerate_themes/apps/` (like `tilix.py`) with an `install(theme)`
-   function and an `APP` describing it, and its name in `ORDER` in
-   `jenerate_themes/apps/__init__.py`, under its category.
+5. Fill in the rest of the app's `APP`, and add the app to the list in the
+   main [README](README.md), under its category's heading (and marked
+   (Linux) or (macOS) if it only runs on one).
 
-   If the theme can't be installed from `setup.sh` (you install it in the
-   app yourself, like the browsers and Slack), add the app's id to
-   `MANUAL_APPS`, so that when a user setup selection of ALL THE APPS occurs, 
-   it leaves it out. If the app uses one palette at a time 
-   (installing one switches the app to it, like tmux), add it to
-   `ONE_PALETTE_APPS`, so a user setup selection of ALL THE PALETTES isn't 
-   offered for it. Add the app's commands, Flatpak id and macOS app name to 
-   `app_present`, so ALL THE APPS only installs into it when it's there 
-   (the tests set `SETUP_FOUND_APPS` to decide which apps count as found). 
-   In either ALL option, `ask_yes` answers yes and `choose` picks the first 
-   choice, so keep the first choice the safe, usual one, and don't make the 
+   If the theme can't be installed for the user (you install it in the
+   app yourself, like most browsers and Slack), set `manual=True`, so
+   ALL THE APPS leaves it out. If the app uses one palette at a time
+   (installing one switches the app to it, like tmux), set
+   `one_palette=True`, so ALL THE PALETTES isn't offered for it. Set
+   `commands`, `flatpaks` and `mac_apps` (or `libraries`, or a `present`
+   check), so ALL THE APPS only installs into the app when it's there (the
+   tests set `SETUP_FOUND_APPS` to decide which apps count as found). An
+   app that only runs on one system gets `system="Linux"` or
+   `system="Darwin"`, and is only offered there.
+   In either ALL option, `ask_yes` answers yes and `choose` picks the first
+   choice, so keep the first choice the safe, usual one, and don't make the
    install wait for anything else (check `state.current.auto` and stop with
    `stop()` instead, saying how to finish, like Obsidian's vault path).
 
-   `setup.sh` groups apps into categories (`CATEGORY_IDS` and
-   `CATEGORY_NAMES`), so the menu stays short however many apps there are.
-   Categories are named for what you do in the apps (browsing, editing,
-   hacking and testing, art and design), and an app goes where its theme
-   shows up: a tool with a command line and a desktop app files its theme
-   by which of the two it colors, and one that can theme both gets an
-   entry in each.
-   Put the new app's `add_app` line with the others in its category, in
-   alphabetical order; Linux-only apps go inside an `if [ "$OS" = "Linux" ]`,
-   and macOS-only ones inside an `if [ "$OS" = "Darwin" ]`.
-   An app that doesn't fit a category can use `""`, which puts it on the
-   main app menu. Apps can also be found by typing part of their name, which
-   searches names, ids, category names, and the two optional lists:
+   Find the theme's files with `paths.app_themes(...)`, as every app does,
+   so installs link to the right copy. Code that needs other paths reads
+   from `paths.SOURCE` and writes only under `paths.DATA` (see
+   [A clone and an installed copy](#a-clone-and-an-installed-copy)).
+   `tests/apps/test-every-app.sh` runs every app in an installed copy too,
+   and fails if one writes into the package or links to it.
+
+   The app menu groups apps into categories (`CATEGORIES`, in
+   `jenerate_themes/apps/__init__.py`), so it stays short however many apps
+   there are. Categories are named for what you do in the apps (browsing,
+   editing, hacking and testing, art and design), and an app goes where its
+   theme shows up: a tool with a command line and a desktop app files its
+   theme by which of the two it colors, and one that can theme both gets an
+   entry in each. Within a category, apps are listed alphabetically by
+   their `label`.
+   An app that doesn't fit a category can use `category=""`, which puts it
+   on the main app menu. Apps can also be found by typing part of their
+   name, which searches names, ids, category names, and the two optional
+   lists:
 
    - **covers:** the apps a theme covers that don't fit in its menu name,
      written as their names and as its README lists them. Searching
@@ -264,6 +291,11 @@ If the app installs a packaged file (like Vivaldi's `.zip`), add Blue
 Purple's package to `EXAMPLE_PACKAGES` in
 [maintainer-tools/prep-commit.py](maintainer-tools/prep-commit.py), so it's
 rebuilt with the other defaults.
+
+If installing Blue Purple into the app only takes linking its files into
+place (or showing a theme to paste in), add it to the part of `setup.sh`
+that runs without Python too: an `add_fallback_app` line in menu order, an
+`install_<app>` function, and a line in the `case` in `install_app`.
 
 ## Changing a template or Blue Purple
 
@@ -377,7 +409,8 @@ tests/run.sh
 ```
 
 It shows each test file's results as it goes, then the totals for all of
-them, naming any file with failures. To run one file's tests, run the file;
+them, and lists every failed test by file, each with the first reason it
+gave. To run one file's tests, run the file;
 to run only some of them, add part of their names:
 
 ```bash
@@ -389,7 +422,8 @@ Tests live in [tests/](tests/):
 
 | Folder | Tests |
 |--------|-------|
-| `tests/apps/` | each app, one file per app: making its theme, and installing it; plus `test-every-app.sh`, the basics for every app |
+| `tests/apps/` | each app, one file per app: making its theme, and installing it; plus `test-every-app.sh`, the basics for every app, in a clone and in an installed copy |
+| `tests/installed/` | an installed copy: its data folder, bundled and own palettes, the pre-made Blue Purple, and a clone and an installed copy on one computer |
 | `tests/menus/` | the menus: choosing an app and a palette, searching, ALL THE APPS and ALL THE PALETTES |
 | `tests/generate/` | making themes for every app at once: palettes and their mistakes, colors, contrast, light and dark, listing and removing (through `jenerate.py`) |
 | `tests/setup/` | `setup.sh` itself: handing over to `jenerate`, Blue Purple without Python, and its options |

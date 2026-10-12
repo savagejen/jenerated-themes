@@ -26,9 +26,9 @@ class App:
     label        its name in the menus
     category     one of CATEGORIES, or "" to stay on the main app menu
     install      install(theme) installs a palette's theme into it
-    templates    (template, output) pairs, relative to the repository root:
-                 the files each palette's theme is made from, and where they
-                 go. {slug} in the output is replaced with the palette's slug;
+    templates    (template, output) pairs, laid out as in the repository:
+                 the files each palette's theme is made from (read from
+                 paths.SOURCE), and where they go (under paths.DATA). {slug} in the output is replaced with the palette's slug;
                  it may name a folder, which is created as needed and deleted
                  with the palette's last file. {scheme} in the template is
                  replaced with "dark" or "light", for apps whose dark and

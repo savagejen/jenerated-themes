@@ -2,16 +2,16 @@
 
 import json
 
+from . import paths, state
 from .errors import JenerateError
-from .paths import ROOT
-from .render import read_template
 from .paths import VSCODE_THEME
+from .render import read_template
 
-# package.json is rebuilt from this base after every run, listing each VS Code
-# theme file that exists.
-VSCODE_PACKAGE_BASE = ROOT / "app-themes/vs-code-theme/package.json.tmpl"
+# package.json is rebuilt from this base (read from paths.SOURCE) after every
+# run, listing each VS Code theme file that exists (under paths.DATA).
+VSCODE_PACKAGE_BASE = "app-themes/vs-code-theme/package.json.tmpl"
 
-VSCODE_PACKAGE = ROOT / "app-themes/vs-code-theme/package.json"
+VSCODE_PACKAGE = "app-themes/vs-code-theme/package.json"
 
 # A theme file's "type" -> the "uiTheme" VS Code expects in package.json.
 VSCODE_UI_THEMES = {
@@ -29,8 +29,8 @@ def read_vscode_theme(path):
         theme = json.loads(path.read_text())
         name, kind = theme["name"], theme.get("type", "dark")
     except (json.JSONDecodeError, KeyError, TypeError) as error:
-        raise JenerateError(f"{path.relative_to(ROOT)}: not a valid theme file ({error}). "
-                 f"Regenerate it with ./jenerate.py, or delete it.")
+        raise JenerateError(f"{paths.shown(path)}: not a valid theme file ({error}). "
+                 f"Regenerate it with {state.generate()}, or delete it.")
     return name, kind
 
 
@@ -40,22 +40,24 @@ def write_vscode_package(slugs=None):
 
     Each theme's label in the picker is the `name` inside its theme file.
     """
-    package = json.loads(read_template(VSCODE_PACKAGE_BASE))
+    package = json.loads(read_template(paths.SOURCE / VSCODE_PACKAGE_BASE))
+    target = paths.DATA / VSCODE_PACKAGE
     if slugs is None:
-        paths = sorted(ROOT.glob(VSCODE_THEME.format(slug="*")))
+        files = sorted(paths.DATA.glob(VSCODE_THEME.format(slug="*")))
     else:
-        paths = [ROOT / VSCODE_THEME.format(slug=slug) for slug in slugs]
+        files = [paths.DATA / VSCODE_THEME.format(slug=slug) for slug in slugs]
     themes = []
-    for path in paths:
+    for path in files:
         name, kind = read_vscode_theme(path)
         themes.append({
             "label": name,
             "uiTheme": VSCODE_UI_THEMES.get(kind, "vs-dark"),
-            "path": f"./{path.relative_to(VSCODE_PACKAGE.parent).as_posix()}",
+            "path": f"./{path.relative_to(target.parent).as_posix()}",
         })
     package["contributes"]["themes"] = themes
 
     content = json.dumps(package, indent=2) + "\n"
-    if not VSCODE_PACKAGE.exists() or VSCODE_PACKAGE.read_text() != content:
-        VSCODE_PACKAGE.write_text(content)
-        print(f"Updated {VSCODE_PACKAGE.relative_to(ROOT)}")
+    if not target.exists() or target.read_text() != content:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+        print(f"Updated {paths.shown(target)}")

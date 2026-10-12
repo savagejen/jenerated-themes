@@ -4,7 +4,7 @@
 [jenerate.py](../../jenerate.py) writes one folder for each palette you
 generate, for example `blue-purple/`, holding the theme's `settings.json`, in
 the same format as Vivaldi's own themes. Blue Purple is included; to add other
-palettes, see [Getting started](../../README.md#getting-started).
+palettes, see [Setting up by hand](../../README.md#setting-up-by-hand).
 
 The palette's colors fill Vivaldi's five theme colors:
 

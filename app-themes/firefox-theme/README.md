@@ -5,7 +5,7 @@ themes: the window, tabs, toolbar, address bar, menus, sidebar and new tab
 page. [jenerate.py](../../jenerate.py) writes one folder for each palette you
 generate, for example `blue-purple/`, holding the theme's `manifest.json`.
 Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 Each theme marks Firefox's own pages as dark or light, to match the palette.
 Websites still follow your system's light or dark setting.

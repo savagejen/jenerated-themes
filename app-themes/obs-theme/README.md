@@ -7,7 +7,7 @@ and its meters, and the preview's background.
 [jenerate.py](../../jenerate.py) writes one style for each palette you
 generate, for example `jenerated-blue-purple.ovt`. Blue Purple is included;
 to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 Each style builds on OBS's own Yami theme (its Light style for light
 palettes), so OBS's layout and icons stay as they are and only the colors

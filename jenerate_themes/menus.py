@@ -1,11 +1,12 @@
 """The menus: choosing an app and a palette, then generating and installing
 its theme. This is what `jenerate` (or ./setup.sh) runs with no subcommand."""
 
+import os
 import signal
 import sys
 from dataclasses import dataclass
 
-from . import state
+from . import paths, state
 from .apps import APPS, CATEGORIES, app_present, find_app, other_system
 from .errors import JenerateError
 from .palettes import palette_files, palette_scheme, read_palette_file
@@ -38,20 +39,23 @@ def start_palette_creator():
     serve.py asks whether to open it or start a fresh one; Back there
     (serve.py's exit status 3) returns here, so the first menu can be shown
     again."""
+    draft = paths.shown(paths.DRAFTS / "work-in-progress-palette.toml")
+    palettes_folder = paths.shown(paths.PALETTES)
+    finders = state.COMMAND if paths.INSTALLED else f"jenerate.py and {state.COMMAND}"
     step("Starting the Palette Creator")
     say("It opens in your browser. If it doesn't, open the address printed below.")
     say("")
     say("1. The page starts with your work-in-progress palette")
-    say("   (palette-creator/work-in-progress-palette.toml; the first time, a copy")
+    say(f"   ({draft}; the first time, a copy")
     say('   of Blue Purple). To begin from another palette, use "Load from...".')
     say("2. Give it a name and a slug (lowercase words and dashes, like deep-blue-sea).")
     say("3. Change colors with the color pickers, or type #rrggbb or another")
     say("   color's name. The preview updates as you go; hover a color to see")
     say("   where it's used, or click the preview to find a color.")
     say('4. Your draft saves itself as you go. "Save as palette..." opens a save')
-    say("   dialog in palettes/Dark or palettes/Light, to match the palette; keep")
-    say(f"   the suggested name, <slug>-palette.toml, so jenerate.py and {state.COMMAND}")
-    say("   can find it.")
+    say(f"   dialog in {palettes_folder}/Dark or {palettes_folder}/Light, to match the")
+    say("   palette; keep the suggested name, <slug>-palette.toml, so")
+    say(f"   {finders} can find it.")
     say(f"5. When you're done, press Ctrl+C here to stop it, then run {state.COMMAND}")
     say('   again and choose "Install a theme": your palette will be listed.')
     say("")
@@ -60,6 +64,7 @@ def start_palette_creator():
     previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         status = status_of([sys.executable, "-m", "jenerate_themes.creator.serve"],
+                           env={**os.environ, "JENERATE_COMMAND": state.COMMAND},
                            preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_DFL))
     finally:
         signal.signal(signal.SIGINT, previous)

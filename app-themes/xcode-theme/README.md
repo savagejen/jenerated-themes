@@ -11,7 +11,7 @@ scrollbar.
 [jenerate.py](../../jenerate.py) writes one theme for each palette you
 generate, for example `jenerated-blue-purple.xccolortheme`. Blue Purple is
 included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 Each theme uses SF Mono, Xcode's usual font, at 13 points. You can change
 the font and size in Xcode's settings after choosing the theme.

@@ -9,7 +9,7 @@ Insomnia themes come as plugins. [jenerate.py](../../jenerate.py) writes one
 plugin folder for each palette you generate, for example
 `blue-purple/insomnia-plugin-jenerated-blue-purple/`, holding the plugin's
 `package.json` and `index.js`. Blue Purple is included; to add other
-palettes, see [Getting started](../../README.md#getting-started).
+palettes, see [Setting up by hand](../../README.md#setting-up-by-hand).
 
 The plugin only provides a theme. It declares that it needs no
 permissions, which Insomnia's plugin settings show.

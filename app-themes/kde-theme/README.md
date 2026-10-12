@@ -21,7 +21,7 @@ No extension is needed: Plasma supports color schemes on its own.
 [jenerate.py](../../jenerate.py) writes one folder for each palette you
 generate, for example `blue-purple/`, holding the three files. Blue Purple is
 included; to add other palettes, see
-[Getting started](../../README.md#getting-started). Dark and light palettes
+[Setting up by hand](../../README.md#setting-up-by-hand). Dark and light palettes
 both work: the color scheme simply uses the palette's colors.
 
 The files are generated from `colors.tmpl`, `konsole.colorscheme.tmpl` and

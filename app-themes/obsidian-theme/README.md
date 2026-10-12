@@ -4,7 +4,7 @@
 [jenerate.py](../../jenerate.py) writes one folder for each palette you generate,
 for example `blue-purple/`, holding the theme's `theme.css` and
 `manifest.json`. Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 Each theme uses the palette's colors whether Obsidian is set to light or
 dark, and tells Obsidian whether the palette is dark or light.

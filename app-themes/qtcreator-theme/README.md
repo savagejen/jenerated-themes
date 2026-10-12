@@ -9,7 +9,7 @@ the underlines for errors, warnings and info.
 [jenerate.py](../../jenerate.py) writes one color scheme for each palette
 you generate, for example `jenerated-blue-purple.xml`. Blue Purple is
 included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 This colors the editor. The rest of Qt Creator's window comes from its own
 UI theme, whose format is tied to Qt Creator's internal design files and

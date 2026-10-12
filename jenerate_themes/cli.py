@@ -18,8 +18,8 @@ from pathlib import Path
 
 from . import __version__, paths, state
 from .errors import JenerateError
-from .palettes import CONTRAST_TARGET, report_contrast
-from .render import add, list_palettes, remove
+from .palettes import CONTRAST_TARGET, is_path, report_contrast
+from .render import add, list_palettes, refresh_blue_purple, remove
 from .system import current_folder
 from .vscode import write_vscode_package
 
@@ -41,21 +41,23 @@ def command_name():
 def repository(start_dir):
     """The repository's folder as you named it (keeping the links in its
     path), when the command was started from it, for paths.LINK_ROOT;
-    otherwise paths.ROOT. os.path.normpath takes .. as the shell does (Path
+    otherwise paths.DATA. os.path.normpath takes .. as the shell does (Path
     keeps it)."""
     candidate = Path(os.path.normpath(os.path.join(start_dir, os.path.dirname(sys.argv[0]) or ".")))
     try:
-        if candidate.samefile(paths.ROOT):
+        if candidate.samefile(paths.DATA):
             return candidate
     except OSError:
         pass
-    return paths.ROOT
+    return paths.DATA
 
 
 def palette_names(values):
     """Palette names from the command line, where several can also be
-    separated by commas."""
-    return [name.strip() for value in values for name in value.split(",") if name.strip()]
+    separated by commas. A palette given as a path is taken from the folder
+    the command was started in."""
+    names = [name.strip() for value in values for name in value.split(",") if name.strip()]
+    return [str(Path(state.START_DIR, name)) if is_path(name) else name for name in names]
 
 
 def parser():
@@ -106,14 +108,23 @@ def main(args=None):
     options = parser().parse_args(args)
 
     state.START_DIR = current_folder()
-    paths.LINK_ROOT = repository(state.START_DIR)
     state.COMMAND = command_name()
-    os.chdir(paths.LINK_ROOT)
-    os.environ["PWD"] = str(paths.LINK_ROOT)
+    if paths.DATA is None:
+        sys.exit("HOME isn't set, so there's no folder to keep your themes in. Set it to "
+                 f"yours (like export HOME=/home/you), then run {state.COMMAND} again.")
+    if not paths.INSTALLED:
+        # A clone works from the repository, as you named it.
+        paths.LINK_ROOT = repository(state.START_DIR)
+        os.chdir(paths.LINK_ROOT)
+        os.environ["PWD"] = str(paths.LINK_ROOT)
 
     from . import menus  # the apps are loaded only when they're needed
 
     try:
+        # After an upgrade, an installed copy's Blue Purple themes catch up
+        # with the ones it comes with.
+        if refresh_blue_purple():
+            write_vscode_package()
         if options.command is None:
             menus.run()
         elif options.command == "install":

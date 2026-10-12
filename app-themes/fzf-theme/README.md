@@ -11,7 +11,7 @@ fzf.vim that use your fzf options.
 generate, for example `blue-purple/`, holding `jenerated-blue-purple.sh`
 (for bash and zsh) and `jenerated-blue-purple.fish` (for fish). Blue Purple
 is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How the colors are used
 

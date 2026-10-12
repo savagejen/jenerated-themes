@@ -53,7 +53,7 @@ from jenerate_themes.errors import JenerateError  # noqa: E402
 from jenerate_themes.ui import step  # noqa: E402
 from jenerate_themes.creator import serve  # noqa: E402
 
-ROOT = paths.ROOT
+ROOT = paths.SOURCE  # a clone: the repository
 PALETTES = paths.PALETTES
 SCREENSHOTS = PALETTES / "Screenshots"
 README = PALETTES / "README.md"

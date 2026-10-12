@@ -13,7 +13,7 @@ the desktop app and the mobile apps.
 generate, for example `blue-purple.json`, holding the theme in the format
 Mattermost's custom theme editor copies and pastes. Blue Purple is
 included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How the colors are used
 

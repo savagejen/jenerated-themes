@@ -8,7 +8,7 @@ accent colors the editor uses for asset types and folders.
 [jenerate.py](../../jenerate.py) writes one theme for each palette you
 generate, for example `jenerated-blue-purple.json`. Blue Purple is included;
 to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 This themes the editor itself, not your games. The code editor you use with
 Unreal has its own theme: see [VS Code](../vs-code-theme/),

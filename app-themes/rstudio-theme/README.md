@@ -10,7 +10,7 @@ dark or light to match the theme.
 [jenerate.py](../../jenerate.py) writes one theme for each palette you
 generate, for example `jenerated-blue-purple.rstheme`. Blue Purple is
 included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 An `.rstheme` is CSS with a short header naming the theme and saying
 whether it's dark. Each theme has the same parts as RStudio's built-in

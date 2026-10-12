@@ -22,9 +22,9 @@ def install(theme):
     # app-themes/vim-theme is a Vim package: linked once, every generated
     # palette's colorscheme (in its colors/ folder) is available.
     if has_vim:
-        plan_link(vim_pack, paths.app_themes("vim-theme"))
+        plan_link(vim_pack, paths.app_themes("vim-theme"), shared="Vim")
     if has_nvim:
-        plan_link(nvim_pack, paths.app_themes("vim-theme"))
+        plan_link(nvim_pack, paths.app_themes("vim-theme"), shared="Neovim")
     if has_vim and has_nvim:
         run_install_plan("the colorschemes for Vim and Neovim")
     elif has_vim:
