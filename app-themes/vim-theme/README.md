@@ -4,9 +4,9 @@ Colorschemes for [Vim](https://www.vim.org) (8 or later) and
 [Neovim](https://neovim.io) that match the VS Code themes: the same syntax
 colors, and the same 16 colors in the built-in terminal as the Ptyxis and
 Tilix themes. [jenerate.py](../../jenerate.py) writes one colorscheme for each
-palette you generate, named `jenerated-<slug>`, in `colors/`, for example
+palette you generate, named `jenerated-<short-name>`, in `colors/`, for example
 `colors/jenerated-blue-purple.vim`. Blue Purple is included; to add other
-palettes, see [Getting started](../../README.md#getting-started).
+palettes, see [Setting up by hand](../../README.md#setting-up-by-hand).
 
 The colorschemes use the palette's exact colors in GUI Vim, and in terminals
 with `termguicolors` set. Without it, they fall back to the terminal's 16
@@ -20,7 +20,7 @@ The colorschemes are generated from `colorscheme.vim.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Vim. To
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Vim. To
 install by hand:
 
 1. Clone this repository.

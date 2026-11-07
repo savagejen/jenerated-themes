@@ -6,7 +6,7 @@
 # file. Templates add transparency themselves (e.g. {{accent}}33).
 
 name = "Sunset"
-slug = "sunset"
+short_name = "sunset"
 
 [colors]
 # Backgrounds, darkest to lightest (the sky, from its top to the horizon)

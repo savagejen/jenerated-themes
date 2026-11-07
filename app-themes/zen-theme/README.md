@@ -15,7 +15,7 @@ your profile:
 [jenerate.py](../../jenerate.py) writes one folder for each palette you
 generate, for example `blue-purple/`, holding the two files. Blue Purple is
 included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How it works
 
@@ -36,7 +36,7 @@ colors, see [Changing colors](../../README.md#changing-colors).
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Zen
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Zen
 Browser. Open Zen at least once first, so it has a profile. The script:
 
 1. Asks which profile to use, if you have more than one.
@@ -64,5 +64,5 @@ To install by hand, find your profile folder in Zen (`about:support`, then
 3. Restart Zen.
 
 Zen reads the theme when it starts, so after changing the palette and
-running `./jenerate.py`, restart Zen. To go back to Zen's own look, remove
+regenerating its themes, restart Zen. To go back to Zen's own look, remove
 the two `@import` lines (or the files), and restart.

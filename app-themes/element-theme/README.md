@@ -8,7 +8,7 @@ avatars.
 [jenerate.py](../../jenerate.py) writes one folder for each palette you
 generate, for example `blue-purple/`, holding `jenerated-blue-purple.json`,
 an Element custom theme. Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How it works
 
@@ -39,7 +39,7 @@ This is for **Element Desktop**. Element on the web (such as
 app.element.io) reads its settings from the website, so it can't load a
 theme from your computer.
 
-The easiest way is `./setup.sh` from the repository root: choose Element
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Element
 (under Communication). It adds the theme to Element's own settings file,
 `config.json`, under `setting_defaults.custom_themes`, keeping everything
 else in the file, and backs the file up first (as
@@ -67,7 +67,7 @@ it if needed) as an item of `custom_themes`:
 ```
 
 The theme is copied into `config.json`, so after changing the palette, run
-`./setup.sh` again (it replaces the old copy) and restart Element.
+`jenerate` again (it replaces the old copy) and restart Element.
 
 If you've added custom themes before in Element's developer tools
 (`/devtools`, then **Custom themes**), Element keeps that list in your

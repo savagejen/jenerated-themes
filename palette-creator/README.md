@@ -9,16 +9,21 @@ it as you edit.
 
 Needs Python 3.11 or later. Run `./setup.sh` from the repository root and
 choose **Design a new palette**; it explains the steps below, then starts
-the Palette Creator. Or start it directly:
+the Palette Creator. Or go straight to it:
 
 ```bash
-./palette-creator/serve.py
+./setup.sh --design
 ```
 
-It opens the page in your browser (use `--no-browser` to just print the
-address, or `--port` to pick a port). Press `Ctrl+C` in the terminal to stop
-it. The page only works while `serve.py` is running, and only from this
-computer.
+It opens the page in your browser. Press `Ctrl+C` in the terminal to stop
+it. The page only works while the Palette Creator is running, and only from
+this computer.
+
+The Palette Creator's code is in
+[jenerate_themes/creator](../jenerate_themes/creator/): `serve.py` and the
+page, `palette-creator.html`. To start it with options (`--no-browser` to
+just print the address, or `--port` to pick a port), run it from the
+repository root as `python3 -m jenerate_themes.creator.serve --no-browser`.
 
 It uses port 8765, or the next free one if another program has it. If the
 Palette Creator is already running there from this folder (left open in
@@ -31,8 +36,8 @@ repository, so the page and the server are the new versions.
 - **Your draft:** the page edits `work-in-progress-palette.toml` in this
   folder, and saves it automatically as you go (whenever the palette is
   valid; if it isn't, the draft is kept as it was until you fix it). It's
-  created from Blue Purple the first time you start `serve.py`, and git
-  ignores it, so your drafts stay yours.
+  created from Blue Purple the first time you start the Palette Creator, and
+  git ignores it, so your drafts stay yours.
 - **Description:** the comment at the top of the palette file: what the
   palette is and where its colors come from. Blank lines separate
   paragraphs. It's wrapped to fit the file when saved, and the file's usual
@@ -52,24 +57,28 @@ repository, so the page and the server are the new versions.
   it (including colors that refer to it), or click part of the preview to
   jump to its color.
 - **Checking:** the page checks the palette with `jenerate.py`'s own rules as
-  you type, and shows what's wrong, such as a slug with capitals or a color
-  the templates need. Hot pink in the preview means a color is missing or
-  invalid.
+  you type, and shows what's wrong, such as a short name with capitals or a
+  color the templates need. Hot pink in the preview means a color is missing
+  or invalid.
 
 ## Save it
 
 - **Save as palette...** opens your computer's save dialog in `palettes/Dark`
   or `palettes/Light`, whichever the palette is, suggesting
-  `<slug>-palette.toml` (for example `sunset-palette.toml`). Keep that name:
-  `jenerate.py` finds palettes there by their slug, so it won't accept
-  another name. You can also save somewhere else and pass the file's path to
-  `jenerate.py`. The dialog is `zenity` or `kdialog` on Linux, or the
-  standard one on macOS; without one, the page asks for a file name
-  instead. Then generate its themes:
-
-  ```bash
-  ./jenerate.py <slug>
-  ```
+  `<short-name>-palette.toml` (for example `sunset-palette.toml`). Keep that
+  name: `jenerate.py` finds palettes there by their short name, so it won't
+  accept another name. You can also save somewhere else and pass the file's
+  path to `jenerate.py`. The dialog is `zenity` or `kdialog` on Linux, or the
+  standard one on macOS; without one, the page asks for a file name instead.
+- **Install it, or keep designing:** once it's saved, the page asks whether
+  to install it into your apps now. Choosing to install closes the Palette
+  Creator, and the terminal you started it from goes on to the app menu
+  with your palette already chosen (ALL THE APPS is there too). Choosing to
+  keep designing leaves it saved; install it later by running `./setup.sh`
+  again and choosing **Install a theme**. A palette saved outside
+  `palettes/` isn't offered: generate its themes with
+  `./jenerate.py path/to/your-palette.toml`, then follow the install steps
+  in each app's folder.
 
 Saving keeps the palette file's layout: its header comments, its groups of
 colors with their titles, and each color's note.

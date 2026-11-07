@@ -11,7 +11,7 @@ fzf.vim that use your fzf options.
 generate, for example `blue-purple/`, holding `jenerated-blue-purple.sh`
 (for bash and zsh) and `jenerated-blue-purple.fish` (for fish). Blue Purple
 is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How the colors are used
 
@@ -41,7 +41,7 @@ The files are generated from `fzf.sh.tmpl` and `fzf.fish.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose fzf. It
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose fzf. It
 links the palette's colors to `~/.config/fzf/jenerated-colors.sh`, and then:
 
 - for **bash** and **zsh**, offers to add a line to `~/.bashrc` or
@@ -61,6 +61,6 @@ echo '. ~/.config/fzf/jenerated-colors.sh' >>~/.bashrc   # or ~/.zshrc
 For fish, link `jenerated-blue-purple.fish` into `~/.config/fish/conf.d/`
 instead.
 
-After changing the palette, run `./jenerate.py` and open a new terminal. To
-switch palettes, run `./setup.sh` again. To go back to fzf's own colors,
+After changing the palette, regenerate its themes and open a new terminal.
+To switch palettes, run `jenerate` again. To go back to fzf's own colors,
 remove the line from your startup file (or the link from fish's `conf.d`).

@@ -5,7 +5,7 @@
 # file. Templates add transparency themselves (e.g. {{accent}}33).
 
 name = "Blue Purple"
-slug = "blue-purple"
+short_name = "blue-purple"
 
 [colors]
 # Backgrounds, darkest to lightest

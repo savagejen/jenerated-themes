@@ -6,7 +6,7 @@ sidebars, tooltips, scrollbars, switches, checkboxes, sliders and progress
 bars. [jenerate.py](../../jenerate.py) writes one theme folder for each
 palette you generate, for example `blue-purple/`, holding `gtk-3.0/gtk.css`
 and `index.theme`. Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## Which apps
 
@@ -37,8 +37,8 @@ It doesn't apply to:
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose GTK3 apps.
-It links the theme into `~/.local/share/themes/Jenerated-<slug>`, and on
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose GTK3 apps.
+It links the theme into `~/.local/share/themes/Jenerated-<short-name>`, and on
 GNOME offers to switch to it, showing your current theme and the command to
 switch back. To install it by hand:
 

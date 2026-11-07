@@ -7,7 +7,7 @@ Each theme is named "Jenerated" plus the palette's name, for example
 open-source build some Linux distributions ship, like Arch's `code` package)
 and VSCodium.
 
-The theme files in `themes/` (`jenerated-<slug>-color-theme.json`) are
+The theme files in `themes/` (`jenerated-<short-name>-color-theme.json`) are
 generated from `themes/color-theme.json.tmpl`, and `package.json` from
 `package.json.tmpl`. To change colors, see
 [Changing colors](../../README.md#changing-colors).
@@ -20,8 +20,11 @@ Development Host with the themes available immediately.
 
 ## Install locally
 
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose VS Code.
+To install by hand:
+
 1. Clone this repository. Blue Purple is included; to add other palettes,
-   see [Getting started](../../README.md#getting-started).
+   see [Setting up by hand](../../README.md#setting-up-by-hand).
 
    ```bash
    git clone https://github.com/savagejen/jenerated-themes jenerated-themes
@@ -30,10 +33,10 @@ Development Host with the themes available immediately.
 2. Symlink or copy the folder into your extensions directory:
    `~/.vscode/extensions` for VS Code, or `~/.vscode-oss/extensions` for
    Code - OSS and VSCodium (use that path in the commands below). A symlink
-   means themes you generate or remove later show up after a reload; with
-   a copy, you copy the folder again. Run these from
-   the same folder where you ran `git clone`. (`./setup.sh` links it into
-   each of those folders that exists.)
+   means themes you generate or remove later show up after a reload; with a
+   copy, you copy the folder again. Run these from the same folder where you
+   ran `git clone`. (`jenerate` links it into each of those folders that
+   exists.)
 
    ```bash
    # Symlink (ln needs an absolute path, hence $PWD)

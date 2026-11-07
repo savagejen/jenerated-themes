@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+"""Jenerated Themes: run it from this folder as ./jenerate (./jenerate --help
+lists what it can do). It's the jenerate command, for a copy of the
+repository; installed, the command is just jenerate."""
+
+import os
+import sys
+
+if sys.version_info < (3, 11):
+    sys.exit("jenerate needs Python 3.11 or later (python3 --version to check).")
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+from jenerate_themes.cli import main  # noqa: E402  (needs the path above)
+
+main()

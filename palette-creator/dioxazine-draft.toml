@@ -9,7 +9,7 @@
 # file. Templates add transparency themselves (e.g. {{accent}}33).
 
 name = "Dioxazine"
-slug = "dioxazine"
+short_name = "dioxazine"
 
 [colors]
 # Backgrounds: the paint's masstone, darkest to lightest

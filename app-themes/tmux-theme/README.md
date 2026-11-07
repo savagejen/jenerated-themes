@@ -9,7 +9,7 @@ numbers. What runs inside the panes keeps your terminal's colors.
 [jenerate.py](../../jenerate.py) writes one folder for each palette you
 generate, for example `blue-purple/`, holding `jenerated-blue-purple.conf`.
 Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How the colors are used
 
@@ -37,7 +37,7 @@ The file is generated from `colors.conf.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose tmux. It
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose tmux. It
 links the palette's colors to `~/.config/tmux/jenerated-colors.conf`, and
 adds a line that loads them to the end of your tmux settings: `~/.tmux.conf`
 if you have one, or else `~/.config/tmux/tmux.conf` (the same order tmux
@@ -54,6 +54,6 @@ echo 'source-file -q ~/.config/tmux/jenerated-colors.conf' >>~/.tmux.conf
 tmux source-file ~/.config/tmux/jenerated-colors.conf   # if tmux is running
 ```
 
-After changing the palette, run `./jenerate.py` and load the file into tmux
-again (or restart it). To switch palettes, run `./setup.sh` again. To go
+After changing the palette, regenerate its themes and load the file into
+tmux again (or restart it). To switch palettes, run `jenerate` again. To go
 back to tmux's own colors, remove the `source-file` line and restart tmux.

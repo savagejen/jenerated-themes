@@ -9,7 +9,7 @@ plugins to Gaming Mode, and its **CSS Loader** plugin applies themes.
 [jenerate.py](../../jenerate.py) writes one CSS Loader theme folder for each
 palette you generate, for example `blue-purple/`, holding `theme.json` and
 `shared.css`. Blue Purple is included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How it works
 
@@ -44,10 +44,10 @@ The files are generated from `theme.json.tmpl` and `shared.css.tmpl` by
 First install [Decky Loader](https://decky.xyz), following its instructions
 for your system, then install **CSS Loader** from Decky's plugin store.
 
-The easiest way is `./setup.sh` from the repository root (in Desktop Mode, or
-over SSH): choose Decky Loader. It links the theme into `~/homebrew/themes`,
-where CSS Loader looks for themes. To install it by hand, run this from the
-same folder where you ran `git clone`:
+The easiest way is `jenerate` (or `./setup.sh` in a clone), in Desktop Mode
+or over SSH: choose Decky Loader. It links the theme into
+`~/homebrew/themes`, where CSS Loader looks for themes. To install it by
+hand, run this from the same folder where you ran `git clone`:
 
 ```bash
 mkdir -p ~/homebrew/themes
@@ -63,5 +63,5 @@ Then, in Gaming Mode:
 3. Turn on **Jenerated Blue Purple**.
 
 CSS Loader reads the theme from the repository, so after changing the
-palette and running `./jenerate.py`, press **Refresh** again. To go back to
+palette and regenerating its themes, press **Refresh** again. To go back to
 Steam's own colors, turn the theme off.

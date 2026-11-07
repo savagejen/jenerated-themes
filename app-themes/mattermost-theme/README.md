@@ -13,7 +13,7 @@ the desktop app and the mobile apps.
 generate, for example `blue-purple.json`, holding the theme in the format
 Mattermost's custom theme editor copies and pastes. Blue Purple is
 included; to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 ## How the colors are used
 
@@ -38,15 +38,15 @@ The files are generated from `theme.json.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Mattermost
-(under Communication). It prints the theme and copies it to your clipboard.
-Or copy the contents of the palette's `.json` file yourself. Then, in
-Mattermost:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose
+Mattermost (under Communication). It prints the theme and copies it to your
+clipboard. Or copy the contents of the palette's `.json` file yourself.
+Then, in Mattermost:
 
 1. Open **Settings -> Display -> Theme**, and choose **Edit**.
 2. Choose **Custom Theme**, and paste the theme into the box under **Copy
    and paste to share theme colors**.
 3. Choose **Save**.
 
-After changing the palette, run `./jenerate.py` (or `./setup.sh`) and paste
-the new theme the same way.
+After changing the palette, run `jenerate` again and paste the new theme the
+same way.

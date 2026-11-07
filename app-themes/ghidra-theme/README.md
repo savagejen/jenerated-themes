@@ -2,9 +2,9 @@
 
 Themes for [Ghidra](https://ghidra-sre.org/), the reverse engineering suite
 (11.0 or later, which added themes). [jenerate.py](../../jenerate.py) writes
-one `jenerated-<slug>.theme` file for each palette you generate, for example
-`jenerated-blue-purple.theme`. Each shows up in Ghidra as "Jenerated" plus
-the palette's name.
+one `jenerated-<short-name>.theme` file for each palette you generate, for
+example `jenerated-blue-purple.theme`. Each shows up in Ghidra as "Jenerated"
+plus the palette's name.
 
 A theme colors Ghidra's windows, tables and panels, and its code views in
 the same roles as the editor themes:
@@ -23,10 +23,10 @@ The files are generated from `theme.theme.tmpl`. To change colors, see
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Ghidra. It
-links the theme into the `themes` folder of each Ghidra version's settings
-folder it finds. Ghidra makes that folder the first time it runs; before
-that, setup explains how to import the theme from Ghidra instead.
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Ghidra.
+It links the theme into the `themes` folder of each Ghidra version's
+settings folder it finds. Ghidra makes that folder the first time it runs;
+before that, setup explains how to import the theme from Ghidra instead.
 
 To install by hand, either:
 

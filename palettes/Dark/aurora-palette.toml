@@ -7,7 +7,7 @@
 # file. Templates add transparency themselves (e.g. {{accent}}33).
 
 name = "Aurora"
-slug = "aurora"
+short_name = "aurora"
 
 [colors]
 # Backgrounds: the night sky, darkest to lightest

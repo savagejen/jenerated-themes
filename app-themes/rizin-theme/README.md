@@ -1,9 +1,10 @@
 # Jenerated Themes for rizin
 
-Color themes for [rizin](https://rizin.re/), the reverse engineering framework, and
-Cutter, its graphical interface. [jenerate.py](../../jenerate.py) writes one
-`jenerated-<slug>` file for each palette you generate, for example
-`jenerated-blue-purple`, loaded in rizin with `eco jenerated-<slug>`.
+Color themes for [rizin](https://rizin.re/), the reverse engineering
+framework, and Cutter, its graphical interface.
+[jenerate.py](../../jenerate.py) writes one `jenerated-<short-name>` file for
+each palette you generate, for example `jenerated-blue-purple`, loaded in
+rizin with `eco jenerated-<short-name>`.
 
 Rizin is a fork of [radare2](../radare2-theme/), and the themes match
 radare2's, with rizin's names for its colors (it calls addresses `offset`,
@@ -24,12 +25,12 @@ The files are generated from `theme.rz.tmpl`. To change colors, see
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose rizin. It
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose rizin. It
 links the theme into rizin's themes folder, and offers to load it every time
 rizin starts. To install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
-   see [Getting started](../../README.md#getting-started).
+   see [Setting up by hand](../../README.md#setting-up-by-hand).
 
    ```bash
    git clone https://github.com/savagejen/jenerated-themes jenerated-themes

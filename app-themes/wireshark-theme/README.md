@@ -2,7 +2,7 @@
 
 Coloring rules for [Wireshark](https://www.wireshark.org/), the network
 protocol analyzer. [jenerate.py](../../jenerate.py) writes a `colorfilters`
-file for each palette you generate, in `<slug>/colorfilters`, for example
+file for each palette you generate, in `<short-name>/colorfilters`, for example
 `blue-purple/colorfilters`.
 
 They're Wireshark's own default coloring rules, with the same filters in the
@@ -31,11 +31,11 @@ The rules go in a Wireshark configuration profile of their own, named
 Default profile) are left alone, and each palette is a profile you can
 switch to.
 
-The easiest way is `./setup.sh` from the repository root: choose Wireshark.
-To install by hand:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose
+Wireshark. To install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
-   see [Getting started](../../README.md#getting-started).
+   see [Setting up by hand](../../README.md#setting-up-by-hand).
 
    ```bash
    git clone https://github.com/savagejen/jenerated-themes jenerated-themes

@@ -5,7 +5,7 @@
 # file. Templates add transparency themselves (e.g. {{accent}}33).
 
 name = "Madrone Grove"
-slug = "madrone-grove"
+short_name = "madrone-grove"
 
 [colors]
 # Backgrounds: warm shadows, darkest to lightest, with a green sidebar

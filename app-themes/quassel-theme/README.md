@@ -1,9 +1,9 @@
 # Jenerated Themes for Quassel IRC
 
 Stylesheets for the [Quassel IRC](https://quassel-irc.org/) client.
-[jenerate.py](../../jenerate.py) writes one `jenerated-<slug>.qss` file for
-each palette you generate, for example `jenerated-blue-purple.qss`. Only the
-client needs one: if you run Quassel as a core on a server, install the
+[jenerate.py](../../jenerate.py) writes one `jenerated-<short-name>.qss` file
+for each palette you generate, for example `jenerated-blue-purple.qss`. Only
+the client needs one: if you run Quassel as a core on a server, install the
 stylesheet on the computer you chat from.
 
 A stylesheet colors the whole Quassel window, not just the chat:
@@ -35,12 +35,12 @@ The files are generated from `stylesheet.qss.tmpl`. To change colors, see
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Quassel
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Quassel
 IRC. It links the stylesheet into a `stylesheets` folder in Quassel's
 settings folder. If you have the Flatpak, it also copies the stylesheet into
 the Flatpak's settings folder, since the Flatpak can't see files outside its
-own folders; run `./setup.sh` again after changing the palette to update
-that copy.
+own folders; run `jenerate` again after changing the palette to update that
+copy.
 
 To install by hand, link it there yourself, so later changes to the palette
 show up after you restart Quassel. Quassel's settings folder is

@@ -1,0 +1,94 @@
+# How Jenerated Themes is packaged, for pipx and the .deb, .rpm and Arch
+# packages. Installed, it's the jenerate command; see "A clone and an
+# installed copy" in CONTRIBUTING.md for how an installed copy finds its
+# files.
+
+[build-system]
+requires = ["hatchling>=1.27", "hatch-fancy-pypi-readme>=24.1"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jenerate-themes"
+dynamic = ["version", "readme"]
+description = "Matching color themes for dozens of apps, generated from one color palette."
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "savagejen" }]
+keywords = ["theme", "color-scheme", "palette", "vscode", "vim", "terminal"]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Desktop Environment",
+]
+# Only Python's own library: nothing else to install.
+dependencies = []
+
+[project.scripts]
+jenerate = "jenerate_themes.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/savagejen/jenerated-themes"
+Changelog = "https://github.com/savagejen/jenerated-themes/blob/main/CHANGELOG.md"
+
+# The version is __version__ in jenerate_themes/__init__.py, so it's kept in
+# one place.
+[tool.hatch.version]
+path = "jenerate_themes/__init__.py"
+
+# The README is the package's page on PyPI. Its links are relative, for
+# GitHub and clones, so they're made into links to GitHub there: images to
+# the files themselves, everything else to the page GitHub shows for it.
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+path = "README.md"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '!\[([^\]]*)\]\((?!https?://)([^)#]+)\)'
+replacement = '![\1](https://raw.githubusercontent.com/savagejen/jenerated-themes/main/\2)'
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '\]\((?!https?://|#)([^)]+)\)'
+replacement = '](https://github.com/savagejen/jenerated-themes/blob/main/\1)'
+
+# Links to the README's own sections go to them on GitHub, since PyPI's page
+# doesn't mark its headings for links to find.
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '\]\(#([^)]+)\)'
+replacement = '](https://github.com/savagejen/jenerated-themes#\1)'
+
+# The source package: what the package is built from.
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "jenerate_themes",
+    "app-themes",
+    "palettes",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+]
+exclude = ["palettes/Screenshots"]
+
+# The installed package: jenerate_themes, with the templates, the palettes
+# and Blue Purple's pre-made themes in its data/ folder, laid out as in the
+# repository. Whole folders, so a new template or palette is packaged with
+# nothing more to do. Files git ignores (palettes you generated) are left
+# out, as are what's only for the repository: the apps' READMEs, the palette
+# screenshots, and the colors-to-avoid list.
+[tool.hatch.build.targets.wheel]
+only-include = ["jenerate_themes", "app-themes", "palettes"]
+exclude = [
+    "README.md",
+    "palettes/Screenshots",
+    "palettes/avoid-these.txt",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"app-themes" = "jenerate_themes/data/app-themes"
+"palettes" = "jenerate_themes/data/palettes"

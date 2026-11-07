@@ -1,0 +1,3 @@
+# Text files are stored and checked out with LF line endings, whatever a
+# contributor's editor saves; git leaves files it finds binary alone.
+* text=auto eol=lf

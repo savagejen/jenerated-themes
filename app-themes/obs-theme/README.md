@@ -7,7 +7,7 @@ and its meters, and the preview's background.
 [jenerate.py](../../jenerate.py) writes one style for each palette you
 generate, for example `jenerated-blue-purple.ovt`. Blue Purple is included;
 to add other palettes, see
-[Getting started](../../README.md#getting-started).
+[Setting up by hand](../../README.md#setting-up-by-hand).
 
 Each style builds on OBS's own Yami theme (its Light style for light
 palettes), so OBS's layout and icons stay as they are and only the colors
@@ -33,8 +33,8 @@ The files are generated from `style.ovt.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose OBS Studio
-(under Entertainment). It links the style into OBS's themes folder:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose OBS
+Studio (under Entertainment). It links the style into OBS's themes folder:
 
 - Linux: `~/.config/obs-studio/themes/`, and, if OBS was installed through
   Flatpak, `~/.var/app/com.obsproject.Studio/config/obs-studio/themes/`
@@ -48,4 +48,4 @@ Then restart OBS Studio, and:
 2. Choose **Yami** as the **Theme** and **Jenerated Blue Purple** as the
    **Style**.
 
-After changing the palette, run `./jenerate.py` and restart OBS.
+After changing the palette, regenerate its themes and restart OBS.

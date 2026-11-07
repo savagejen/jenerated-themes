@@ -9,7 +9,7 @@ colors that shells and compilation output use inside Emacs.
 [jenerate.py](../../jenerate.py) writes one theme for each palette you
 generate, for example `jenerated-blue-purple-theme.el`, a standard Emacs
 custom theme named `jenerated-blue-purple`. Blue Purple is included; to add
-other palettes, see [Getting started](../../README.md#getting-started).
+other palettes, see [Setting up by hand](../../README.md#setting-up-by-hand).
 
 The theme also sets faces for built-in packages Emacs loads on demand, such
 as diffs and tab bars; Emacs keeps them until those packages load. It works
@@ -22,12 +22,12 @@ The files are generated from `theme.el.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Emacs
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Emacs
 (under Editors). It links the theme into Emacs's own folder, where Emacs
 looks for themes without any other setup. That's `~/.emacs.d/` if you have
 it (or a `~/.emacs` file), otherwise `~/.config/emacs/` if you have that,
-and otherwise `~/.emacs.d/`, the same way Emacs chooses. To install by
-hand, link or copy the palette's `-theme.el` file into that folder.
+and otherwise `~/.emacs.d/`, the same way Emacs chooses. To install by hand,
+link or copy the palette's `-theme.el` file into that folder.
 
 Then, in Emacs:
 
@@ -39,4 +39,4 @@ Then, in Emacs:
 
 Or add `(load-theme 'jenerated-blue-purple t)` to your init file.
 
-After changing the palette, run `./jenerate.py` and load the theme again.
+After changing the palette, regenerate its themes and load the theme again.

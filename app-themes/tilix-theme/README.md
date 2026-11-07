@@ -1,10 +1,11 @@
 # Jenerated Themes for Tilix
 
 Color schemes for [Tilix](https://gnunn1.github.io/tilix-web/), the tiling
-terminal for Linux. [jenerate.py](../../jenerate.py) writes one `<slug>.json`
-file for each palette you generate, for example `blue-purple.json`. Each uses
-the same colors as the matching VS Code theme's built-in terminal and the
-Ptyxis palette, and shows up in Tilix as "Jenerated" plus the palette's name.
+terminal for Linux. [jenerate.py](../../jenerate.py) writes one
+`<short-name>.json` file for each palette you generate, for example
+`blue-purple.json`. Each uses the same colors as the matching VS Code theme's
+built-in terminal and the Ptyxis palette, and shows up in Tilix as "Jenerated"
+plus the palette's name.
 
 Each scheme uses the palette's colors whether GNOME is set to light or dark
 mode.
@@ -15,11 +16,11 @@ The `.json` files are generated from `scheme.json.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Tilix. To
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Tilix. To
 install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
-   see [Getting started](../../README.md#getting-started).
+   see [Setting up by hand](../../README.md#setting-up-by-hand).
 
    ```bash
    git clone https://github.com/savagejen/jenerated-themes jenerated-themes

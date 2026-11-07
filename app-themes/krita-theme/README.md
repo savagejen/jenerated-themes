@@ -1,21 +1,22 @@
 # Jenerated Themes for Krita
 
-Color themes for [Krita](https://krita.org/), the painting app. Krita's
-themes are KDE color schemes, so it uses the same file as the
-[KDE Plasma theme](../kde-theme/): `app-themes/kde-theme/<slug>/Jenerated-<slug>.colors`,
-written by [jenerate.py](../../jenerate.py) for each palette you generate. It
-shows up in Krita as "Jenerated" plus the palette's name, and colors Krita's
-windows, dockers and menus; your canvas and brushes are untouched.
+Color themes for [Krita](https://krita.org/), the painting app. Krita's themes
+are KDE color schemes, so it uses the same file as the
+[KDE Plasma theme](../kde-theme/):
+`app-themes/kde-theme/<short-name>/Jenerated-<short-name>.colors`, written by
+[jenerate.py](../../jenerate.py) for each palette you generate. It shows up in
+Krita as "Jenerated" plus the palette's name, and colors Krita's windows,
+dockers and menus; your canvas and brushes are untouched.
 
 To change colors, see [Changing colors](../../README.md#changing-colors).
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Krita. To
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Krita. To
 install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
-   see [Getting started](../../README.md#getting-started).
+   see [Setting up by hand](../../README.md#setting-up-by-hand).
 
    ```bash
    git clone https://github.com/savagejen/jenerated-themes jenerated-themes

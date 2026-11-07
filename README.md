@@ -1,6 +1,6 @@
 # Jenerated Themes
 
-A small theming engine: pick a color palette, and `jenerate.py` (the
+A small theming engine: pick a color palette, and `jenerate` (the
 Jenerator) turns it into matching themes for every supported app. You only
 get the palettes you ask for, so your apps' theme lists stay short.
 
@@ -12,8 +12,9 @@ install it in any app without running anything.
 ## Supported apps
 
 Each app has its own folder with a template and install instructions. They're
-grouped the same way as in `./setup.sh`, which can also search for an app by
-name. Apps marked (Linux) or (macOS) are only offered on that system.
+grouped the same way as in `jenerate`, which can also search for an app by
+name. Apps marked (Linux) or (macOS), and the Linux desktops, are only
+offered on that system.
 
 ### Web browsers
 
@@ -89,38 +90,98 @@ name. Apps marked (Linux) or (macOS) are only offered on that system.
 A few premade palettes are included, dark and light, and can be previewed in
 [palettes/README.md](palettes/README.md).
 
-## Quick Start Guide
+## Install
 
-The quickest way to use Jenerated Themes is to clone the repository and 
-run the setup script: 
+### With pipx (recommended)
+
+Jenerated Themes needs Python 3.11 or later (`python3 --version` to check),
+which current Linux systems come with. [pipx](https://pipx.pypa.io/)
+installs it as the `jenerate` command, in a place of its own.
+
+1. Install pipx, if you don't have it, with the line for your system, then
+   run `pipx ensurepath` and open a new terminal, so the commands pipx
+   installs can be found:
+
+   ```bash
+   sudo apt install pipx         # Ubuntu, Debian, Kali
+   sudo dnf install pipx         # Fedora
+   sudo pacman -S python-pipx    # Arch
+   brew install pipx             # macOS, with Homebrew
+   pipx ensurepath
+   ```
+
+2. Install Jenerated Themes:
+
+   ```bash
+   pipx install jenerate-themes
+   ```
+
+3. Run it, and choose an app and a theme:
+
+   ```bash
+   jenerate
+   ```
+
+To update it later, run `pipx upgrade jenerate-themes`. To uninstall it, run
+`pipx uninstall jenerate-themes`. The themes and palettes you made are kept
+in your [data folder](#where-your-themes-and-palettes-are); delete that too
+once you've switched your apps to other themes, since they use the files
+there.
+
+### From a clone, with setup.sh
+
+You can also clone the repository and run the setup script, which works the
+same way:
+
 ```bash
 git clone https://github.com/savagejen/jenerated-themes jenerated-themes
 cd jenerated-themes
 ./setup.sh
 ```
 
-The setup script asks which app and which theme you want (dark or light, then which one) 
-and it can also open the palette previews in your browser. 
+It needs Python 3.11 or later too; without it, it offers to install the
+Blue Purple theme into the apps where that only takes linking a few files
+into place, or pasting a theme in. Run `git pull` in the folder to update
+it.
 
-It is designed to work on Linux or macOS, but some of the themes function on other 
-platforms and users on those platforms can use the `jenerate.py` python script instead. See [Setting up by hand](#setting-up-by-hand) below.
-For most apps, the startup script first shows the commands that install the theme, 
-then offers to run them for you, linking the files (so they follow
-palette changes) or copying them. It can also start the [Palette
-Creator](palette-creator/), for designing a palette of your own:
+It is designed to work on Linux or macOS, but some of the themes function on
+other platforms, where the `jenerate` command (installed with pipx, above)
+can make them. See [Setting up by hand](#setting-up-by-hand) below.
 
-`./setup.sh --help` lists the setup shortcuts, like going straight to installing a
-particular palette into a particular app, or straight to the Palette
-Creator.
+## Using it
+
+`jenerate` (or `./setup.sh`, in a clone) asks which app and which theme you
+want (dark or light, then which one), and it can also open the palette
+previews in your browser. For most apps, it first shows the commands that
+install the theme, then offers to run them for you, linking the files (so
+they follow palette changes) or copying them. It can also start the
+[Palette Creator](palette-creator/), for designing a palette of your own.
+
+`jenerate --help` (or `./setup.sh --help`) lists the shortcuts, like going
+straight to installing a particular palette into a particular app, or
+straight to the Palette Creator.
 
 To theme everything at once, choose **ALL THE APPS** in the app menu: it
 installs one palette into every app it finds on your computer that it can
 install into by itself, without asking anything else once you've said yes.
-Apps it doesn't find are left out, and listed. (Apps whose
-themes are installed by hand, like the browsers and Slack, are left out and
-listed.) Or, for one app that keeps several themes to choose from (VS Code,
-Vim, the terminals and most editors), choose **ALL THE PALETTES** at the dark
-or light question, to install every palette into it.
+Apps it doesn't find are left out, and listed. (Apps whose themes are
+installed by hand, like most browsers and Slack, are left out and listed.)
+Or, for one app that keeps several themes to choose from (VS Code, Vim, the
+terminals and most editors), choose **ALL THE PALETTES** at the dark or
+light question, to install every palette into it.
+
+### Where your themes and palettes are
+
+|                               | Installed with pipx                         | A clone                              |
+|-------------------------------|---------------------------------------------|--------------------------------------|
+| Your palettes                 | `~/.local/share/jenerate-themes/palettes`   | `palettes/`                          |
+| Generated themes              | `~/.local/share/jenerate-themes/app-themes` | `app-themes/`, next to the templates |
+| Generating a palette's themes | `jenerate generate sunset`                  | `./jenerate.py sunset`               |
+
+On macOS, the data folder is `~/Library/Application Support/jenerate-themes`
+instead of `~/.local/share/jenerate-themes`. The palettes that come with
+Jenerated Themes are listed with yours, and one of yours with the same short
+name takes its place.
 
 ### Setting up by hand
 
@@ -141,8 +202,8 @@ or later):
    ./jenerate.py --list
    ```
 
-3. Generate themes for the palettes you want, by slug. Separate several with
-   commas, or run it again later to add more:
+3. Generate themes for the palettes you want, by short name. Separate several
+   with commas, or run it again later to add more:
 
    ```bash
    ./jenerate.py sunset
@@ -155,28 +216,32 @@ To remove a palette's themes again, run `./jenerate.py --remove sunset`.
 
 ## How it works
 
-A palette is a small file in [palettes/Dark](palettes/Dark/) or
-[palettes/Light](palettes/Light/) that names each color by
-its role: the editor background, text, the accent, error red, the terminal's
-colors and so on. `jenerate.py` fills those colors into a template for each
-app, and writes the themes next to the templates, named after the palette.
-Themes you generated earlier are kept.
+A palette is a small file that names each color by its role: the editor
+background, text, the accent, error red, the terminal's colors and so on.
+The ones that come with Jenerated Themes are in [palettes/Dark](palettes/Dark/)
+and [palettes/Light](palettes/Light/). Jenerated Themes fills those colors
+into a template for each app, and writes the themes named after the
+palette, in your [data folder](#where-your-themes-and-palettes-are) or,
+in a clone, next to the templates. Themes you generated earlier are kept.
 
-Generated themes stay out of git, so your copy holds only the palettes you
-chose. Don't edit them by hand; change the palette and run `jenerate.py`
-again.
+In a clone, generated themes stay out of git, so your copy holds only the
+palettes you chose. Don't edit generated themes by hand; change the palette
+and generate its themes again.
 
 ## Light and dark palettes
 
 Palettes can be dark or light. `jenerate.py` works out which from the
 palette's editor background (`bg`): a palette is light if black text reads
 better on it than white. A palette can also say which it is, with
-`scheme = "dark"` or `scheme = "light"` after its `slug`. The themes follow:
+`scheme = "dark"` or `scheme = "light"` after its `short_name`. The themes
+follow:
 VS Code and Firefox mark the theme dark or light, JetBrains themes build on
 the IDE's dark or light theme, GTK3 themes on Adwaita's dark or light
 version, Obsidian and Vim tell the app which it is, Godot uses its own
 contrast setting for dark or light, and Chromium picks matching search
-logos for the new tab page. The other apps just use the palette's colors.
+logos for the new tab page. Several others (among them Element, Mattermost,
+Zen and the GNOME text editors) also mark the theme dark or light or adjust
+a few details to match. The rest just use the palette's colors.
 
 Two text colors matter most for light palettes: `text_bright` is text on the
 accent color (buttons, badges, selected menu items), and `text_strong` is
@@ -187,36 +252,41 @@ on a light palette `text_bright` stays light for the accent, and
 
 ## Changing colors
 
-Edit a palette, for example `palettes/Dark/sunset-palette.toml`, then run
-`./jenerate.py sunset` to regenerate its themes. Reload the apps that use it
-to see the change.
+Edit one of your palettes, then generate its themes again
+(`jenerate generate sunset`, or `./jenerate.py sunset` in a clone), and reload the
+apps that use it to see the change. To change a palette that came with
+Jenerated Themes, copy it into your palettes folder first (see
+[Where your themes and palettes are](#where-your-themes-and-palettes-are)),
+or load it into the [Palette Creator](palette-creator/) and save it from
+there: yours takes its place. In a clone, you can edit the palettes in
+`palettes/` directly.
 
-You can also keep a palette outside this repository and pass its path:
-`./jenerate.py ~/my-palettes/forest-palette.toml`.
+You can also keep a palette anywhere else and give its path:
+`jenerate generate ~/my-palettes/forest-palette.toml`.
 
 ## Adding a palette
 
-The easiest way is the [Palette Creator](palette-creator/): run
-`./setup.sh` and choose **Design a new palette**, or run
-`./palette-creator/serve.py`. It shows a preview in your browser that
-recolors as you edit. Save the palette (it goes in `palettes/Dark` or
-`palettes/Light`, to match it), then generate its themes with
-`./jenerate.py <slug>`.
+The easiest way is the [Palette Creator](palette-creator/): run `jenerate`
+(or `./setup.sh`) and choose **Design a new palette** (`--help` lists a
+shortcut straight to it). It shows a preview in your browser that recolors
+as you edit. Save the palette (it goes in your palettes folder's `Dark` or
+`Light`, to match it), and it asks whether to install it into your apps
+now, or keep designing and install it later from the menu.
 
 To write one by hand, copy an existing palette to
-`palettes/Dark/<slug>-palette.toml` or `palettes/Light/<slug>-palette.toml`,
-change its `name`, `slug` and colors, and run
-`./jenerate.py <slug>`. Every color the templates use must be defined; if one
-is missing, `jenerate.py` stops and names it.
+`Dark/<short-name>-palette.toml` or `Light/<short-name>-palette.toml` in your
+palettes folder, change its `name`, `short_name` and colors, and generate
+its themes. Every color the templates use
+must be defined; if one is missing, Jenerated Themes stops and names it.
 
-A few rules keep generated files safe and valid; `jenerate.py` checks them and
-explains any that a palette breaks:
+A few rules keep generated files safe and valid; Jenerated Themes checks
+them and explains any that a palette breaks:
 
-- The `slug` is used in file names, so it's lowercase letters, numbers and
-  single dashes, like `deep-blue-sea`.
-- A palette in `palettes/Dark` or `palettes/Light` must be named
-  `<slug>-palette.toml`, and a slug can only be used once. (A palette kept
-  elsewhere and passed by path can be named anything.)
+- The `short_name` is used in file names, so it's lowercase letters,
+  numbers and single dashes, like `deep-blue-sea`.
+- A palette in your palettes folder's `Dark` or `Light` must be named
+  `<short-name>-palette.toml`, and a short name can only be used once there.
+  (A palette kept elsewhere and given by its path can be named anything.)
 - The `name` can't be empty, start or end with spaces, or contain double
   quotes, slashes, backslashes, `<`, `>`, `&` or line breaks. (It's written
   into JSON and XML files, and also names the Obsidian theme's folder.)
