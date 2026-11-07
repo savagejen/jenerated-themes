@@ -26,7 +26,7 @@ The files are generated from `scheme.ini.tmpl` by
 Close Spyder first: it saves its settings when it closes, which would undo
 the change.
 
-The easiest way is `./setup.sh` from the repository root: choose Spyder
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Spyder
 (under Editors). It adds the theme to `spyder.ini` as a custom theme (the
 same way Spyder's own **Create new theme** does, named `custom-0`,
 `custom-1` and so on, so it sits alongside any themes of your own), and
@@ -45,5 +45,5 @@ If you didn't make it the current theme, choose **Jenerated Blue Purple**
 under **Tools -> Preferences -> Appearance -> Syntax highlighting theme**.
 
 The theme is copied into Spyder's settings, so after changing the palette,
-run `./setup.sh` again (with Spyder closed); it updates the same custom
-theme instead of adding another.
+run `jenerate` again (with Spyder closed); it updates the same custom theme
+instead of adding another.

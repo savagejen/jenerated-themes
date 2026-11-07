@@ -13,17 +13,18 @@ veilamp_skin() { printf '%s' "$SANDBOX/repo/app-themes/veilamp-theme/$1/skin.jso
 # GIVEN the Sunset palette
 # WHEN generating its Veilamp skin
 # THEN it's valid JSON with the name, and string vars, which Veilamp needs to
-#      load it; its main highlight color is Sunset's accent and its text is
-#      Sunset's text
+#      load it; its main highlight color is Sunset's accent, its text is
+#      Sunset's text, and text on the accent is Sunset's text_bright
 test_veilamp_skin_follows_the_palette() {
   generate sunset
   OUTPUT="$("$PYTHON" -c '
 import json, sys
 t = json.load(open(sys.argv[1]))
 v = t["vars"]
-print(t["name"], v["--cyan"], v["--text"], all(isinstance(x, str) for x in v.values()))
+print(t["name"], v["--cyan"], v["--text"], v["--on-accent"],
+      all(isinstance(x, str) for x in v.values()))
 ' "$(veilamp_skin sunset)")"
-  assert_contains "Jenerated Sunset $(color accent) $(color text) True"
+  assert_contains "Jenerated Sunset $(color accent) $(color text) $(color text_bright) True"
 }
 
 # --- Tests: installing -------------------------------------------------------
@@ -43,8 +44,8 @@ test_veilamp_links_the_skin_package() {
   assert_link "$SANDBOX/home/$VEILAMP_SKIN_DIR" "$SANDBOX/repo/app-themes/veilamp-theme/blue-purple"
   assert_exists "$SANDBOX/home/$VEILAMP_SKIN_DIR/skin.json"
   assert_contains "Restart Veilamp"
-  assert_contains '"Jenerated Blue Purple" as the palette'
-  assert_contains "Winamp Classic keeps its own colors"
+  assert_contains 'Open Settings -> Appearance and click the "Jenerated Blue Purple" skin'
+  assert_contains "Classic and LCARS keep their own"
   assert_contains "Veilamp can't remove a linked skin itself"
 }
 

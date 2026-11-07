@@ -296,7 +296,7 @@ test_help_lists_the_options() {
     assert_contains "-h, --help"
     assert_contains "--prep-commit"
     assert_contains "--update-screenshots "
-    assert_contains "--update-screenshots=SLUGS"
+    assert_contains "--update-screenshots=NAMES"
     assert_not_contains "What would you like to do?"
   done
 }

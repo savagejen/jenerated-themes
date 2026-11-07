@@ -33,7 +33,7 @@ The files are generated from `package.json.tmpl` and `index.js.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Insomnia.
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Insomnia.
 It copies the plugin into Insomnia's plugins folder (a copy, since Insomnia
 ignores plugins that are links to folders elsewhere). The folder is:
 
@@ -44,7 +44,7 @@ ignores plugins that are links to folders elsewhere). The folder is:
   `~/snap/insomnia/current/.config/Insomnia/plugins/`
 - macOS: `~/Library/Application Support/Insomnia/plugins/`
 
-To install by hand, copy the palette's `insomnia-plugin-jenerated-<slug>`
+To install by hand, copy the palette's `insomnia-plugin-jenerated-<short-name>`
 folder into that folder.
 
 Then, in Insomnia:
@@ -53,5 +53,5 @@ Then, in Insomnia:
    **Plugins** and choose **Reload**.
 2. Open **Settings -> Themes**, and choose **Jenerated Blue Purple**.
 
-The plugin is a copy, so after changing the palette, run `./setup.sh` again
+The plugin is a copy, so after changing the palette, run `jenerate` again
 (it replaces the old copy) and reload the plugins.

@@ -76,7 +76,7 @@ test_prep_commit_on_a_clean_repository() {
 # WHEN running setup.sh --prep-commit
 # THEN the hint lists both, ready to paste into jenerate.py
 test_prep_commit_lists_every_other_generated_theme() {
-  sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^short_name = .*/short_name = "forest"/' \
     "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
   sandbox_jenerate forest,sunset
   run_setup "" --prep-commit

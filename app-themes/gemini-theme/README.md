@@ -2,8 +2,9 @@
 
 Color themes for [Gemini CLI](https://github.com/google-gemini/gemini-cli),
 the terminal AI assistant. [jenerate.py](../../jenerate.py) writes one
-`jenerated-<slug>.json` theme file for each palette you generate, for example
-`jenerated-blue-purple.json`, named "Jenerated" plus the palette's name.
+`jenerated-<short-name>.json` theme file for each palette you generate, for
+example `jenerated-blue-purple.json`, named "Jenerated" plus the palette's
+name.
 
 The theme sets Gemini CLI's colors from the palette: its background and
 text; its keyword color for links and for keywords and types in code (Gemini
@@ -21,9 +22,10 @@ The files are generated from `theme.json.tmpl`. To change colors, see
 Gemini CLI loads a theme from a JSON file named by `ui.theme` in its
 `settings.json`, and only from inside your home folder.
 
-The easiest way is `./setup.sh` from the repository root: choose Gemini CLI.
-It links the theme into `~/.gemini/themes`, and offers to set `ui.theme` in
-`~/.gemini/settings.json`, keeping your other settings. To install by hand:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Gemini
+CLI. It links the theme into `~/.gemini/themes`, and offers to set
+`ui.theme` in `~/.gemini/settings.json`, keeping your other settings. To
+install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
    see [Setting up by hand](../../README.md#setting-up-by-hand).

@@ -22,11 +22,11 @@ The files are generated from `theme.xccolortheme.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root, on your Mac:
-choose Xcode (under Editors). It links the theme into Xcode's themes
-folder, `~/Library/Developer/Xcode/UserData/FontAndColorThemes/`, named
-after the palette (for example `Jenerated Blue Purple.xccolortheme`), since
-Xcode lists themes by their file names. To install by hand:
+The easiest way is `jenerate` (or `./setup.sh` in a clone), on your Mac:
+choose Xcode (under Editors). It links the theme into Xcode's themes folder,
+`~/Library/Developer/Xcode/UserData/FontAndColorThemes/`, named after the
+palette (for example `Jenerated Blue Purple.xccolortheme`), since Xcode
+lists themes by their file names. To install by hand:
 
 ```bash
 mkdir -p ~/Library/Developer/Xcode/UserData/FontAndColorThemes
@@ -38,4 +38,4 @@ Then quit and reopen Xcode (it finds new themes when it starts), open
 **Xcode -> Settings** (**Preferences** in older versions) **-> Themes**, and
 choose **Jenerated Blue Purple**.
 
-After changing the palette, run `./jenerate.py` and restart Xcode.
+After changing the palette, regenerate its themes and restart Xcode.

@@ -19,6 +19,7 @@
     "--text": "#DBDEE1",
     "--text-dim": "#6b6f8a",
     "--text-faint": "#4b4d63",
+    "--on-accent": "#ffffff",
     "--accent-grad": "linear-gradient(135deg, #5865F3 0%, #7289DA 100%)",
     "--accent-grad-h": "linear-gradient(90deg, #5865F3 0%, #7289DA 100%)",
     "--glow-cyan": "0 0 18px #5865F359",

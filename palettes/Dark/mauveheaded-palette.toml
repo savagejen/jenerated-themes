@@ -6,7 +6,7 @@
 # file. Templates add transparency themselves (e.g. {{accent}}33).
 
 name = "Mauveheaded"
-slug = "mauveheaded"
+short_name = "mauveheaded"
 
 [colors]
 # Backgrounds: dusky mauves, darkest to lightest

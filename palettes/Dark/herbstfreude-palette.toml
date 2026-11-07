@@ -10,7 +10,7 @@
 # file. Templates add transparency themselves (e.g. {{accent}}33).
 
 name = "Herbstfreude"
-slug = "herbstfreude"
+short_name = "herbstfreude"
 
 [colors]
 # Backgrounds: darkest to lightest, and a copper sidebar

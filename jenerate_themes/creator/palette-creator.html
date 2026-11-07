@@ -265,7 +265,7 @@
   <label class="field">Name
     <input id="name" size="18" autocomplete="off" spellcheck="false">
   </label>
-  <label class="field">Slug (used in file names)
+  <label class="field">Short name (used in file names)
     <input id="slug" size="16" autocomplete="off" spellcheck="false">
   </label>
   <label class="field description">Description (the comment at the top of the palette file)
@@ -274,7 +274,7 @@
   </label>
   <div class="actions">
     <button id="load" title="Replace your draft with a palette file you choose">Load from...</button>
-    <button id="publish" class="primary" title="Choose where to save it, starting in palettes/Dark or palettes/Light as &lt;slug&gt;-palette.toml">Save as palette...</button>
+    <button id="publish" class="primary" title="Choose where to save it, starting in palettes/Dark or palettes/Light as &lt;short-name&gt;-palette.toml">Save as palette...</button>
   </div>
   <div id="status" role="status" aria-live="polite"></div>
 </header>
@@ -399,7 +399,7 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const ANSI = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"];
 
-// The palette being edited: {header, name, slug, groups: [{title, colors: [{key, value, note}]}]}
+// The palette being edited (its short name as slug): {header, name, slug, groups: [{title, colors: [{key, value, note}]}]}
 let palette = null;
 let dirty = false;
 let saveTimer = null;
@@ -660,6 +660,27 @@ async function save(target, filename = undefined, overwrite = false) {
       return;
     }
     setStatus(result.message, "ok");
+    // A saved palette isn't in any app yet: offer to install it now, which
+    // continues in the terminal, or to keep designing.
+    if (result.install_here && confirm(
+      `${result.message}\n\nInstall ${result.name} into your apps now?\n\n` +
+      `OK: install it. The Palette Creator closes, and you choose the apps ` +
+      `in the terminal you started it from.\n` +
+      `Cancel: keep designing. You can install it later.`)) {
+      install(result.slug);
+    }
+  } catch {
+    setStatus("Can't reach serve.py. Is it still running?", "bad");
+  }
+}
+
+// Hands a saved palette back to jenerate to install: serve.py stops, and
+// the terminal goes on to the app menu with it chosen.
+async function install(slug) {
+  try {
+    const result = await post("/api/install", { slug });
+    if (!result.ok) return setStatus(result.error, "bad");
+    setStatus(result.message, "ok");
   } catch {
     setStatus("Can't reach serve.py. Is it still running?", "bad");
   }
@@ -760,7 +781,7 @@ $("slug").addEventListener("input", (event) => {
   palette.slug = event.target.value;
   if (!SLUG.test(palette.slug)) {
     markDirty(true);
-    setStatus("The slug can only use lowercase letters, numbers and single dashes, like deep-blue-sea", "bad");
+    setStatus("The short name can only use lowercase letters, numbers and single dashes, like deep-blue-sea", "bad");
     return;
   }
   changed();

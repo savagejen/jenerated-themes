@@ -130,7 +130,7 @@ test_contrast_matches_jenerate_py() {
 test_palette_paths_are_taken_from_where_it_runs() {
   [ -n "$PYTHON" ] || return 0
   mkdir -p "$SANDBOX/elsewhere"
-  sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^short_name = .*/short_name = "forest"/' \
     "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/elsewhere/forest-palette.toml"
   OUTPUT="$(cd "$SANDBOX/elsewhere" && HOME="$SANDBOX/home" JENERATE_COMMAND= \
     "$PYTHON" "$SANDBOX/repo/jenerate" generate ./forest-palette.toml 2>&1)"
@@ -249,26 +249,40 @@ test_no_subcommand_shows_the_menus() {
 
 # --- Tests: the app modules --------------------------------------------------------
 
-# GIVEN a module in jenerate_themes/apps/ with no APP
+# add_app_module name -> imports the module in jenerate_themes/apps/__init__.py
+# in the sandbox and adds its APP to ALL_APPS, as a contributor adding an app
+# does.
+add_app_module() {
+  sed -i -e "s/^from \. import (\$/from . import (\n    $1,/" \
+    -e "s/^ALL_APPS = \[\$/ALL_APPS = [\n    $1.APP,/" \
+    "$SANDBOX/repo/jenerate_themes/apps/__init__.py"
+}
+
+# GIVEN a module in jenerate_themes/apps/, imported and added to ALL_APPS,
+#       with no APP
 # WHEN running jenerate
-# THEN it stops, naming the module and what it needs
+# THEN it stops, with Python's error naming the module and what it lacks
 test_an_app_module_needs_an_app() {
   [ -n "$PYTHON" ] || return 0
   printf '"""Not finished yet."""\n' >"$SANDBOX/repo/jenerate_themes/apps/example.py"
+  add_app_module example
   run_cli "" list
   assert_status 1
-  assert_contains "jenerate_themes/apps/example.py has no APP."
+  assert_contains "module 'jenerate_themes.apps.example' has no attribute 'APP'"
 }
 
-# GIVEN a helper module in jenerate_themes/apps/ whose name starts with _
+# GIVEN a module in jenerate_themes/apps/ that isn't imported in
+#       __init__.py, and that would leave a file behind if it ever ran
 # WHEN running jenerate
-# THEN it's left out, rather than taken for an app
-test_helper_modules_are_not_apps() {
+# THEN it never runs: a file doesn't get run just by being in the folder
+test_an_unlisted_module_never_runs() {
   [ -n "$PYTHON" ] || return 0
-  printf '"""Shared by some apps."""\n' >"$SANDBOX/repo/jenerate_themes/apps/_shared.py"
+  printf 'open(%s, "w").close()\n' "'$SANDBOX/ran'" \
+    >"$SANDBOX/repo/jenerate_themes/apps/unlisted.py"
   run_cli "" list
   assert_status 0
   assert_contains "Dark palettes:"
+  [ ! -e "$SANDBOX/ran" ] || fail "unlisted.py ran, though __init__.py doesn't import it"
 }
 
 # GIVEN an app whose category isn't one of the categories
@@ -278,18 +292,21 @@ test_an_app_needs_a_known_category() {
   [ -n "$PYTHON" ] || return 0
   printf 'from . import App\n\nAPP = App(id="example", label="Example", category="nope", install=print)\n' \
     >"$SANDBOX/repo/jenerate_themes/apps/example.py"
+  add_app_module example
   run_cli "" list
   assert_status 1
-  assert_contains 'jenerate_themes/apps/example.py: no category called "nope"; the categories are browsers, communication,'
+  assert_contains 'The app "example" has no category called "nope"; the categories are browsers, communication,'
 }
 
-# GIVEN a new app module, with no list to add it to
+# GIVEN a new app module, imported and added to ALL_APPS
 # WHEN listing the apps (by asking for one that doesn't exist)
-# THEN it's there, in its category, in alphabetical order
-test_a_new_app_is_found_by_itself() {
+# THEN it's there, in its category, in alphabetical order (wherever it is in
+#      the list)
+test_a_listed_app_is_in_the_menus() {
   [ -n "$PYTHON" ] || return 0
   printf 'from . import App\n\nAPP = App(id="example", label="Example Chat", category="communication", install=print)\n' \
     >"$SANDBOX/repo/jenerate_themes/apps/example.py"
+  add_app_module example
   run_cli "" install nope
   assert_contains "element, example, mattermost"
 }

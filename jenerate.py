@@ -10,14 +10,14 @@ Usage:
     ./jenerate.py --contrast                  # check every palette's text contrast
     ./jenerate.py --contrast sunset           # just these palettes'
 
-A palette is named by its slug (palettes/Dark/<slug>-palette.toml or
-palettes/Light/<slug>-palette.toml) or given as a path to a .toml file. A
-palette straight in palettes/ works too, until the screenshot script files
-it. Each run adds to, or updates, the themes already generated; nothing else
-is touched. Each template's {{name}} placeholders are replaced with the
-palette's colors (plus its `name` and `slug`), and the result is written
-next to the template. Each color is also available as RGB and HSL numbers,
-for apps whose themes need them: {{accent_rgb}} is "88, 101, 243",
+A palette is named by its short name (palettes/Dark/<short-name>-palette.toml
+or palettes/Light/<short-name>-palette.toml) or given as a path to a .toml
+file. A palette straight in palettes/ works too, until the screenshot script
+files it. Each run adds to, or updates, the themes already generated; nothing
+else is touched. Each template's {{name}} placeholders are replaced with the
+palette's colors (plus its `name` and `short_name`), and the result is
+written next to the template. Each color is also available as RGB and HSL
+numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 243",
 {{accent_rgb_csv}} is "88,101,243", {{accent_rgb_spaced}} is "88 101 243",
 {{accent_rgb16}} is "22616,25957,62451" (each channel from 0 to 65535, as
 Wireshark stores colors), {{accent_float}} is "0.3451, 0.3961, 0.9529" (each
@@ -25,13 +25,12 @@ channel from 0 to 1; {{accent_float_spaced}} is the same with spaces instead
 of commas), {{accent_linear_r}}, {{accent_linear_g}} and {{accent_linear_b}}
 are its channels in linear light (for apps that store colors that way, such
 as Unreal Engine), {{accent_h}}, {{accent_s}} and {{accent_l}} are "235",
-"87" and "65", {{accent_hex}} is "5865F3" (without the #), and
-{{accent_int}} is "5793267" (0xrrggbb as a decimal number, as LibreOffice
-stores colors).
+"87" and "65", {{accent_hex}} is "5865F3" (without the #), and {{accent_int}}
+is "5793267" (0xrrggbb as a decimal number, as LibreOffice stores colors).
 {{green_over_bg_20}} is one color laid over another at a percentage (0 to
 100), as #rrggbb: how {{green}}33 looks over {{bg}}, for apps that can't take
 a color with transparency.
-{{uuid}} is an ID made from the slug, the same every time, for apps that
+{{uuid}} is an ID made from the short name, the same every time, for apps that
 identify themes by UUID.
 
 Palettes can be dark or light. {{scheme}} is "dark" or "light": the palette's
@@ -61,7 +60,7 @@ def main():
         description=__doc__.split("\n")[0],
         epilog="Separate several palettes with commas or spaces.")
     parser.add_argument("palettes", nargs="*",
-                        help="palette slugs (e.g. blue-purple) or .toml paths")
+                        help="palettes' short names (e.g. blue-purple) or .toml paths")
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--remove", action="store_true",
                         help="delete these palettes' generated themes")

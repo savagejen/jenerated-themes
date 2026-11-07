@@ -24,7 +24,7 @@ The files are generated from `theme.rstheme.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose RStudio
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose RStudio
 (under Editors). It links the theme into RStudio's themes folder,
 `~/.config/rstudio/themes/` on both Linux and macOS (or
 `$RSTUDIO_CONFIG_HOME/themes/` if you've set that). To install by hand:
@@ -41,5 +41,5 @@ Then, in **Tools -> Global Options -> Appearance**, choose **Jenerated Blue
 Purple** as the **Editor theme**, and **Apply**. Restart RStudio first if
 it doesn't appear in the list.
 
-After changing the palette, run `./jenerate.py` and choose the theme again,
-or restart RStudio.
+After changing the palette, regenerate its themes and choose the theme
+again, or restart RStudio.

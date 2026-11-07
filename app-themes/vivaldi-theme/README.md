@@ -25,11 +25,12 @@ The files are generated from `settings.json.tmpl` by
 
 ## Install
 
-Vivaldi imports themes as a `.zip` holding the theme's `settings.json`.
-Blue Purple's is included, ready to import:
+Vivaldi imports themes as a `.zip` holding the theme's `settings.json`. Blue
+Purple's is included, ready to import:
 [jenerated-blue-purple.zip](jenerated-blue-purple.zip). For other palettes,
-the easiest way is `./setup.sh` from the repository root: choose Vivaldi, and
-it makes `app-themes/vivaldi-theme/jenerated-<slug>.zip`. To make it by hand:
+the easiest way is `jenerate` (or `./setup.sh` in a clone): choose Vivaldi,
+and it makes `app-themes/vivaldi-theme/jenerated-<short-name>.zip`. To make it
+by hand:
 
 ```bash
 cd app-themes/vivaldi-theme/blue-purple
@@ -45,8 +46,8 @@ Then, in Vivaldi:
    installed.
 
 After changing a palette, make and import the `.zip` again. Each palette's
-theme keeps the same id (a UUID made from its slug), so Vivaldi offers the new
-one as an update to the theme you installed.
+theme keeps the same id (a UUID made from its short name), so Vivaldi offers
+the new one as an update to the theme you installed.
 
 If Vivaldi says the theme "cannot be previewed due to format errors", the
 theme's fields don't match what Vivaldi expects; `settings.json.tmpl` matches

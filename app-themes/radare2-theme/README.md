@@ -1,9 +1,10 @@
 # Jenerated Themes for radare2
 
-Color themes for [radare2](https://rada.re/), the reverse engineering framework, and
-Iaito, its graphical interface. [jenerate.py](../../jenerate.py) writes one
-`jenerated-<slug>` file for each palette you generate, for example
-`jenerated-blue-purple`, loaded in radare2 with `eco jenerated-<slug>`.
+Color themes for [radare2](https://rada.re/), the reverse engineering
+framework, and Iaito, its graphical interface.
+[jenerate.py](../../jenerate.py) writes one `jenerated-<short-name>` file for
+each palette you generate, for example `jenerated-blue-purple`, loaded in
+radare2 with `eco jenerated-<short-name>`.
 
 Rizin, the fork of radare2, names some colors differently, so it has
 [its own themes](../rizin-theme/).
@@ -23,7 +24,7 @@ The files are generated from `theme.r2.tmpl`. To change colors, see
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose radare2. It
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose radare2. It
 links the theme into radare2's themes folder, and offers to load it every time
 radare2 starts. To install by hand:
 

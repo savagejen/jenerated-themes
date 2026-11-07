@@ -33,9 +33,10 @@ def install(theme):
 
     step("Done! To turn the skin on:")
     say("1. Restart Veilamp if it's open; it looks for skins when it starts.")
-    say('2. Open the Skins tab ("Skins" in the top bar), and choose')
-    say(f'   "Jenerated {theme.name}" as the palette, with the Modern, Circular or Sci-fi')
-    say("   HUD layout. (Winamp Classic keeps its own colors.)")
+    say(f'2. Open Settings -> Appearance and click the "Jenerated {theme.name}" skin.')
+    say("   It's colors only, so it recolors the layout you're using: Modern,")
+    say("   Circular, Sci-fi HUD or Neonwave. (Classic and LCARS keep their own")
+    say("   colors.) For another of those layouts, click its skin first.")
     say(f"After changing the palette, run {state.regenerate(theme.slug)} and restart Veilamp.")
     if state.current.mode == "link":
         say("Veilamp can't remove a linked skin itself (its remove button shows an")

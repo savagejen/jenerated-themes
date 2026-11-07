@@ -8,7 +8,7 @@
 # file. Templates add transparency themselves (e.g. {{accent}}33).
 
 name = "Anodized"
-slug = "anodized"
+short_name = "anodized"
 
 [colors]
 # Backgrounds: gunmetal, anodized violet and gold, darkest to lightest

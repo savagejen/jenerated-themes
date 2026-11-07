@@ -68,6 +68,14 @@ def list_palettes():
     return "./jenerate.py --list" if COMMAND in OLD_STYLE else f"{COMMAND} list"
 
 
+def install_palette(slug):
+    """The command that installs one palette, choosing the apps from the
+    menus: setup.sh's --install from a clone, or the install subcommand."""
+    if COMMAND in OLD_STYLE:
+        return f"./setup.sh --install=,{slug}"
+    return f"{COMMAND} install --palette {slug}"
+
+
 def regenerate(slug):
     """The command that regenerates one palette's themes."""
     return f"{generate()} {slug}"

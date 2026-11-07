@@ -37,7 +37,7 @@ add_palette() {
     printf '# The %s palette, for testing.\n' "$2"
     # Sunset's file from the end of its description on.
     sed -n '/^#$/,$p' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
-  } | sed -e "s/^name = .*/name = \"$2\"/" -e "s/^slug = .*/slug = \"$1\"/" \
+  } | sed -e "s/^name = .*/name = \"$2\"/" -e "s/^short_name = .*/short_name = \"$1\"/" \
     >"$SANDBOX/repo/palettes/$1-palette.toml"
   [ "${3:-}" = "screenshot" ] && printf 'png' >"$SANDBOX/repo/palettes/Screenshots/$1.png"
   return 0
@@ -117,7 +117,7 @@ $actual"
 # THEN both are filed under Light, and its section is added at the end of
 #      the light group, after Candy
 test_readme_adds_a_light_palette_to_the_light_group() {
-  sed -e 's/^name = .*/name = "Meringue"/' -e 's/^slug = .*/slug = "meringue"/' \
+  sed -e 's/^name = .*/name = "Meringue"/' -e 's/^short_name = .*/short_name = "meringue"/' \
     "$SANDBOX/repo/palettes/Light/candy-palette.toml" >"$SANDBOX/repo/palettes/meringue-palette.toml"
   printf 'png' >"$SANDBOX/repo/palettes/Screenshots/meringue.png"
   run_screenshots --readme-only
@@ -138,7 +138,7 @@ test_readme_adds_a_light_palette_to_the_light_group() {
 test_readme_files_a_palette_by_its_scheme() {
   add_palette dawn Dawn screenshot
   run_screenshots --readme-only
-  sed -i 's/^scheme = .*//; s/^slug = "dawn"/&\nscheme = "light"/' "$SANDBOX/repo/palettes/Dark/dawn-palette.toml"
+  sed -i 's/^scheme = .*//; s/^short_name = "dawn"/&\nscheme = "light"/' "$SANDBOX/repo/palettes/Dark/dawn-palette.toml"
   run_screenshots --readme-only
   assert_status 0
   assert_contains "Moved palettes/Dark/dawn-palette.toml to palettes/Light/"

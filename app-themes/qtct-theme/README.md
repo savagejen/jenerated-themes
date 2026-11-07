@@ -6,7 +6,7 @@ GNOME, Xfce, Cinnamon, MATE, window managers and so on. With one of these
 schemes chosen, Qt apps take the palette's colors: Legion, Wireshark's
 windows, VLC, qBittorrent, KeePassXC and any other Qt app that doesn't set
 its own. [jenerate.py](../../jenerate.py) writes one
-`jenerated-<slug>.conf` file for each palette you generate, and the same
+`jenerated-<short-name>.conf` file for each palette you generate, and the same
 file works for both qt5ct (Qt 5 apps) and qt6ct (Qt 6 apps).
 
 The colors follow the [KDE Plasma color scheme](../kde-theme/), so Qt apps
@@ -25,7 +25,7 @@ The files are generated from `colors.conf.tmpl`. To change colors, see
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose "Qt apps
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose "Qt apps
 outside KDE Plasma". To install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,

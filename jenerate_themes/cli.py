@@ -71,13 +71,13 @@ def parser():
 
     install = commands.add_parser(
         "install", help="install a theme, skipping the menus",
-        description='Install a theme. APP is an app\'s id and PALETTE a palette\'s slug, '
+        description='Install a theme. APP is an app\'s id and PALETTE a palette\'s short name, '
                     'like "jenerate install vscode candy". Leave either out to choose it '
                     'from its menu (use --palette to name only the palette). "all" means '
                     'ALL THE APPS or ALL THE PALETTES. A name it doesn\'t know lists the '
                     'ones it does.')
     install.add_argument("app", nargs="?", default="", help="the app's id, or all")
-    install.add_argument("palette", nargs="?", default="", help="the palette's slug, or all")
+    install.add_argument("palette", nargs="?", default="", help="the palette's short name, or all")
     install.add_argument("--palette", dest="palette_option", default="", metavar="PALETTE",
                          help="the palette, when choosing the app from the menus")
 
@@ -85,18 +85,18 @@ def parser():
         "generate", help="generate palettes' themes",
         epilog="Separate several palettes with commas or spaces.")
     generate.add_argument("palettes", nargs="+",
-                          help="palette slugs (e.g. blue-purple) or .toml paths")
+                          help="palettes' short names (e.g. blue-purple) or .toml paths")
 
     remove_ = commands.add_parser(
         "remove", help="remove palettes' generated themes (the palettes are kept)",
         epilog="Separate several palettes with commas or spaces.")
-    remove_.add_argument("palettes", nargs="+", help="palette slugs or .toml paths")
+    remove_.add_argument("palettes", nargs="+", help="palettes' short names or .toml paths")
 
     commands.add_parser("list", help="list the palettes, marking the generated ones")
 
     contrast = commands.add_parser(
         "contrast", help=f"report text colors below the recommended contrast ({CONTRAST_TARGET}:1)")
-    contrast.add_argument("palettes", nargs="*", help="palette slugs or .toml paths (default: all)")
+    contrast.add_argument("palettes", nargs="*", help="palettes' short names or .toml paths (default: all)")
 
     commands.add_parser("design", help="start the Palette Creator, for designing a new palette")
     return top

@@ -37,8 +37,8 @@ It doesn't apply to:
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose GTK3 apps.
-It links the theme into `~/.local/share/themes/Jenerated-<slug>`, and on
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose GTK3 apps.
+It links the theme into `~/.local/share/themes/Jenerated-<short-name>`, and on
 GNOME offers to switch to it, showing your current theme and the command to
 switch back. To install it by hand:
 

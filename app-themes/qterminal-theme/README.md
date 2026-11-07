@@ -1,19 +1,19 @@
 # Jenerated Themes for QTerminal
 
-Color schemes for [QTerminal](https://github.com/lxqt/qterminal), the
-terminal of the LXQt desktop and Kali Linux. QTerminal's terminal
-(qtermwidget) reads Konsole's color scheme format, so it uses the same file
-as the [KDE Plasma theme](../kde-theme/)'s Konsole scheme:
-`app-themes/kde-theme/<slug>/Jenerated-<slug>.colorscheme`, written by
-[jenerate.py](../../jenerate.py) for each palette you generate. It has the
-same 16 terminal colors as the Tilix, Ptyxis and Konsole themes.
+Color schemes for [QTerminal](https://github.com/lxqt/qterminal), the terminal
+of the LXQt desktop and Kali Linux. QTerminal's terminal (qtermwidget) reads
+Konsole's color scheme format, so it uses the same file as the
+[KDE Plasma theme](../kde-theme/)'s Konsole scheme:
+`app-themes/kde-theme/<short-name>/Jenerated-<short-name>.colorscheme`,
+written by [jenerate.py](../../jenerate.py) for each palette you generate. It
+has the same 16 terminal colors as the Tilix, Ptyxis and Konsole themes.
 
 To change colors, see [Changing colors](../../README.md#changing-colors).
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose QTerminal.
-To install by hand:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose
+QTerminal. To install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
    see [Setting up by hand](../../README.md#setting-up-by-hand).

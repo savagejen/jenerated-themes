@@ -22,12 +22,12 @@ The files are generated from `theme.el.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Emacs
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Emacs
 (under Editors). It links the theme into Emacs's own folder, where Emacs
 looks for themes without any other setup. That's `~/.emacs.d/` if you have
 it (or a `~/.emacs` file), otherwise `~/.config/emacs/` if you have that,
-and otherwise `~/.emacs.d/`, the same way Emacs chooses. To install by
-hand, link or copy the palette's `-theme.el` file into that folder.
+and otherwise `~/.emacs.d/`, the same way Emacs chooses. To install by hand,
+link or copy the palette's `-theme.el` file into that folder.
 
 Then, in Emacs:
 
@@ -39,4 +39,4 @@ Then, in Emacs:
 
 Or add `(load-theme 'jenerated-blue-purple t)` to your init file.
 
-After changing the palette, run `./jenerate.py` and load the theme again.
+After changing the palette, regenerate its themes and load the theme again.

@@ -343,8 +343,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--readme-only", action="store_true",
                         help="only update palettes/README.md")
-    parser.add_argument("slugs", nargs="*", metavar="slug",
-                        help="palettes to screenshot, by slug (commas or spaces "
+    parser.add_argument("slugs", nargs="*", metavar="short-name",
+                        help="palettes to screenshot, by short name (commas or spaces "
                              "between several); all of them if none are named")
     args = parser.parse_args()
     slugs = [s for arg in args.slugs for s in arg.split(",") if s]

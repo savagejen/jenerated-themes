@@ -12,7 +12,7 @@ palette. Each theme colors:
 - **Code:** the Basic macro editor and SQL in Base.
 
 [jenerate.py](../../jenerate.py) writes one extension folder for each
-palette you generate, for example `blue-purple/`; `setup.sh` packages it as
+palette you generate, for example `blue-purple/`; `jenerate` packages it as
 `jenerated-blue-purple.oxt`. Blue Purple's `.oxt` is included, ready to
 install; to add other palettes, see
 [Setting up by hand](../../README.md#setting-up-by-hand).
@@ -45,7 +45,7 @@ The files are generated from the `.tmpl` files here by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose
 LibreOffice (under Editors). It packages the palette's `.oxt` and, if
 LibreOffice is closed, installs it with LibreOffice's `unopkg` tool.
 Otherwise, or to install by hand: in LibreOffice, open **Tools ->
@@ -64,6 +64,6 @@ The window colors need a recent LibreOffice with application theming (on
 the Appearance page). In older versions, the page is called **Application
 Colors**; choosing the theme there colors documents but not the window.
 
-After changing the palette, run `./setup.sh` again (with LibreOffice
-closed), or add the new `.oxt` in **Tools -> Extensions**, which replaces the
-old one. Then restart LibreOffice.
+After changing the palette, run `jenerate` again (with LibreOffice closed),
+or add the new `.oxt` in **Tools -> Extensions**, which replaces the old one.
+Then restart LibreOffice.

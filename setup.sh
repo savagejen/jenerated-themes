@@ -127,8 +127,8 @@ Options:
   --version                   Show the version, and exit.
   --design                    Start the Palette Creator, skipping the menu.
   --install=APP,PALETTE       Install a theme, skipping the menus: APP is an
-                              app's id and PALETTE a palette's slug, like
-                              --install=vscode,candy. Leave either out to
+                              app's id and PALETTE a palette's short name,
+                              like --install=vscode,candy. Leave either out to
                               choose it from its menu (--install=vscode, or
                               --install=,candy). "all" means ALL THE APPS or
                               ALL THE PALETTES. A name it doesn't know lists
@@ -140,8 +140,8 @@ For maintainers (see CONTRIBUTING.md):
   --update-screenshots        File every palette as dark or light, retake
                               every palette's screenshot, and update
                               palettes/README.md. Needs Node.js and npm.
-  --update-screenshots=SLUGS  The same, but retake only these palettes'
-                              screenshots, by slug, with commas between
+  --update-screenshots=NAMES  The same, but retake only these palettes'
+                              screenshots, by short name, with commas between
                               several (like candy,sunset).
 EOF_USAGE
 }

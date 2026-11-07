@@ -52,6 +52,9 @@ app-themes/veilamp-theme/*/
 # Your palette draft in the Palette Creator.
 palette-creator/work-in-progress-palette.toml
 
+# Packages built from pyproject.toml.
+/dist/
+
 # Except the default palette, Blue Purple, which is committed so the themes
 # work without running jenerate.py.
 !app-themes/vs-code-theme/package.json

@@ -36,13 +36,17 @@ What you need:
 - **Python 3.11 or later**, for `jenerate.py`, the Palette Creator and most
   of the tests. Nothing to install beyond Python itself.
 - **`curl`**, for the Palette Creator tests.
+- **pip and venv** (usually part of Python; on Debian and Ubuntu, the
+  `python3-pip` and `python3-venv` packages) and a network connection, for
+  the package tests.
 - **Node.js and npm**, only for [updating screenshots](#screenshots).
 
 ## How it works
 
 - **Palettes** in [palettes/Dark](palettes/Dark/) and
   [palettes/Light](palettes/Light/) are TOML files with a `name`, a
-  `slug`, an optional `scheme` (`"dark"` or `"light"`), and a list of colors
+  `short_name` (lowercase words and dashes, used in file names), an
+  optional `scheme` (`"dark"` or `"light"`), and a list of colors
   named by role (`bg`, `text`, `accent`, `red`, `term_bright_cyan`, ...). A
   color is a `#rrggbb` value or the name of another color in the same file.
 - **Templates** (the `.tmpl` files in each app's folder, under
@@ -50,7 +54,7 @@ What you need:
   placeholders where the colors go.
 - **[jenerate.py](jenerate.py)** fills in every template for each palette
   you name and writes the results next to the templates, named after the
-  palette's slug. For VS Code it also rebuilds
+  palette's short name. For VS Code it also rebuilds
   `app-themes/vs-code-theme/package.json` from `package.json.tmpl`, listing
   every generated theme. Its code is in the
   [jenerate_themes](jenerate_themes/) package: palettes in `palettes.py`,
@@ -85,9 +89,35 @@ decides which, and where files go:
 In a clone the two are the same folder, so everything works as described
 here. An installed copy comes with Blue Purple's themes already made: they
 are copied into the data folder when first needed, and refreshed after an
-upgrade. A palette of someone's own replaces a bundled one with its slug.
-The package build includes `app-themes/` and `palettes/` whole, so new
-templates and palettes are packaged with nothing more to do.
+upgrade. A palette of someone's own replaces a bundled one with its short
+name.
+The package is built from [pyproject.toml](pyproject.toml), which puts
+`app-themes/` and `palettes/` whole into the package's `data/` folder, so
+new templates and palettes are packaged with nothing more to do. Files git
+ignores (like palettes you generated) are left out, and so are the apps'
+READMEs and the palette screenshots. The package's version is
+`__version__` in `jenerate_themes/__init__.py`. To try it as someone who
+installed it would, without touching your other installs:
+
+```bash
+python3 -m venv /tmp/jenerate-try
+/tmp/jenerate-try/bin/pip install .
+/tmp/jenerate-try/bin/jenerate list
+```
+
+An installed copy writes to your real data folder
+(`~/.local/share/jenerate-themes`), so remove that afterward if you don't
+want to keep what you made.
+
+To build the packages themselves (the source package and the wheel, in
+`dist/`), put the build tool in a virtual environment of its own, since
+many systems don't let pip install into their Python:
+
+```bash
+python3 -m venv /tmp/jenerate-build
+/tmp/jenerate-build/bin/pip install build
+/tmp/jenerate-build/bin/python -m build
+```
 
 ### Template placeholders
 
@@ -110,9 +140,9 @@ templates and palettes are packaged with nothing more to do.
   (0 to 100), as `#rrggbb`: how `{{green}}33` would look over `{{bg}}`. Use
   it for apps that don't take colors with transparency, like tinted diff
   backgrounds in Gemini CLI.
-- `{{name}}` and `{{slug}}` are the palette's name and slug.
-- `{{uuid}}` is an ID made from the palette's slug, the same every time, for
-  apps that identify themes by UUID.
+- `{{name}}` and `{{short_name}}` are the palette's name and short name.
+- `{{uuid}}` is an ID made from the palette's short name, the same every time,
+  for apps that identify themes by UUID.
 - `{{scheme}}` is `dark` or `light`, and
   `{{scheme: "text for dark" | "text for light"}}` picks one of two texts. A
   template whose dark and light versions differ too much for that can have
@@ -154,22 +184,22 @@ Don't edit generated files by hand; change the palette or template and run
 
 ## Adding a palette
 
-Design it in the [Palette Creator](palette-creator/)
-(`./jenerate design`), or copy an existing palette to
-`palettes/Dark/<slug>-palette.toml` or `palettes/Light/<slug>-palette.toml`
-and edit it. (A palette saved straight in `palettes/`, or in the wrong one of
-the two, still works, and [updating the screenshots](#screenshots) files it.) Every color the templates use
-must be defined; `jenerate.py` names any that are missing, and checks the
-palette's other rules (see
-[Adding a palette](README.md#adding-a-palette) in the README).
+Design it in the [Palette Creator](palette-creator/) (`./jenerate design`), or
+copy an existing palette to `palettes/Dark/<short-name>-palette.toml` or
+`palettes/Light/<short-name>-palette.toml` and edit it. (A palette saved
+straight in `palettes/`, or in the wrong one of the two, still works, and
+[updating the screenshots](#screenshots) files it.) Every color the templates
+use must be defined; `jenerate.py` names any that are missing, and checks the
+palette's other rules (see [Adding a palette](README.md#adding-a-palette) in
+the README).
 
 Then:
 
-1. Generate it and try it in a few apps: `./jenerate.py <slug>`.
+1. Generate it and try it in a few apps: `./jenerate.py <short-name>`.
 2. Write a description as the comment at the top of the file: what the
    palette is and where its colors come from. It becomes the palette's
    section in [palettes/README.md](palettes/README.md).
-3. Check its text contrast with `./jenerate.py --contrast <slug>`: a
+3. Check its text contrast with `./jenerate.py --contrast <short-name>`: a
    recommendation, not a rule (see [Text contrast](#text-contrast)).
 4. [Update the screenshots](#screenshots), which adds the palette's
    screenshot and README section.
@@ -221,13 +251,16 @@ takes.
    with a template (`<something>.tmpl`) that uses the palette's color names.
    Start the template with a comment saying it's generated and not to edit
    it, where the format allows comments.
-2. Add a module for the app in `jenerate_themes/apps/`, like `tilix.py`,
-   with an `install(theme)` function and an `APP` describing it (the fields
-   are explained in `App`, in `jenerate_themes/apps/__init__.py`). Every
-   module there is found by itself. List the app's `(template, output)` pairs
-   in its `templates`. Use `{slug}` in the output path so each palette gets
-   its own file. An app that needs several files per theme can use `{slug}`
-   as a folder, like Obsidian's `app-themes/obsidian-theme/{slug}/theme.css`.
+2. Add a module for the app in `jenerate_themes/apps/`, like `tilix.py`, with
+   an `install(theme)` function and an `APP` describing it (the fields are
+   explained in `App`, in `jenerate_themes/apps/__init__.py`). Then, in that
+   `__init__.py`, import the module and add its `APP` to `ALL_APPS`: only the
+   modules imported there run, so code can't run just by being added to the
+   folder (a test checks the imports against the folder). List the app's `(template, output)` pairs in its
+   `templates`. Use `{slug}` (the code's name for the short name) in the
+   output path so each palette gets its own file. An app that needs several
+   files per theme can use `{slug}` as a folder, like Obsidian's
+   `app-themes/obsidian-theme/{slug}/theme.css`.
 3. Add the output pattern to `.gitignore`, with a `!` line keeping Blue
    Purple's files, like the other apps.
 4. Write a README for the app: what it themes, which palette colors go
@@ -329,6 +362,39 @@ tests check that they match.
    avoid, what you're committing for symbols outside plain ASCII, and new
    files' names for underscores.
 
+## Releasing
+
+Releases are published by
+[.github/workflows/release.yml](.github/workflows/release.yml) when a version
+tag is pushed. It checks the tag matches `__version__` and the CHANGELOG has
+the version's release date, tests and builds the packages, publishes them to
+PyPI (where `pipx install jenerate-themes` gets them), and makes a GitHub
+release with them and the version's CHANGELOG section. On every pull
+request, it builds and tests the packages without publishing anything.
+Dependabot keeps the actions it uses up to date, and its pull requests merge
+themselves once that build passes. Each action is pinned to an exact commit,
+with its version in a comment (`@<commit>  # v7.0.1`), since a version tag
+can be moved to different code; pin any action you add the same way.
+
+For each release:
+
+1. Set the new version in `__version__` in `jenerate_themes/__init__.py`
+   (see the CHANGELOG for which number goes up), and give its CHANGELOG
+   section the release date: `## [1.0.0] - 2026-10-12`.
+2. Optionally, try it first: in the repository's Actions tab, choose Release,
+   then "Run workflow". That publishes to TestPyPI instead, and you can try
+   the result with
+   `pipx install --index-url https://test.pypi.org/simple/ jenerate-themes`.
+3. Merge into `main`, then tag that commit and push the tag:
+
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+A version can only be published to PyPI once, so a mistake found afterward
+is fixed in the next version.
+
 ## Screenshots
 
 Each palette has a screenshot in `palettes/Screenshots/Dark` or
@@ -339,7 +405,7 @@ Each palette has a screenshot in `palettes/Screenshots/Dark` or
 ./setup.sh --update-screenshots
 ```
 
-To retake just some, name them by slug, with commas between several:
+To retake just some, name them by short name, with commas between several:
 
 ```bash
 ./setup.sh --update-screenshots=candy
@@ -348,8 +414,8 @@ To retake just some, name them by slug, with commas between several:
 
 First it files every palette: `jenerate.py` works out whether each is dark
 or light (its `scheme`, or else its `bg`), and a palette or screenshot in the
-wrong folder, or straight in `palettes/`, is moved to the right one. A slug
-found in two places stops it, naming both, until you keep one.
+wrong folder, or straight in `palettes/`, is moved to the right one. A short
+name found in two places stops it, naming both, until you keep one.
 
 Then it shows each palette in the Palette Creator's preview (running on a
 throwaway copy of the repository, so your draft is never touched), saves a
@@ -377,7 +443,8 @@ for the details.
 Letters in any language are welcome anywhere: a palette named "Smørrebrød"
 or "Ночь", or a description in Japanese. Everything else outside plain ASCII
 isn't: typographic dashes, ellipses, arrows, middle dots, curly quotes,
-emoji, and invisible characters like non-breaking and zero-width spaces.
+emoji, invisible characters like non-breaking and zero-width spaces, and
+control characters other than tab.
 That goes for code, comments, docs, palettes and the Palette Creator.
 
 Write plain text instead: `...`, `-`, `->`, straight quotes, a word instead
@@ -386,7 +453,7 @@ back in disguise, as an HTML entity (like `&middot;`) or an escape code
 (like `\u2022`): the page would still show the symbol. The pre-commit hook
 refuses a commit that adds anything else, naming each file and line, and a
 test in `tests/repo/` checks the whole repository. File names follow the
-same rule. Both use Perl, which comes with Linux and macOS.
+same rule. Both run `.githooks/check-symbols.py`, so they can't drift apart.
 
 ## File names
 
@@ -423,6 +490,7 @@ Tests live in [tests/](tests/):
 | Folder | Tests |
 |--------|-------|
 | `tests/apps/` | each app, one file per app: making its theme, and installing it; plus `test-every-app.sh`, the basics for every app, in a clone and in an installed copy |
+| `tests/package/` | the packages `pyproject.toml` builds (the source package and the wheel): what's in them, and that the wheel installs and runs as `jenerate` |
 | `tests/installed/` | an installed copy: its data folder, bundled and own palettes, the pre-made Blue Purple, and a clone and an installed copy on one computer |
 | `tests/menus/` | the menus: choosing an app and a palette, searching, ALL THE APPS and ALL THE PALETTES |
 | `tests/generate/` | making themes for every app at once: palettes and their mistakes, colors, contrast, light and dark, listing and removing (through `jenerate.py`) |
@@ -434,8 +502,9 @@ Tests live in [tests/](tests/):
 | `tests/repo/` | the repository as a whole, such as symbols staying plain ASCII |
 
 Each test runs against a temporary copy of the repository, so the tests
-don't touch your generated or installed themes. Tests that need Python 3.11
-or `curl` are skipped without them. Shared helpers are in `tests/lib.sh`,
+don't touch your generated or installed themes. Tests that need Python 3.11,
+`curl`, or pip, venv and a network connection are skipped without them.
+Shared helpers are in `tests/lib.sh`,
 and the app tests' own (`install_app`, `generate`) in `tests/apps/apps.sh`.
 
 Tests are shell functions named `test_...`, each with a comment above it in

@@ -20,9 +20,9 @@ copies of the same scheme:
 
 | File | For | What differs |
 |------|-----|--------------|
-| `gtksourceview-4/jenerated-<slug>.xml` | GtkSourceView 3 and 4: gedit 46 and earlier, Xed, Pluma, Meld | the plain format |
-| `gtksourceview-5/jenerated-<slug>.xml` | GtkSourceView 5: GNOME Text Editor | adds whether the palette is dark or light, and the colors GNOME Text Editor recolors its window with (which GtkSourceView 4 refuses) |
-| `libgedit-gtksourceview-300/jenerated-<slug>.xml` | gedit 47 and later, which use their own fork of GtkSourceView | marks the palette dark or light its own way, and refuses the plain format's version number |
+| `gtksourceview-4/jenerated-<short-name>.xml` | GtkSourceView 3 and 4: gedit 46 and earlier, Xed, Pluma, Meld | the plain format |
+| `gtksourceview-5/jenerated-<short-name>.xml` | GtkSourceView 5: GNOME Text Editor | adds whether the palette is dark or light, and the colors GNOME Text Editor recolors its window with (which GtkSourceView 4 refuses) |
+| `libgedit-gtksourceview-300/jenerated-<short-name>.xml` | gedit 47 and later, which use their own fork of GtkSourceView | marks the palette dark or light its own way, and refuses the plain format's version number |
 
 The files are generated from `gtksourceview-4.xml.tmpl`,
 `gtksourceview-5.xml.tmpl` and `libgedit.xml.tmpl` by
@@ -31,9 +31,9 @@ The files are generated from `gtksourceview-4.xml.tmpl`,
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose the text
-editors. It links each version of the scheme into the folder that version
-of GtkSourceView reads. If GNOME Text Editor or gedit was installed through
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose the text
+editors. It links each version of the scheme into the folder that version of
+GtkSourceView reads. If GNOME Text Editor or gedit was installed through
 Flatpak, which keeps each app's files in a folder of its own, it links the
 scheme there too. To install by hand, run these from the same folder where
 you ran `git clone`:
@@ -65,4 +65,4 @@ that were open:
 - **Pluma, Meld and others:** in their preferences, usually under fonts and
   colors.
 
-After changing the palette, run `./jenerate.py` and reopen the editors.
+After changing the palette, regenerate its themes and reopen the editors.

@@ -4,6 +4,7 @@ its theme. This is what `jenerate` (or ./setup.sh) runs with no subcommand."""
 import os
 import signal
 import sys
+import tempfile
 from dataclasses import dataclass
 
 from . import paths, state
@@ -35,10 +36,12 @@ class Palette:
 
 def start_palette_creator():
     """Explains the Palette Creator, then runs its server until Ctrl+C, and
-    exits when it stops. If this folder's Palette Creator is already running,
-    serve.py asks whether to open it or start a fresh one; Back there
-    (serve.py's exit status 3) returns here, so the first menu can be shown
-    again."""
+    exits when it stops. After "Save as palette", the page asks whether to
+    install the palette now; if so, serve.py writes its slug to the handoff
+    file and exits with status 4, and this returns the slug, for the menus to
+    install it. If this folder's Palette Creator is already running, serve.py
+    asks whether to open it or start a fresh one; Back there (status 3)
+    returns None, so the first menu can be shown again."""
     draft = paths.shown(paths.DRAFTS / "work-in-progress-palette.toml")
     palettes_folder = paths.shown(paths.PALETTES)
     finders = state.COMMAND if paths.INSTALLED else f"jenerate.py and {state.COMMAND}"
@@ -48,29 +51,51 @@ def start_palette_creator():
     say("1. The page starts with your work-in-progress palette")
     say(f"   ({draft}; the first time, a copy")
     say('   of Blue Purple). To begin from another palette, use "Load from...".')
-    say("2. Give it a name and a slug (lowercase words and dashes, like deep-blue-sea).")
+    say("2. Give it a name, and a short name for its files (lowercase words and dashes,")
+    say("   like deep-blue-sea).")
     say("3. Change colors with the color pickers, or type #rrggbb or another")
     say("   color's name. The preview updates as you go; hover a color to see")
     say("   where it's used, or click the preview to find a color.")
     say('4. Your draft saves itself as you go. "Save as palette..." opens a save')
     say(f"   dialog in {palettes_folder}/Dark or {palettes_folder}/Light, to match the")
-    say("   palette; keep the suggested name, <slug>-palette.toml, so")
+    say("   palette; keep the suggested name, <short-name>-palette.toml, so")
     say(f"   {finders} can find it.")
-    say(f"5. When you're done, press Ctrl+C here to stop it, then run {state.COMMAND}")
-    say('   again and choose "Install a theme": your palette will be listed.')
+    say("5. Once it's saved, the page asks whether to install it into your apps now")
+    say("   (you choose the apps here) or keep designing.")
+    say("6. When you're done, press Ctrl+C here to stop it. To install a palette")
+    say(f'   later, run {state.COMMAND} again and choose "Install a theme".')
     say("")
+    handle, handoff = tempfile.mkstemp(prefix="jenerate-handoff-")
+    os.close(handle)
     # Ctrl+C is for serve.py: it stops the server and exits. This waits for it
     # instead of stopping too.
     previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         status = status_of([sys.executable, "-m", "jenerate_themes.creator.serve"],
-                           env={**os.environ, "JENERATE_COMMAND": state.COMMAND},
+                           env={**os.environ, "JENERATE_COMMAND": state.COMMAND,
+                                "JENERATE_HANDOFF": handoff},
                            preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_DFL))
+        slug = open(handoff, encoding="utf-8").read().strip() if status == 4 else ""
     finally:
         signal.signal(signal.SIGINT, previous)
+        os.unlink(handoff)
     if status == 3:
-        return
+        return None
+    if status == 4 and slug:
+        return slug
     raise SystemExit(status if status >= 0 else 128 - status)
+
+
+def palette_from_creator(slug):
+    """The palette the Palette Creator handed back to install, announced."""
+    if HOME is None:
+        stop("HOME isn't set, so there's no home folder to install themes into. "
+             "Set it to yours (like export HOME=/home/you), then run "
+             f"{state.COMMAND} again.")
+    palette = find_palette(slug, load_palettes())
+    step(f"Installing {palette.name}")
+    say("Choose the app to install it into (or ALL THE APPS).")
+    return palette
 
 
 # --- Choosing an app ---------------------------------------------------------
@@ -449,9 +474,13 @@ def run(want_app="", want_palette="", design=False):
 
     if design:
         # Back, at the question about a Palette Creator that's already
-        # running, ends here: there's no menu to go back to.
-        start_palette_creator()
-        return
+        # running, ends here: there's no menu to go back to. A palette
+        # handed back to install goes on to the app menus.
+        slug = start_palette_creator()
+        if slug is None:
+            return
+        want_palette = palette_from_creator(slug)
+        skip_first_menu = True
 
     # Each menu's Back goes to the one before it: the theme menu back to the
     # app menus, and the main app menu back to this first question. Naming an
@@ -461,8 +490,10 @@ def run(want_app="", want_palette="", design=False):
             if choose("What would you like to do?",
                       "Install a theme for an app",
                       "Design a new palette (opens the Palette Creator)") == 1:
-                start_palette_creator()
-                continue
+                slug = start_palette_creator()
+                if slug is None:
+                    continue
+                want_palette = palette_from_creator(slug)
         skip_first_menu = False
 
         menus = AppMenus()

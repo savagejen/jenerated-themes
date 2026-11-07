@@ -2,9 +2,9 @@
 
 Terminal palettes for [Ptyxis](https://gitlab.gnome.org/chergert/ptyxis), the
 default terminal on Ubuntu 25.10 and later. [jenerate.py](../../jenerate.py)
-writes one `<slug>.palette` file for each palette you generate, for example
-`blue-purple.palette`. Each uses the same colors as the matching VS Code
-theme's built-in terminal.
+writes one `<short-name>.palette` file for each palette you generate, for
+example `blue-purple.palette`. Each uses the same colors as the matching VS
+Code theme's built-in terminal.
 
 Each palette uses the palette's colors whether GNOME is set to light or dark
 mode.
@@ -14,6 +14,9 @@ The `.palette` files are generated from `palette.tmpl` by
 [Changing colors](../../README.md#changing-colors).
 
 ## Install
+
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Ptyxis.
+To install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
    see [Setting up by hand](../../README.md#setting-up-by-hand).
@@ -25,7 +28,7 @@ The `.palette` files are generated from `palette.tmpl` by
 2. Symlink or copy the palettes into Ptyxis's palette folder. A symlink means
    later changes to a palette show up after you reopen Ptyxis. After
    generating more palettes, run the command again to add the new ones; after
-   `jenerate.py --remove`, delete that palette's file from
+   removing a palette's themes, delete that palette's file from
    `~/.local/share/org.gnome.Ptyxis/palettes/` too. Run these from the same
    folder where you ran `git clone`.
 

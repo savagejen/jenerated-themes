@@ -3,7 +3,7 @@
 Themes for the [Godot](https://godotengine.org) editor (Godot 4), in two
 parts that match the VS Code themes:
 
-- a **script editor theme** (`Jenerated-<slug>.tet`), with the same syntax
+- a **script editor theme** (`Jenerated-<short-name>.tet`), with the same syntax
   colors as the VS Code theme, plus GDScript's own (node paths, annotations
   and so on), the editor background, selection, current line, code
   completion, breakpoints and bookmarks; and
@@ -34,7 +34,7 @@ colors, see [Changing colors](../../README.md#changing-colors).
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Godot. It
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Godot. It
 links the script editor theme where Godot looks for it, and, if Godot has
 been opened before and is closed now, offers to set the interface colors and
 the script editor theme in Godot's editor settings. It backs the settings up
@@ -42,7 +42,7 @@ first (next to them, as `editor_settings-4.x.tres.before-jenerated`), and
 prints the command to restore them.
 
 Godot saves its settings when it closes, so close it before running
-`./setup.sh`, or the change is undone.
+`jenerate`, or the change is undone.
 
 To install by hand, link the script editor theme into Godot's
 `text_editor_themes` folder:
@@ -65,6 +65,6 @@ Then, in Godot, open **Editor -> Editor Settings** and set:
 - **Text Editor -> Theme -> Color Theme:** Jenerated-blue-purple
 
 The script editor theme is read each time Godot starts, so after changing
-the palette and running `./jenerate.py`, restart Godot to see new syntax
+the palette and regenerating its themes, restart Godot to see new syntax
 colors. The interface colors are copied into Godot's settings, so run
-`./setup.sh` again (or change them by hand) to update those.
+`jenerate` again (or change them by hand) to update those.

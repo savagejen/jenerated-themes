@@ -40,7 +40,7 @@ The files are generated from `theme.json.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Unreal
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Unreal
 Engine (under Editors). It links the theme into Unreal's folder for your own
 themes, which every engine version shares:
 
@@ -58,7 +58,7 @@ Then, in the Unreal Editor:
    Restart the editor first if it doesn't appear.
 
 To tweak the colors inside Unreal, choose **Duplicate** and edit the copy.
-Editing the linked theme itself changes the generated file, and running
-`./jenerate.py` again would overwrite your changes.
+Editing the linked theme itself changes the generated file, and regenerating
+its themes would overwrite your changes.
 
-After changing the palette, run `./jenerate.py` and restart the editor.
+After changing the palette, regenerate its themes and restart the editor.

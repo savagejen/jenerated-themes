@@ -20,7 +20,7 @@ The files are generated from `color-scheme.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Sublime
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Sublime
 Text (under Editors). It links the color scheme into Sublime Text's
 `Packages/User` folder:
 
@@ -45,4 +45,4 @@ Then, in Sublime Text:
    **Adaptive**.
 
 Sublime Text reloads the color scheme when its file changes, so after
-changing the palette, running `./jenerate.py` is enough.
+changing the palette, regenerating its themes is enough.

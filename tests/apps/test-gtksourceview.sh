@@ -194,7 +194,7 @@ test_gtksourceview_links_each_version() {
 # THEN it tells GNOME Text Editor users to pick its light style
 test_gtksourceview_light_palette_says_light_style() {
   fake_os Linux
-  sed -e 's/^name = .*/name = "Dawn"/' -e 's/^slug = .*/slug = "dawn"/' \
+  sed -e 's/^name = .*/name = "Dawn"/' -e 's/^short_name = .*/short_name = "dawn"/' \
     -e 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/dawn-palette.toml"
   install_app gtksourceview dawn "y\n1\n"

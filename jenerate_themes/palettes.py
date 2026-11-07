@@ -15,7 +15,9 @@ SCHEME_FOLDERS = {"dark": "Dark", "light": "Light"}
 
 SCHEMES = ("dark", "light")
 
-# Slugs become file names, so they're kept to lowercase words and dashes.
+# A palette's short name (`short_name`; `slug` in older palettes) names its
+# files, so it's kept to lowercase words and dashes. The code calls it the
+# slug.
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 
 # Each palette's {{uuid}} is made from its slug in this namespace.
@@ -28,9 +30,10 @@ def is_path(arg):
 
 
 def check_slug(slug, source):
-    """The slug, or JenerateError if it isn't safe to use in a file name."""
+    """The short name, or JenerateError if it isn't safe to use in a file
+    name."""
     if not SLUG.fullmatch(slug):
-        raise JenerateError(f"{source}: {slug!r} is not a valid slug (use lowercase "
+        raise JenerateError(f"{source}: {slug!r} is not a valid short name (use lowercase "
                  f"letters, numbers and single dashes, e.g. blue-purple)")
     return slug
 
@@ -132,14 +135,21 @@ def filed_path(values):
 
 
 def read_palette_file(path):
-    """Parse a palette file and check its `name`, `slug` and `colors`."""
+    """Parse a palette file and check its `name`, `short_name` and `colors`.
+    The short name is returned as data["slug"] too, which is what the code
+    calls it; palettes from before 1.0.0 have `slug` in place of
+    `short_name`, and are read the same."""
     try:
         with open(path, "rb") as f:
             data = tomllib.load(f)
     except tomllib.TOMLDecodeError as error:
         raise JenerateError(f"{path}: not a valid palette file: {error}")
 
-    for key in ("name", "slug"):
+    if "short_name" in data and "slug" in data and data["short_name"] != data["slug"]:
+        raise JenerateError(f"{path}: has both `short_name` and `slug`; keep only "
+                            f"`short_name`")
+    data["slug"] = data["short_name"] = data.get("short_name", data.get("slug"))
+    for key in ("name", "short_name"):
         if not isinstance(data.get(key), str):
             raise JenerateError(f"{path}: missing top-level `{key}` string")
     # The name is written into the themes as is, so it mustn't be able to
@@ -154,7 +164,7 @@ def read_palette_file(path):
     slug = check_slug(data["slug"], path)
     if in_palettes(path) and path.name != f"{slug}-palette.toml":
         raise JenerateError(f"{path}: palettes in palettes/ must be named after their "
-                 f"slug; rename it to {slug}-palette.toml")
+                 f"short name; rename it to {slug}-palette.toml")
 
     if data.get("scheme") not in (None, *SCHEMES):
         raise JenerateError(f'{path}: `scheme` must be "dark" or "light" (or left out, '
@@ -213,7 +223,8 @@ def report_contrast(names):
 def load_palette(path):
     """Read a palette and return its template values: every color as
     #rrggbb (with references to other colors followed) and in its other
-    forms (see color_formats), plus `name`, `slug`, `uuid` and `scheme`."""
+    forms (see color_formats), plus `name`, `short_name` (and `slug`, the
+    same), `uuid` and `scheme`."""
     data = read_palette_file(path)
     colors = data["colors"]
 
@@ -235,7 +246,7 @@ def load_palette(path):
     # A color the palette defines outright wins over another's derived form.
     values.update((key, resolve(key)) for key in colors)
     values["name"] = data["name"]
-    values["slug"] = data["slug"]
+    values["slug"] = values["short_name"] = data["slug"]
     values["uuid"] = str(uuid.uuid5(UUID_NAMESPACE, data["slug"]))
     values["scheme"] = data.get("scheme") or (scheme_of(values["bg"]) if "bg" in values else "dark")
     return values

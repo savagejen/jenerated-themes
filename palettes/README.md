@@ -1,6 +1,6 @@
 # Palettes
 
-Each palette here is a TOML file of named colors (`<slug>-palette.toml`),
+Each palette here is a TOML file of named colors (`<short-name>-palette.toml`),
 filed in [Dark](Dark/) or [Light](Light/).
 [jenerate.py](../jenerate.py) turns a palette into matching themes for every
 [supported app](../README.md#supported-apps), from VS Code and the terminals
@@ -13,7 +13,7 @@ notifications and a diff. The dark and light palettes each have a section,
 which you can collapse to see just the other.
 
 To use a palette, run `./setup.sh` and choose it, or generate its themes
-directly with `./jenerate.py <slug>`. To make your own, see
+directly with `./jenerate.py <short-name>`. To make your own, see
 [Adding a palette](../README.md#adding-a-palette).
 
 <details open>
@@ -132,31 +132,6 @@ berries, orange and brown bark
 
 Editor `#17110f`, Sidebar `#14221a`, Accent `#d63d38`, Text `#f3e3d3`
 
-### Neon Dev
-
-`neon-dev`
-
-Neon over TV static: a violet color bar frames the neutral greys of broadcast
-static, with the test pattern's darkest black behind the minimap. Hot pink,
-lime, amber and sky blue join test-bar yellow, cyan and magenta.
-
-![The Neon Dev palette in the Palette Creator's preview](Screenshots/Dark/neon-dev.png)
-
-Editor `#1f1f1f`, Sidebar `#2b2b2b`, Accent `#ff00aa`, Text `#f2f2f2`
-
-### Pop
-
-`pop`
-
-Every color made of FF, AA and 00: hot pink, amber, violet, lime, sky blue and
-mint, as flat color bars around the neutral greys of TV static. Violet frames
-the window, mint fills the minimap, and lime and amber draw the indent guides
-and whitespace.
-
-![The Pop palette in the Palette Creator's preview](Screenshots/Dark/pop.png)
-
-Editor `#1f1f1f`, Sidebar `#2b2b2b`, Accent `#ff00aa`, Text `#f2f2f2`
-
 ### Herbstfreude
 
 `herbstfreude`
@@ -215,5 +190,18 @@ sunflower, stem green, rosemary and clover.
 ![The Lavender Fields palette in the Palette Creator's preview](Screenshots/Light/lavender-fields.png)
 
 Editor `#fbf9fd`, Sidebar `#f1ecf7`, Accent `#7446bd`, Text `#2c2340`
+
+### Spring Morning
+
+`spring-morning`
+
+A light palette of a spring morning in the garden: dew-white and spring-green
+backgrounds, charcoal text, a spring-grass accent, and syntax colors from the
+beds coming into bloom: lilac, bluebell, tulip, terracotta pots, daffodil,
+emerald, the pond and redbud.
+
+![The Spring Morning palette in the Palette Creator's preview](Screenshots/Light/spring-morning.png)
+
+Editor `#fbfdfb`, Sidebar `#e9f8ea`, Accent `#17824a`, Text `#1d2521`
 
 </details>

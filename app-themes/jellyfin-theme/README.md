@@ -34,10 +34,11 @@ The files are generated from `theme.css.tmpl` by
 
 ## Install
 
-Jellyfin is themed from inside the app, by pasting CSS into it. The easiest
-way is `./setup.sh` from the repository root: choose Jellyfin (under
+Jellyfin is themed from inside the app, by pasting CSS into it. The easiest way
+is `jenerate` (or `./setup.sh` in a clone): choose Jellyfin (under
 Entertainment). It copies the palette's CSS to your clipboard (or tells you
-where the file is). To do it by hand, open the palette's `.css` file and copy everything in it.
+where the file is). To do it by hand, open the palette's `.css` file and copy
+everything in it.
 
 Then paste it into Jellyfin, in one of two places:
 
@@ -53,5 +54,5 @@ palette, or **Light** for a light one. The colors come from the palette
 either way, but Jellyfin shades a few things, like raised panels,
 differently for dark and light themes.
 
-After changing the palette, run `./setup.sh` again and paste the new CSS in
+After changing the palette, run `jenerate` again and paste the new CSS in
 place of the old.

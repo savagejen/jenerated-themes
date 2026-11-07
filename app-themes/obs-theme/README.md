@@ -33,8 +33,8 @@ The files are generated from `style.ovt.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose OBS Studio
-(under Entertainment). It links the style into OBS's themes folder:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose OBS
+Studio (under Entertainment). It links the style into OBS's themes folder:
 
 - Linux: `~/.config/obs-studio/themes/`, and, if OBS was installed through
   Flatpak, `~/.var/app/com.obsproject.Studio/config/obs-studio/themes/`
@@ -48,4 +48,4 @@ Then restart OBS Studio, and:
 2. Choose **Yami** as the **Theme** and **Jenerated Blue Purple** as the
    **Style**.
 
-After changing the palette, run `./jenerate.py` and restart OBS.
+After changing the palette, regenerate its themes and restart OBS.

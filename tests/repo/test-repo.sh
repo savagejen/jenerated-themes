@@ -9,43 +9,33 @@ source "$(dirname "$0")/../lib.sh"
 
 # --- Tests: symbols stay ASCII -----------------------------------------------
 
-# GIVEN every text file in the repository (tracked, or new and not ignored)
+# GIVEN every file and folder in the repository (tracked, or new and not
+#       ignored)
 # WHEN looking for characters outside ASCII that aren't letters or accent
-#      marks, the same rule as the pre-commit hook
+#      marks in its name and, for a text file, its lines, the same rule and
+#      script as the pre-commit hook
 # THEN there are none: letters in any language are fine, but symbols are
 #      written as plain text ("...", "-", "->")
 test_symbols_are_plain_ascii() {
-  command -v perl >/dev/null 2>&1 || return 0
-  OUTPUT="$(cd "$SANDBOX/repo" && find . -type f ! -path './.git/*' -print0 |
-    LC_ALL=C xargs -0 grep -Il "$(printf '[\200-\377]')" 2>/dev/null |
-    while IFS= read -r file; do
-      perl -MEncode -ne '
-        $_ = decode("UTF-8", $_, sub { "\x{FFFD}" });
-        print "$ARGV:$.\n" if /[^\x00-\x7F\p{L}\p{M}]/;
-      ' "$file"
-    done)"
-  [ -z "$OUTPUT" ] || fail "these lines have symbols outside plain ASCII:
+  OUTPUT="$(cd "$SANDBOX/repo" && python3 .githooks/check-symbols.py --all)"
+  STATUS=$?
+  [ -z "$OUTPUT" ] || fail "these file names and lines have symbols outside plain ASCII:
 $OUTPUT"
+  # A non-zero exit means the check couldn't finish, even with nothing listed.
+  assert_status 0
 }
 
+# --- Tests: no compiled Python ----------------------------------------------
+
 # GIVEN every file in the repository (tracked, or new and not ignored)
-# WHEN looking for characters outside ASCII that aren't letters or accent
-#      marks in its name, the same rule as the pre-commit hook
-# THEN there are none
-test_file_names_are_plain_ascii() {
-  command -v perl >/dev/null 2>&1 || return 0
-  OUTPUT="$(cd "$SANDBOX/repo" && find . -path ./.git -prune -o -print0 |
-    perl -MEncode -e '
-      $/ = "\0";
-      while (my $file = <STDIN>) {
-        chomp $file;
-        my $name = decode("UTF-8", $file, sub { "\x{FFFD}" });
-        next unless $name =~ /[^\x00-\x7F\p{L}\p{M}]/;
-        $name =~ s/([^\x20-\x7E\p{L}\p{M}])/sprintf("<U+%04X>", ord $1)/ge;
-        print encode("UTF-8", $name), "\n";
-      }
-    ')"
-  [ -z "$OUTPUT" ] || fail "these file names have symbols outside plain ASCII:
+# WHEN looking for compiled Python files (.so, .pyd, .pyc, .pyo)
+# THEN there are none: Python imports a compiled module in place of a .py
+#      file with the same name, and review only shows it as a binary file,
+#      so one could run hidden code instead of the source everyone reads
+test_no_compiled_python_files() {
+  OUTPUT="$(cd "$SANDBOX/repo" && find . -path ./.git -prune -o -type f \
+    \( -name '*.so' -o -name '*.pyd' -o -name '*.pyc' -o -name '*.pyo' \) -print)"
+  [ -z "$OUTPUT" ] || fail "these compiled Python files shouldn't be in the repository:
 $OUTPUT"
 }
 

@@ -23,6 +23,45 @@ after_sandbox() {
   done
 }
 
+# GIVEN the modules in jenerate_themes/apps/ (other than __init__.py), and
+#       the ones Python loads when jenerate_themes.apps is imported
+# WHEN comparing them
+# THEN they match: an app whose module isn't imported in __init__.py would
+#      never show up, and a loaded module with no .py file would be some
+#      other kind of file
+test_every_app_module_is_imported() {
+  OUTPUT="$("$PYTHON" -c '
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import jenerate_themes.apps
+
+apps_folder = Path(sys.argv[1], "jenerate_themes", "apps")
+module_files = set()
+for path in apps_folder.glob("*.py"):
+    if path.name != "__init__.py":
+        module_files.add(path.stem)
+
+# The app modules Python loaded while importing the package: the ones
+# __init__.py imports.
+loaded_modules = set()
+for name in sys.modules:
+    if name.startswith("jenerate_themes.apps."):
+        loaded_modules.add(name.removeprefix("jenerate_themes.apps."))
+
+for name in sorted(module_files - loaded_modules):
+    print(f"  {name}.py is not imported in jenerate_themes/apps/__init__.py")
+for name in sorted(loaded_modules - module_files):
+    print(f"  {name} was loaded, but there is no {name}.py")
+' "$SANDBOX/repo" 2>&1)"
+  STATUS=$?
+  [ -z "$OUTPUT" ] || fail "the imports in jenerate_themes/apps/__init__.py and the folder don't match:
+$OUTPUT"
+  # A module that can't be imported stops the whole import, with Python's
+  # error above.
+  assert_status 0
+}
+
 # app_outputs id slug [folder] -> prints the path of each file the app's
 # templates make for the palette, in the sandbox repository or the folder.
 app_outputs() {

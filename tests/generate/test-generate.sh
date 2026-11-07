@@ -36,7 +36,7 @@ write_palette() {
   shift 3
   # & and | mean something in a sed replacement, so escape them.
   name="$(printf '%s' "$name" | sed 's/[&|]/\\&/g')"
-  sed -e "s|^name = .*|name = \"$name\"|" -e "s|^slug = .*|slug = \"$slug\"|" \
+  sed -e "s|^name = .*|name = \"$name\"|" -e "s|^short_name = .*|short_name = \"$slug\"|" \
     "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$path"
   for line in "$@"; do
     printf '%s\n' "$line" >>"$path"
@@ -205,7 +205,7 @@ test_unknown_palette_is_an_error() {
 candy_with() {
   local slug="$1" name="$2" file="$SANDBOX/repo/palettes/$1-palette.toml"
   shift 2
-  sed -e "s/^name = .*/name = \"$name\"/" -e "s/^slug = .*/slug = \"$slug\"/" \
+  sed -e "s/^name = .*/name = \"$name\"/" -e "s/^short_name = .*/short_name = \"$slug\"/" \
     "$SANDBOX/repo/palettes/Light/candy-palette.toml" >"$file"
   while [ "$#" -ge 2 ]; do
     sed -i "s/^$1 = \"[^\"]*\"/$1 = \"$2\"/" "$file"
@@ -455,7 +455,7 @@ test_repo_in_a_folder_with_spaces() {
   mkdir -p "$SANDBOX/My Projects" "$SANDBOX/My Palettes"
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
-  sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^short_name = .*/short_name = "forest"/' \
     "$repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/My Palettes/forest.toml"
   OUTPUT="$(cd "$SANDBOX" && "$PYTHON" "$repo/jenerate.py" "$SANDBOX/My Palettes/forest.toml" 2>&1)"
   STATUS=$?
@@ -742,7 +742,7 @@ test_a_light_background_makes_light_themes() {
 # THEN each follows its scheme setting, not its background
 test_the_scheme_setting_overrides_the_background() {
   write_palette "$SANDBOX/lit.toml" "Lit" "lit"
-  { sed -n '1,/^slug = /p' "$SANDBOX/lit.toml"; echo 'scheme = "light"'; sed '1,/^slug = /d' "$SANDBOX/lit.toml"; } \
+  { sed -n '1,/^short_name = /p' "$SANDBOX/lit.toml"; echo 'scheme = "light"'; sed '1,/^short_name = /d' "$SANDBOX/lit.toml"; } \
     >"$SANDBOX/repo/palettes/lit-palette.toml"
   write_light_palette dim Dim 'scheme = "dark"'
   run_jenerate lit,dim
@@ -1011,7 +1011,7 @@ test_palette_file_name_must_match_its_slug() {
   write_palette "$SANDBOX/repo/palettes/twilight-palette.toml" "Twilight" "dusk"
   run_jenerate twilight
   assert_status 1
-  assert_contains "twilight-palette.toml: palettes in palettes/ must be named after their slug; rename it to dusk-palette.toml"
+  assert_contains "twilight-palette.toml: palettes in palettes/ must be named after their short name; rename it to dusk-palette.toml"
   assert_missing "$(slack_theme dusk)"
 }
 
@@ -1040,7 +1040,7 @@ test_list_reports_a_misnamed_palette() {
 # WHEN generating it
 # THEN it exits with status 1, saying the color must be a quoted string
 test_color_that_is_not_a_string() {
-  printf 'name = "Numbers"\nslug = "numbers"\n[colors]\naccent = 5\n' \
+  printf 'name = "Numbers"\nshort_name = "numbers"\n[colors]\naccent = 5\n' \
     >"$SANDBOX/repo/palettes/numbers-palette.toml"
   run_jenerate numbers
   assert_status 1
@@ -1051,7 +1051,7 @@ test_color_that_is_not_a_string() {
 # WHEN generating it
 # THEN it exits with status 1, saying colors must be a [colors] table
 test_colors_that_are_not_a_table() {
-  printf 'name = "Flat"\nslug = "flat"\ncolors = "#123456"\n' \
+  printf 'name = "Flat"\nshort_name = "flat"\ncolors = "#123456"\n' \
     >"$SANDBOX/repo/palettes/flat-palette.toml"
   run_jenerate flat
   assert_status 1
@@ -1092,15 +1092,41 @@ test_palette_without_a_name() {
   assert_contains 'missing top-level `name` string'
 }
 
-# GIVEN a palette with no slug
+# GIVEN a palette with no short name
 # WHEN generating it
-# THEN it exits with status 1, saying the slug is missing
-test_palette_without_a_slug() {
-  grep -v '^slug = ' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
+# THEN it exits with status 1, saying the short name is missing
+test_palette_without_a_short_name() {
+  grep -v '^short_name = ' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/broken-palette.toml"
   run_jenerate broken
   assert_status 1
-  assert_contains 'missing top-level `slug` string'
+  assert_contains 'missing top-level `short_name` string'
+}
+
+# GIVEN a palette from before 1.0.0, with `slug` where palettes now have
+#       `short_name`
+# WHEN listing and generating it
+# THEN it works as if it had `short_name`
+test_palette_with_the_old_slug_key_still_works() {
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^short_name = .*/slug = "forest"/' \
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/Dark/forest-palette.toml"
+  run_jenerate --list
+  assert_status 0
+  assert_contains "forest"
+  run_jenerate forest
+  assert_status 0
+  assert_contains "Generated Forest (forest)"
+}
+
+# GIVEN a palette with both `short_name` and `slug`, saying different things
+# WHEN generating it
+# THEN it exits with status 1, asking to keep only `short_name`
+test_palette_with_both_keys_that_disagree() {
+  sed 's/^short_name = .*/&\nslug = "other"/' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
+    >"$SANDBOX/repo/palettes/both.toml"
+  run_jenerate "$SANDBOX/repo/palettes/both.toml"
+  assert_status 1
+  assert_contains 'has both `short_name` and `slug`; keep only `short_name`'
 }
 
 # GIVEN a color that refers to itself
@@ -1149,7 +1175,7 @@ test_short_hex_is_rejected() {
 # THEN it exits with status 1, naming accent, and writes none of its files
 test_missing_color_is_named_and_nothing_is_written() {
   grep -v '^accent = ' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" |
-    sed -e 's/^name = .*/name = "Holey"/' -e 's/^slug = .*/slug = "holey"/' \
+    sed -e 's/^name = .*/name = "Holey"/' -e 's/^short_name = .*/short_name = "holey"/' \
       >"$SANDBOX/repo/palettes/holey-palette.toml"
   run_jenerate holey
   assert_status 1
@@ -1200,7 +1226,7 @@ test_a_bad_palette_stops_before_later_ones() {
 # write_unsafe_palette slug -> writes $SANDBOX/unsafe.toml with that slug.
 write_unsafe_palette() {
   write_palette "$SANDBOX/unsafe.toml" "Unsafe" "placeholder"
-  sed "s|^slug = .*|slug = \"$1\"|" "$SANDBOX/unsafe.toml" >"$SANDBOX/unsafe.tmp"
+  sed "s|^short_name = .*|short_name = \"$1\"|" "$SANDBOX/unsafe.toml" >"$SANDBOX/unsafe.tmp"
   mv "$SANDBOX/unsafe.tmp" "$SANDBOX/unsafe.toml"
 }
 
@@ -1211,7 +1237,7 @@ test_slug_cannot_escape_the_repository_when_generating() {
   write_unsafe_palette "../../escaped"
   run_jenerate "$SANDBOX/unsafe.toml"
   assert_status 1
-  assert_contains "'../../escaped' is not a valid slug"
+  assert_contains "'../../escaped' is not a valid short name"
   assert_missing "$SANDBOX/escaped.palette"
   assert_missing "$SANDBOX/escaped.txt"
 }
@@ -1226,7 +1252,7 @@ test_slug_cannot_escape_the_repository_when_removing() {
   echo keep >"$SANDBOX/escaped.txt"
   run_jenerate --remove "$SANDBOX/unsafe.toml"
   assert_status 1
-  assert_contains "is not a valid slug"
+  assert_contains "is not a valid short name"
   assert_exists "$SANDBOX/escaped.palette"
   assert_exists "$SANDBOX/escaped.txt"
 }
@@ -1234,13 +1260,13 @@ test_slug_cannot_escape_the_repository_when_removing() {
 # GIVEN palettes with slugs using capitals, spaces, underscores, slashes, stray
 #       dashes, nothing, or a dot
 # WHEN generating each
-# THEN every one is rejected as not a valid slug
+# THEN every one is rejected as not a valid short name
 test_slugs_must_be_lowercase_words_and_dashes() {
   for slug in "Sunset" "sun set" "sun_set" "sun/set" "-sunset" "sunset-" "sun--set" "" "."; do
     write_unsafe_palette "$slug"
     run_jenerate "$SANDBOX/unsafe.toml"
     assert_status 1
-    assert_contains "is not a valid slug"
+    assert_contains "is not a valid short name"
   done
 }
 
@@ -1258,14 +1284,14 @@ test_valid_slugs_are_accepted() {
 
 # GIVEN slugs typed on the command line
 # WHEN removing '..' or generating 'Sunset'
-# THEN both are rejected as not valid slugs
+# THEN both are rejected as not valid short names
 test_slug_on_the_command_line_is_checked() {
   run_jenerate --remove ..
   assert_status 1
-  assert_contains "'..' is not a valid slug"
+  assert_contains "'..' is not a valid short name"
   run_jenerate Sunset
   assert_status 1
-  assert_contains "'Sunset' is not a valid slug"
+  assert_contains "'Sunset' is not a valid short name"
 }
 
 # GIVEN a palette whose name contains a double quote

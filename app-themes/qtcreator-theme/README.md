@@ -22,10 +22,10 @@ The files are generated from `color-scheme.xml.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Qt Creator
-(under Editors). It links the color scheme into Qt Creator's styles folder,
-`~/.config/QtProject/qtcreator/styles/` (on macOS too), and, if Qt Creator
-was installed through Flatpak, into
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Qt
+Creator (under Editors). It links the color scheme into Qt Creator's styles
+folder, `~/.config/QtProject/qtcreator/styles/` (on macOS too), and, if Qt
+Creator was installed through Flatpak, into
 `~/.var/app/io.qt.QtCreator/config/QtProject/qtcreator/styles/`. To install
 by hand, link or copy the palette's `.xml` file into that folder.
 
@@ -38,5 +38,5 @@ Then, in Qt Creator:
 3. For the rest of the window, choose **Dark** or **Light** under
    **Environment -> Interface -> Theme**.
 
-After changing the palette, run `./jenerate.py` and choose the scheme
+After changing the palette, regenerate its themes and choose the scheme
 again, or restart Qt Creator.

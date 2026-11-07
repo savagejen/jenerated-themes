@@ -35,12 +35,12 @@ The file is generated from `colors.conf.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose mpv
-(under Entertainment). It links the palette's colors into mpv's settings
-folder as `jenerated-colors.conf`, and adds a line to the end of `mpv.conf`
-that loads them, creating `mpv.conf` if needed. If you already have an `mpv.conf`, it
-asks first, and your settings in it are kept. If mpv was installed through
-Flatpak, it does the same in the folder Flatpak gives mpv.
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose mpv (under
+Entertainment). It links the palette's colors into mpv's settings folder as
+`jenerated-colors.conf`, and adds a line to the end of `mpv.conf` that loads
+them, creating `mpv.conf` if needed. If you already have an `mpv.conf`, it asks
+first, and your settings in it are kept. If mpv was installed through Flatpak,
+it does the same in the folder Flatpak gives mpv.
 
 To install by hand, link the palette's file into mpv's settings folder
 (`~/.config/mpv`, on macOS too) and load it from `mpv.conf`:
@@ -54,6 +54,6 @@ echo 'include="~~/jenerated-colors.conf"' >>~/.config/mpv/mpv.conf
 If mpv was installed through Flatpak, use
 `~/.var/app/io.mpv.Mpv/config/mpv` instead of `~/.config/mpv`.
 
-Then restart mpv. After changing the palette, run `./jenerate.py` and
-restart mpv. To switch palettes, run `./setup.sh` again. To go back to
-mpv's own colors, remove the `include` line from `mpv.conf`.
+Then restart mpv. After changing the palette, regenerate its themes and
+restart mpv. To switch palettes, run `jenerate` again. To go back to mpv's
+own colors, remove the `include` line from `mpv.conf`.

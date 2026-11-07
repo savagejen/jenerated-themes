@@ -25,7 +25,9 @@ WIP_REL="palette-creator/work-in-progress-palette.toml"
 # sandbox and waits until it answers. Sets PORT, and stops the server when the
 # test ends. Fake commands in
 # $SANDBOX/bin come first on its PATH. Save dialogs are off (so a test never
-# opens a real one) unless the test sets DIALOG="" and fakes one.
+# opens a real one) unless the test sets DIALOG="" and fakes one. With
+# HANDOFF set to a file, it's started the way jenerate starts it, able to
+# hand a saved palette back to install.
 start_server() {
   PORT="$("$PYTHON" -c '
 import socket
@@ -34,7 +36,7 @@ s.bind(("127.0.0.1", 0))
 print(s.getsockname()[1])
 ')"
   PALETTE_CREATOR_DIALOG="${DIALOG-none}" PATH="$SANDBOX/bin:$PATH" \
-    env PYTHONPATH="$SANDBOX/repo" "$PYTHON" -P -m jenerate_themes.creator.serve --no-browser --port "$PORT" \
+    JENERATE_HANDOFF="${HANDOFF-}" env PYTHONPATH="$SANDBOX/repo" "$PYTHON" -P -m jenerate_themes.creator.serve --no-browser --port "$PORT" \
     >"$SANDBOX/server.log" 2>&1 &
   SERVER_PID=$!
   trap 'kill "$SERVER_PID" 2>/dev/null; rm -rf "$SANDBOX"' EXIT
@@ -175,11 +177,17 @@ start_second() {
   trap 'kill "$SERVER_PID" "$SECOND_PID" 2>/dev/null; rm -rf "$SANDBOX"' EXIT
 }
 
-# second_url -> waits until the second serve.py says where it's running, and
-# prints that address.
-second_url() {
+# wait_for_second_url -> waits until the second serve.py says where it's
+# running, and sets SECOND_URL to that address; fails the test if it doesn't
+# start. Call it directly, not inside $(...): a failure inside $(...) is
+# lost, and its message would be taken for the address.
+wait_for_second_url() {
+  SECOND_URL=""
   for _ in $(seq 100); do
-    sed -n 's/^Palette Creator is running at //p' "$SANDBOX/second.log" | grep . && return
+    SECOND_URL="$(sed -n 's/^Palette Creator is running at //p' "$SANDBOX/second.log")"
+    if [ -n "$SECOND_URL" ]; then
+      return
+    fi
     "$PYTHON" -c 'import time; time.sleep(0.05)'
   done
   fail "the second serve.py didn't start: $(cat "$SANDBOX/second.log")"
@@ -209,11 +217,86 @@ s = socket.socket(); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(); time.s
   SERVER_PID=$!
   "$PYTHON" -c 'import time; time.sleep(0.3)'
   start_second ""
-  url="$(second_url)"
+  wait_for_second_url
+  url="$SECOND_URL"
   [ -n "$url" ] && [ "$url" != "http://127.0.0.1:$PORT/" ] ||
     fail "expected another port than $PORT, got '$url'"
   assert_file_not_contains "$SANDBOX/second.log" "already running"
   curl -s -o /dev/null "$url" || fail "expected the Palette Creator at $url"
+}
+
+# GIVEN another web server on the port serve.py starts from, which answers
+#       /api/info with "not found"
+# WHEN starting serve.py
+# THEN it quietly uses another port: only the Palette Creator's own answer
+#      counts
+test_another_web_server_on_the_port_means_another_port() {
+  PORT="$("$PYTHON" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
+  (cd "$SANDBOX" && exec "$PYTHON" -m http.server --bind 127.0.0.1 "$PORT" >/dev/null 2>&1) &
+  SERVER_PID=$!
+  "$PYTHON" -c 'import time; time.sleep(0.5)'
+  start_second ""
+  wait_for_second_url
+  url="$SECOND_URL"
+  [ -n "$url" ] && [ "$url" != "http://127.0.0.1:$PORT/" ] ||
+    fail "expected another port than $PORT, got '$url'"
+  assert_file_not_contains "$SANDBOX/second.log" "already running"
+  assert_file_not_contains "$SANDBOX/second.log" "Traceback"
+}
+
+# GIVEN a program on the port serve.py starts from that answers something
+#       other than HTTP
+# WHEN starting serve.py
+# THEN it quietly uses another port, rather than stopping with an error
+test_a_program_that_doesnt_speak_http_means_another_port() {
+  PORT="$("$PYTHON" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
+  "$PYTHON" -c '
+import socket, sys
+s = socket.socket(); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen()
+while True:
+    connection, _ = s.accept()
+    connection.recv(1024)
+    connection.sendall(b"hello, this is not HTTP\r\n\r\n")
+    connection.close()
+' "$PORT" &
+  SERVER_PID=$!
+  "$PYTHON" -c 'import time; time.sleep(0.3)'
+  start_second ""
+  wait_for_second_url
+  url="$SECOND_URL"
+  [ -n "$url" ] && [ "$url" != "http://127.0.0.1:$PORT/" ] ||
+    fail "expected another port than $PORT, got '$url'"
+  assert_file_not_contains "$SANDBOX/second.log" "already running"
+  assert_file_not_contains "$SANDBOX/second.log" "Traceback"
+}
+
+# GIVEN --port with something that isn't a port number
+# WHEN starting serve.py
+# THEN it stops with a message saying what it should be, not a traceback
+test_a_bad_port_option_is_explained() {
+  # run_serve also passes $PORT on as PALETTE_CREATOR_PORT.
+  PORT=8765
+  for bad_port in 70000 -1 0 eighty; do
+    run_serve "" --port "$bad_port"
+    assert_status 2
+    assert_contains "argument --port: \"$bad_port\" isn't a port number; choose one from 1 to 65535, like 8765"
+    assert_not_contains "Traceback"
+  done
+}
+
+# GIVEN PALETTE_CREATOR_PORT set to something that isn't a port number
+# WHEN starting serve.py
+# THEN it stops with a message saying what it should be, not a traceback
+test_a_bad_palette_creator_port_is_explained() {
+  PORT="eighty"
+  run_serve ""
+  assert_status 1
+  assert_contains 'PALETTE_CREATOR_PORT is "eighty", but it should be a port number, like 8765.'
+  assert_not_contains "Traceback"
+  PORT="99999"
+  run_serve ""
+  assert_status 1
+  assert_contains "PALETTE_CREATOR_PORT is 99999, but it should be a port number from 1 to 65515."
 }
 
 # GIVEN this folder's Palette Creator already running on the port
@@ -238,7 +321,8 @@ test_running_palette_creator_can_be_opened() {
 test_running_palette_creator_can_be_restarted() {
   start_server
   start_second "2\n"
-  url="$(second_url)"
+  wait_for_second_url
+  url="$SECOND_URL"
   [ "$url" = "http://127.0.0.1:$PORT/" ] || fail "expected the same port, got '$url'"
   assert_file_contains "$SANDBOX/second.log" "Stopped it."
   # Its port is free once it stops serving, a moment before it exits.
@@ -304,7 +388,8 @@ test_a_fake_palette_creator_cant_get_a_process_stopped() {
 test_a_malformed_info_means_another_port() {
   fake_palette_creator "{\"app\": \"palette-creator\", \"root\": \"$SANDBOX/repo\", \"pid\": \"-1\", \"started\": 0}"
   start_second ""
-  url="$(second_url)"
+  wait_for_second_url
+  url="$SECOND_URL"
   [ -n "$url" ] && [ "$url" != "http://127.0.0.1:$PORT/" ] ||
     fail "expected another port than $PORT, got '$url'"
   assert_file_not_contains "$SANDBOX/second.log" "already running"
@@ -349,7 +434,8 @@ test_another_folders_palette_creator_means_another_port() {
     "$PYTHON" -c 'import time; time.sleep(0.05)'
   done
   start_second ""
-  url="$(second_url)"
+  wait_for_second_url
+  url="$SECOND_URL"
   [ "$url" != "http://127.0.0.1:$PORT/" ] || fail "expected another port than $PORT"
   assert_file_not_contains "$SANDBOX/second.log" "already running"
 }
@@ -536,10 +622,10 @@ test_save_as_palette_keeps_the_description() {
 # WHEN loading it and saving it unchanged
 # THEN the scheme line is kept, and the file is byte for byte the same
 test_the_scheme_setting_is_kept() {
-  { sed -n '1,/^slug = /p' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
+  { sed -n '1,/^short_name = /p' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"
     echo 'scheme = "light"'
-    sed '1,/^slug = /d' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"; } >"$SANDBOX/repo/palettes/lit-palette.toml"
-  sed -i 's/^slug = .*/slug = "lit"/' "$SANDBOX/repo/palettes/lit-palette.toml"
+    sed '1,/^short_name = /d' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml"; } >"$SANDBOX/repo/palettes/lit-palette.toml"
+  sed -i 's/^short_name = .*/short_name = "lit"/' "$SANDBOX/repo/palettes/lit-palette.toml"
   start_server
   post /api/load '{"filename": "lit-palette.toml"}'
   assert_json 'd["palette"]["scheme"]' "light"
@@ -598,7 +684,7 @@ test_check_reports_bad_names_and_slugs() {
   post /api/check "$(palette_body "" 'p["name"] = "Evil\"Name"')"
   assert_json 'd["error"]' "\`name\` can't contain quotes, slashes, backslashes, <, >, & or line breaks"
   post /api/check "$(palette_body "" 'p["slug"] = "Not-A-Slug"')"
-  assert_contains "'Not-A-Slug' is not a valid slug"
+  assert_contains "'Not-A-Slug' is not a valid short name"
 }
 
 # GIVEN a note with a line break, a color defined twice, and a color name with
@@ -682,12 +768,14 @@ test_save_as_palette_without_a_dialog_asks_for_a_name() {
 # GIVEN no save dialog, and the page has asked for a name
 # WHEN saving a dark palette as forest-palette.toml
 # THEN palettes/Dark/forest-palette.toml is written, the message says how to
-#      generate it, and jenerate.py can generate it
+#      install it (this Palette Creator wasn't started by jenerate, so it
+#      can't hand the palette back), and jenerate.py can generate it
 test_save_as_palette_with_a_typed_name() {
   start_server
   post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'forest-palette.toml'")"
   assert_json 'd["ok"]' "True"
-  assert_json 'd["message"]' "Saved palettes/Dark/forest-palette.toml. Generate its themes with: ./jenerate.py forest"
+  assert_json 'd["message"]' "Saved palettes/Dark/forest-palette.toml. To use it in your apps, stop the Palette Creator (Ctrl+C) and install it: ./jenerate install --palette forest"
+  assert_json 'd["install_here"]' "False"
   assert_file_contains "$SANDBOX/repo/palettes/Dark/forest-palette.toml" 'name = "Forest"'
   OUTPUT="$(cd "$SANDBOX/repo" && "$PYTHON" jenerate.py forest 2>&1)"
   assert_contains "Generated Forest (forest)"
@@ -703,7 +791,7 @@ test_save_as_palette_files_a_light_palette_in_light() {
   post /api/save "$(palette_body candy "$meringue")"
   assert_json 'd["folder"]' "palettes/Light"
   post /api/save "$(palette_body candy "$meringue; b['filename'] = 'meringue-palette.toml'")"
-  assert_json 'd["message"]' "Saved palettes/Light/meringue-palette.toml. Generate its themes with: ./jenerate.py meringue"
+  assert_json 'd["message"]' "Saved palettes/Light/meringue-palette.toml. To use it in your apps, stop the Palette Creator (Ctrl+C) and install it: ./jenerate install --palette meringue"
   assert_exists "$SANDBOX/repo/palettes/Light/meringue-palette.toml"
 }
 
@@ -723,6 +811,22 @@ test_save_as_palette_asks_before_replacing() {
   post /api/save "$(palette_body sunset "$changed; b['overwrite'] = True")"
   assert_json 'd["ok"]' "True"
   assert_file_contains "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" 'accent = "#123456"'
+}
+
+# GIVEN a palette from before 1.0.0, with `slug` where palettes now have
+#       `short_name`, and no save dialog
+# WHEN loading it and saving it again as a palette
+# THEN it loads with its short name, and is saved with `short_name`
+test_save_turns_the_old_slug_key_into_short_name() {
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^short_name = .*/slug = "forest"/' \
+    "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/Dark/forest-palette.toml"
+  start_server
+  post /api/save "$(palette_body forest 'b["target"] = "palette"; b["filename"] = "forest-palette.toml"; b["overwrite"] = True')"
+  assert_json 'd["ok"]' "True"
+  assert_file_contains "$SANDBOX/repo/palettes/Dark/forest-palette.toml" 'short_name = "forest"'
+  if grep -q '^slug = ' "$SANDBOX/repo/palettes/Dark/forest-palette.toml"; then
+    fail "expected no slug line left in the saved palette"
+  fi
 }
 
 # GIVEN Sunset's palette exists, and no save dialog
@@ -763,22 +867,89 @@ test_save_as_palette_opens_the_dialog_in_palettes() {
   start_server
   post /api/save "$(palette_body "" "$FOREST")"
   assert_json 'd["ok"]' "True"
-  assert_json 'd["message"]' "Saved palettes/forest-palette.toml. Generate its themes with: ./jenerate.py forest"
+  assert_json 'd["message"]' "Saved palettes/forest-palette.toml. To use it in your apps, stop the Palette Creator (Ctrl+C) and install it: ./jenerate install --palette forest"
   assert_file_contains "$SANDBOX/dialog-args" "$SANDBOX/repo/palettes/Dark/forest-palette.toml"
-  assert_file_contains "$SANDBOX/repo/palettes/forest-palette.toml" 'slug = "forest"'
+  assert_file_contains "$SANDBOX/repo/palettes/forest-palette.toml" 'short_name = "forest"'
 }
 
 # GIVEN a save dialog, where a folder outside palettes/ is chosen
 # WHEN saving as a palette
-# THEN it's saved there, and the message gives jenerate.py its path
+# THEN it's saved there, and the message gives ./jenerate generate its path
 test_save_as_palette_somewhere_else() {
   mkdir -p "$SANDBOX/My Palettes"
   fake_dialog 0 "$SANDBOX/My Palettes/woods.toml"
   start_server
   post /api/save "$(palette_body "" "$FOREST")"
   assert_json 'd["ok"]' "True"
-  assert_json 'd["message"]' "Saved $SANDBOX/My Palettes/woods.toml. Generate its themes with: ./jenerate.py $SANDBOX/My Palettes/woods.toml"
-  assert_file_contains "$SANDBOX/My Palettes/woods.toml" 'slug = "forest"'
+  assert_json 'd["message"]' "Saved $SANDBOX/My Palettes/woods.toml. Generate its themes with: ./jenerate generate $SANDBOX/My Palettes/woods.toml"
+  assert_file_contains "$SANDBOX/My Palettes/woods.toml" 'short_name = "forest"'
+}
+
+# GIVEN the Palette Creator started by jenerate, and no save dialog
+# WHEN saving a palette as forest-palette.toml
+# THEN the page is told it can offer to install it now, with its slug and
+#      name
+test_save_offers_to_install_when_started_by_jenerate() {
+  HANDOFF="$SANDBOX/handoff"
+  start_server
+  post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'forest-palette.toml'")"
+  assert_json 'd["ok"]' "True"
+  assert_json 'd["message"]' "Saved palettes/Dark/forest-palette.toml."
+  assert_json 'd["install_here"]' "True"
+  assert_json 'd["slug"]' "forest"
+  assert_json 'd["name"]' "Forest"
+}
+
+# GIVEN the Palette Creator started by jenerate, and Forest saved
+# WHEN the page asks to install it now
+# THEN it answers, then stops with status 4, with forest in the handoff file
+test_install_hands_the_palette_back_to_jenerate() {
+  HANDOFF="$SANDBOX/handoff"
+  start_server
+  post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'forest-palette.toml'")"
+  post /api/install '{"slug": "forest"}'
+  assert_json 'd["ok"]' "True"
+  wait "$SERVER_PID"
+  status=$?
+  [ "$status" = 4 ] || fail "expected serve.py to exit with status 4, got $status"
+  assert_file_equals "$SANDBOX/handoff" "forest"
+}
+
+# GIVEN the Palette Creator started by jenerate
+# WHEN the page asks to install a palette that isn't there
+# THEN it's refused, saying so, and the Palette Creator keeps running
+test_install_refuses_a_missing_palette() {
+  HANDOFF="$SANDBOX/handoff"
+  start_server
+  post /api/install '{"slug": "nope"}'
+  assert_json 'd["ok"]' "False"
+  assert_contains "No palette named 'nope'"
+  get /
+  assert_code 200
+}
+
+# GIVEN the Palette Creator started by hand, not by jenerate
+# WHEN the page asks to install a palette
+# THEN it's refused: there's no jenerate to hand it back to
+test_install_needs_jenerate() {
+  start_server
+  post /api/install '{"slug": "sunset"}'
+  assert_code 400
+}
+
+# GIVEN the Palette Creator started by jenerate, and a save dialog where a
+#       folder outside palettes/ is chosen
+# WHEN saving as a palette
+# THEN installing it isn't offered, since only palettes in palettes/ are
+#      listed for installing
+test_save_somewhere_else_doesnt_offer_to_install() {
+  HANDOFF="$SANDBOX/handoff"
+  mkdir -p "$SANDBOX/My Palettes"
+  fake_dialog 0 "$SANDBOX/My Palettes/woods.toml"
+  start_server
+  post /api/save "$(palette_body "" "$FOREST")"
+  assert_json 'd["ok"]' "True"
+  assert_json 'd.get("install_here", False)' "False"
 }
 
 # GIVEN a save dialog that's cancelled
@@ -968,7 +1139,7 @@ test_load_opens_the_dialog_in_palettes() {
 # THEN it's copied into the work in progress, and the message gives its path
 test_load_from_somewhere_else() {
   mkdir -p "$SANDBOX/My Palettes"
-  sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^short_name = .*/short_name = "forest"/' \
     "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/My Palettes/woods.toml"
   fake_dialog 0 "$SANDBOX/My Palettes/woods.toml"
   start_server
@@ -998,7 +1169,7 @@ test_load_dialog_cancelled() {
 test_load_refuses_a_palette_jenerate_would_reject() {
   printf 'name = "Broken\n' >"$SANDBOX/repo/palettes/broken-palette.toml"
   grep -v '^accent = ' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" |
-    sed -e 's/^name = .*/name = "Holey"/' -e 's/^slug = .*/slug = "holey"/' \
+    sed -e 's/^name = .*/name = "Holey"/' -e 's/^short_name = .*/short_name = "holey"/' \
       >"$SANDBOX/repo/palettes/holey-palette.toml"
   start_server
   post /api/load '{"filename": "broken-palette.toml"}'

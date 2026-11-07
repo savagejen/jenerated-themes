@@ -2,7 +2,7 @@
 
 Colors for [PowerShell](https://github.com/PowerShell/PowerShell) (`pwsh`)
 on Linux and macOS. [jenerate.py](../../jenerate.py) writes one
-`jenerated-<slug>.ps1` script for each palette you generate, for example
+`jenerated-<short-name>.ps1` script for each palette you generate, for example
 `jenerated-blue-purple.ps1`, for your PowerShell profile to load. It sets:
 
 - **The command line as you type** (PSReadLine), colored like code in the
@@ -26,11 +26,11 @@ The scripts are generated from `colors.ps1.tmpl`. To change colors, see
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose PowerShell.
-It links the palette's script to `~/.config/powershell/jenerated-colors.ps1`
-and offers to load it from your profile, keeping your other settings.
-Switching palettes later just points the link at another palette's script.
-To install by hand:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose
+PowerShell. It links the palette's script to
+`~/.config/powershell/jenerated-colors.ps1` and offers to load it from your
+profile, keeping your other settings. Switching palettes later just points
+the link at another palette's script. To install by hand:
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
    see [Setting up by hand](../../README.md#setting-up-by-hand).

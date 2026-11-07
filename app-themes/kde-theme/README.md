@@ -3,18 +3,18 @@
 Themes for the KDE Plasma desktop and its apps, in three parts that match the
 VS Code themes:
 
-- a **Plasma color scheme** (`Jenerated-<slug>.colors`), which colors Plasma
-  itself (the panel, menus and widgets, with the Breeze Plasma style), window
-  title bars (with Breeze window decorations), and every KDE and Qt app, such
-  as Dolphin, Kate, Okular and System Settings. (The [Krita theme](../krita-theme/)
-  uses this same file. On other desktops, the [qt5ct and qt6ct
-  theme](../qtct-theme/) colors Qt apps the same way.) KDE's GTK integration applies
-  it to GTK apps too;
-- a **Konsole color scheme** (`Jenerated-<slug>.colorscheme`), with the same
-  16 terminal colors as the Ptyxis and Tilix themes (the
+- a **Plasma color scheme** (`Jenerated-<short-name>.colors`), which colors
+  Plasma itself (the panel, menus and widgets, with the Breeze Plasma style),
+  window title bars (with Breeze window decorations), and every KDE and Qt
+  app, such as Dolphin, Kate, Okular and System Settings. (The
+  [Krita theme](../krita-theme/) uses this same file. On other desktops, the
+  [qt5ct and qt6ct theme](../qtct-theme/) colors Qt apps the same way.) KDE's
+  GTK integration applies it to GTK apps too;
+- a **Konsole color scheme** (`Jenerated-<short-name>.colorscheme`), with the
+  same 16 terminal colors as the Ptyxis and Tilix themes (the
   [QTerminal theme](../qterminal-theme/) uses this same file); and
-- a **Kate syntax theme** (`Jenerated-<slug>.theme`), with the same syntax
-  colors as the VS Code theme, for Kate, KWrite and other apps that use
+- a **Kate syntax theme** (`Jenerated-<short-name>.theme`), with the same
+  syntax colors as the VS Code theme, for Kate, KWrite and other apps that use
   KDE's text editor.
 
 No extension is needed: Plasma supports color schemes on its own.
@@ -49,11 +49,11 @@ and `green`.
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root (on Linux): choose
-KDE Plasma. It links the three files where KDE looks for them, and on Plasma
-offers to switch the color scheme, showing your current one and the command
-to switch back. To install by hand, run these from the same folder where you
-ran `git clone`:
+The easiest way is `jenerate` (or `./setup.sh` in a clone) (on Linux):
+choose KDE Plasma. It links the three files where KDE looks for them, and on
+Plasma offers to switch the color scheme, showing your current one and the
+command to switch back. To install by hand, run these from the same folder
+where you ran `git clone`:
 
 ```bash
 theme="$PWD/jenerated-themes/app-themes/kde-theme/blue-purple"

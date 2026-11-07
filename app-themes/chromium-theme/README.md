@@ -33,8 +33,8 @@ The manifests are generated from `manifest.json.tmpl` by
 ## Install
 
 Browsers install a theme like this as an unpacked extension, straight from
-its folder. `./setup.sh` from the repository root (choose Chromium browsers)
-generates the theme and explains these steps:
+its folder. `jenerate` (or `./setup.sh` in a clone; choose Chromium
+browsers) generates the theme and explains these steps:
 
 1. Open the browser's extensions page: `chrome://extensions` in Chrome and
    Chromium, `brave://extensions` in Brave, `edge://extensions` in Edge, or
@@ -46,6 +46,6 @@ generates the theme and explains these steps:
 The browser keeps loading the theme from that folder, so leave the repository
 where it is. It also saves a cache of the theme there, `Cached Theme.pak` (git
 ignores it). After changing a palette, generate it again, delete that file
-(`./setup.sh` does this for you), and load the folder again. To go back to the
+(`jenerate` does this for you), and load the folder again. To go back to the
 browser's own look, open **Settings -> Appearance** and click **Reset to
 default** by the theme.

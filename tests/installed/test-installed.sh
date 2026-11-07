@@ -33,7 +33,7 @@ site_listing() {
 # name into a folder.
 my_palette() {
   mkdir -p "$1"
-  sed -e "s/^name = .*/name = \"$3\"/" -e "s/^slug = .*/slug = \"$2\"/" \
+  sed -e "s/^name = .*/name = \"$3\"/" -e "s/^short_name = .*/short_name = \"$2\"/" \
     "$BUNDLED/palettes/Dark/sunset-palette.toml" >"$1/$2-palette.toml"
 }
 
@@ -251,7 +251,7 @@ test_tilix_from_a_clone_then_installed() {
 # GIVEN the Palette Creator started from an installed copy
 # WHEN saving the draft as a new palette
 # THEN the draft and the palette are in the data folder, and the message
-#      names the data folder and the jenerate command
+#      names the data folder and the jenerate command that installs it
 test_palette_creator_saves_to_the_data_folder() {
   command -v curl >/dev/null 2>&1 || return 0
   port="$("$PYTHON" -c '
@@ -281,7 +281,7 @@ print(json.dumps({"palette": p, "target": "palette", "filename": "forest-palette
     "http://127.0.0.1:$port/api/save")"
   assert_exists "$DATA/palettes/Dark/forest-palette.toml"
   assert_contains "Saved ~/$INSTALLED_DATA_PATH/palettes/Dark/forest-palette.toml"
-  assert_contains "jenerate generate forest"
+  assert_contains "install it: jenerate install --palette forest"
 }
 
 run_tests

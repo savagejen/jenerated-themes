@@ -238,7 +238,7 @@ run_installed() {
 # dawn_palette [folder] -> adds Dawn, a light copy of Sunset, to palettes/ (or
 # a folder in it).
 dawn_palette() {
-  sed -e 's/^name = .*/name = "Dawn"/' -e 's/^slug = .*/slug = "dawn"/' \
+  sed -e 's/^name = .*/name = "Dawn"/' -e 's/^short_name = .*/short_name = "dawn"/' \
     -e 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/${1:+$1/}dawn-palette.toml"
 }
@@ -251,7 +251,7 @@ write_light_palette() {
   shift 2
   {
     sed -n '1,/^\[colors\]/{/^\[colors\]/!p}' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" |
-      sed -e "s|^name = .*|name = \"$name\"|" -e "s|^slug = .*|slug = \"$slug\"|"
+      sed -e "s|^name = .*|name = \"$name\"|" -e "s|^short_name = .*|short_name = \"$slug\"|"
     for line in "$@"; do printf '%s\n' "$line"; done
     sed -n '/^\[colors\]/,$p' "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" |
       sed 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/'

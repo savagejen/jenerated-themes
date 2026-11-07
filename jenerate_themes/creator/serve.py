@@ -1,36 +1,34 @@
 #!/usr/bin/env python3
-"""Palette Creator: design a palette in your browser, with a live preview.
+"""Palette Creator: design a palette in your browser with a live preview.
 
-Usage (from the repository; ./jenerate design starts it too):
-    python3 -m jenerate_themes.creator.serve              # open the page in your browser
-    python3 -m jenerate_themes.creator.serve --port 9000  # use exactly this port
-    python3 -m jenerate_themes.creator.serve --no-browser # just print the address
+Usage:
+    python3 -m jenerate_themes.creator.serve              # open in browser
+    python3 -m jenerate_themes.creator.serve --port 9000  # use this port
+    python3 -m jenerate_themes.creator.serve --no-browser # print address only
 
-Without --port it uses port 8765, or the next free one if another program
-has it. If this folder's Palette Creator is already running there (left
-open in another terminal, say), it asks whether to open that one or stop it
-and start a fresh one; Back exits with status 3, which setup.sh takes as a
-way back to its menu.
+This script serves palette-creator.html on 127.0.0.1. 
+The page served is used to edit work-in-progress-palette.toml. 
+"Load from" copies a palette into the draft. 
+"Save as palette" saves it as a palette. 
+Palettes are validated using the jenerator's rules.
 
-Serves palette-creator.html on 127.0.0.1 (this computer only). The page edits
-palette-creator/work-in-progress-palette.toml (in the data folder, for an
-installed copy; see paths.py), which is created from Blue Purple the first
-time. "Load from" copies a palette over it, and "Save as palette" saves it as
-a palette; both open this computer's file dialog (zenity or kdialog on Linux,
-AppleScript on macOS, or Tk), saving in palettes/Dark or palettes/Light to
-match the palette. Without a dialog, the page asks for a file name.
-Palettes are checked with jenerate.py's own rules, and saving and loading
-keep the file's comments and layout.
+Environment variables:
+    PALETTE_CREATOR_PORT    Default starting port (8765).
+    PALETTE_CREATOR_DIALOG  Set to "none" to ask for filenames in the browser
+                            instead of opening file picker windows.
+    JENERATE_COMMAND        Tells users whether to run jenerate or ./jenerate.py
+                            to generate themes from a saved palette.
+    JENERATE_HANDOFF        File used to tell jenerate which palette to install.
 
-Set PALETTE_CREATOR_DIALOG=none to always name the file in the page instead
-(the tests do this), and PALETTE_CREATOR_PORT to start from another port than
-8765 (the tests do this too, so they never meet a Palette Creator you have
-running). JENERATE_COMMAND, set by jenerate when it starts this, is the
-command its messages say to generate themes with.
+When started by jenerate, saving a palette offers to install it immediately.
+Accepting writes its short name to JENERATE_HANDOFF and exits with status 4,
+allowing jenerate to continue the installation. Otherwise, the page shows
+the command to install it manually.
 """
 
 import argparse
 import enum
+import http.client
 import json
 import os
 import platform
@@ -43,8 +41,6 @@ import tempfile
 import textwrap
 import threading
 import time
-import urllib.error
-import urllib.request
 import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -77,13 +73,19 @@ COLOR_NOTE_START = "Every color is a #rrggbb hex value"
 # Header comment lines are wrapped to fit 78 columns with their "# ".
 HEADER_WIDTH = 76
 MAX_BODY = 1_000_000
-# The port to start from without --port, and how many after it to try when
-# another program has it.
-DEFAULT_PORT = int(os.environ.get("PALETTE_CREATOR_PORT") or 8765)
+# The port to start from without --port (unless PALETTE_CREATOR_PORT says
+# another), and how many after it to try when another program has it.
+DEFAULT_PORT = 8765
 PORT_TRIES = 20
 # The exit status for Back, at the question about a Palette Creator that's
 # already running.
 EXIT_BACK = 3
+# The exit status for "install the palette named in JENERATE_HANDOFF now".
+EXIT_INSTALL = 4
+
+# The slug/name of the palette the page asked to install. Once installed, main()
+# hands it back to jenerate after the server stops.
+install_request = None
 STARTED = time.time()
 
 
@@ -145,8 +147,8 @@ def header_from_description(description):
 
 def read_palette(path):
     """Read a palette file into the page's form: its header comments (and
-    their description), name, slug, and colors in titled groups, each with
-    its value and note."""
+    their description), name, short name (as "slug"), and colors in titled
+    groups, each with its value and note."""
     data = call_jenerate(palettes.read_palette_file, path)
     colors = data["colors"]
     header, groups, seen = [], [], set()
@@ -225,13 +227,13 @@ def write_palette(palette):
         header = header_from_description(description)
     name, slug = palette["name"], palette["slug"]
     if not isinstance(name, str) or not isinstance(slug, str):
-        raise PaletteError("name and slug must be text")
+        raise PaletteError("name and short name must be text")
     lines = [f"# {h}".rstrip() for h in header]
     if lines:
         lines.append("")
     # json.dumps writes a valid TOML string, so a stray quote is caught by
     # jenerate.py's checks, with its usual message.
-    lines += [f"name = {json.dumps(name)}", f"slug = {json.dumps(slug)}"]
+    lines += [f"name = {json.dumps(name)}", f"short_name = {json.dumps(slug)}"]
     # A palette can say it's dark or light; otherwise that's worked out.
     if palette.get("scheme") is not None:
         lines.append(f"scheme = {json.dumps(palette['scheme'])}")
@@ -393,10 +395,10 @@ def check_save_path(path, slug):
     if path.suffix != ".toml":
         raise PaletteError(f"{path.name}: palette files need to end in .toml")
     if palettes.in_palettes(path) and path.name != f"{slug}-palette.toml":
-        # jenerate.py (and jenerate's palette list) would stop at a misnamed palette.
+        # jenerate (and its palette list) would stop at a misnamed palette.
         raise PaletteError(f"in palettes/, this palette has to be named "
-                           f"{slug}-palette.toml, so jenerate.py can find it "
-                           f"by its slug. Choose that name, or save it "
+                           f"{slug}-palette.toml, so {state.COMMAND} can find it "
+                           f"by its short name. Choose that name, or save it "
                            f"somewhere else.")
 
 
@@ -436,12 +438,20 @@ def save_palette(palette, target, filename=None, overwrite=False):
         path.write_text(text, encoding="utf-8")
     except OSError as error:
         raise PaletteError(f"couldn't save {path}: {error.strerror}") from None
-    if palettes.in_palettes(path):
-        shown, generate = paths.shown(path), slug
-    else:
-        shown = generate = path
-    return {"ok": True, "message": f"Saved {shown}. Generate its themes with: "
-                                   f"{state.regenerate(generate)}"}
+    if not palettes.in_palettes(path):
+        # Kept elsewhere, it can only be generated by its path, then
+        # installed by hand.
+        return {"ok": True, "message": f"Saved {path}. Generate its themes with: "
+                                       f"{state.regenerate(path)}"}
+    # In the palettes folder, it's listed for installing. The page asks
+    # whether to install it now when jenerate can take it from here.
+    here = bool(os.environ.get("JENERATE_HANDOFF"))
+    message = f"Saved {paths.shown(path)}."
+    if not here:
+        message += (f" To use it in your apps, stop the Palette Creator (Ctrl+C) and "
+                    f"install it: {state.install_palette(slug)}")
+    return {"ok": True, "message": message, "slug": slug, "name": palette["name"],
+            "install_here": here}
 
 
 def load_palette(filename=None):
@@ -617,6 +627,26 @@ class Handler(BaseHTTPRequestHandler):
     def api_load(self, body):
         return load_palette(body.get("filename"))
 
+    def api_install(self, body):
+        """Install a saved palette now: stop serving once this is answered,
+        and hand the palette's slug back to jenerate (see main)."""
+        global install_request
+        if not os.environ.get("JENERATE_HANDOFF"):
+            raise RequestError(HTTPStatus.BAD_REQUEST,
+                               "this Palette Creator wasn't started by jenerate")
+        slug = body.get("slug")
+        try:
+            path = palettes.palette_path(slug if isinstance(slug, str) else "")
+        except JenerateError as error:
+            raise PaletteError(str(error)) from None
+        if not palettes.in_palettes(path):
+            raise PaletteError(f"{slug} isn't in the palettes folder")
+        install_request = slug
+        threading.Thread(target=self.server.shutdown).start()
+        return {"ok": True, "message": "The Palette Creator has closed. Choose the apps to "
+                                       "install it into in the terminal it was started "
+                                       "from; you can close this tab."}
+
     def api_stop(self, body):
         """Stop serving once this is answered: a later serve.py asks this, to
         start a fresh Palette Creator on the port."""
@@ -627,10 +657,47 @@ class Handler(BaseHTTPRequestHandler):
         return {"ok": True}
 
     POST_ROUTES = {"/api/check": api_check, "/api/save": api_save,
-                   "/api/load": api_load, "/api/stop": api_stop}
+                   "/api/load": api_load, "/api/install": api_install,
+                   "/api/stop": api_stop}
 
     def log_message(self, format, *args):
         pass
+
+
+def start_port():
+    """The port to start from without --port: PALETTE_CREATOR_PORT if it's
+    set (the tests set it), or else DEFAULT_PORT."""
+    port_setting = os.environ.get("PALETTE_CREATOR_PORT", "")
+
+    if port_setting == "":
+        return DEFAULT_PORT
+
+    # Only digits: int() would also take "-1", " 1" or "1_000".
+    if not (port_setting.isascii() and port_setting.isdigit()):
+        sys.exit(f'PALETTE_CREATOR_PORT is "{port_setting}", but it should be a port '
+                 f"number, like {DEFAULT_PORT}.")
+
+    port = int(port_setting)
+
+    # The last port it might try has to be a real port too.
+    if not 1 <= port <= 65535 - PORT_TRIES:
+        sys.exit(f"PALETTE_CREATOR_PORT is {port}, but it should be a port number "
+                 f"from 1 to {65535 - PORT_TRIES}.")
+
+    return port
+
+
+def port_argument(text):
+    """--port's value as a number. Anything that isn't a port number is
+    refused with a message, which argparse shows under the usage line."""
+    # Only digits: int() would also take "-1", " 1" or "1_000".
+    is_number = text.isascii() and text.isdigit()
+
+    if not is_number or not 1 <= int(text) <= 65535:
+        raise argparse.ArgumentTypeError(
+            f'"{text}" isn\'t a port number; choose one from 1 to 65535, like {DEFAULT_PORT}')
+
+    return int(text)
 
 
 def running_here(port):
@@ -638,16 +705,36 @@ def running_here(port):
     `port`, or None for anything else there (or nothing). Any program can
     answer on the port, so the answer is only used to ask the question
     about it; nothing it says is trusted to act on."""
+    # http.client is given the host and port separately, so it can only
+    # ever reach this computer, over plain HTTP.
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=2)
+
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/info", timeout=2) as response:
-            info = json.load(response)
+        connection.request("GET", "/api/info")
+        response = connection.getresponse()
+
+        # Anything but a plain "OK" is some other program, or nothing useful.
+        if response.status != HTTPStatus.OK:
+            return None
+
+        info = json.load(response)
+
         if (info.get("app") == "palette-creator"
                 and type(info.get("pid")) is int and info["pid"] != os.getpid()
                 and type(info.get("started")) in (int, float)
                 and Path(info["root"]).resolve() == paths.DATA.resolve()):
             return info
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+
+    # OSError: nothing answered, or it hung up. HTTPException: what answered
+    # doesn't speak HTTP. The rest: it answered something other than the
+    # Palette Creator's info.
+    except (OSError, http.client.HTTPException, ValueError, KeyError, TypeError,
+            AttributeError):
         pass
+
+    finally:
+        connection.close()
+
     return None
 
 
@@ -677,22 +764,29 @@ def stop_running(port):
     It's asked over HTTP rather than sent a signal: whatever answered on the
     port could have given any process number, even -1 (every process you
     own), but asking can only stop the server that's actually there."""
-    request = urllib.request.Request(
-        f"http://127.0.0.1:{port}/api/stop", data=b"{}", method="POST",
-        headers={"Content-Type": "application/json"})
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=2)
+    status = None
+
     try:
-        with urllib.request.urlopen(request, timeout=2):
-            pass
-    except urllib.error.HTTPError as error:
-        if error.code == HTTPStatus.NOT_FOUND:
-            # Palette Creators from before /api/stop existed.
-            sys.exit("The running Palette Creator is from an older version, which can't "
-                     "be stopped from here. Stop it with Ctrl+C in its terminal, then "
-                     "try again.")
-        sys.exit(f"The Palette Creator didn't stop ({error.code} {error.reason}). Stop "
-                 f"it with Ctrl+C in its terminal, then try again.")
-    except OSError:
+        connection.request("POST", "/api/stop", body=b"{}",
+                           headers={"Content-Type": "application/json"})
+        response = connection.getresponse()
+        status = response.status
+        reason = response.reason
+    except (OSError, http.client.HTTPException):
         pass  # It stopped already, or is stopping: the wait below tells.
+    finally:
+        connection.close()
+
+    if status == HTTPStatus.NOT_FOUND:
+        # Palette Creators from before /api/stop existed.
+        sys.exit("The running Palette Creator is from an older version, which can't "
+                 "be stopped from here. Stop it with Ctrl+C in its terminal, then "
+                 "try again.")
+
+    if status is not None and status != HTTPStatus.OK:
+        sys.exit(f"The Palette Creator didn't stop ({status} {reason}). Stop "
+                 f"it with Ctrl+C in its terminal, then try again.")
     for _ in range(100):
         with socket.socket() as probe:
             if probe.connect_ex(("127.0.0.1", port)) != 0:
@@ -718,9 +812,11 @@ def start_server(port, tries):
 
 
 def main():
+    first_port = start_port()
+
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--port", type=int,
-                        help=f"use exactly this port (without it: {DEFAULT_PORT}, "
+    parser.add_argument("--port", type=port_argument,
+                        help=f"use exactly this port (without it: {first_port}, "
                              f"or the next free one)")
     parser.add_argument("--no-browser", action="store_true",
                         help="don't open the page, just print its address")
@@ -729,7 +825,7 @@ def main():
     # The command its messages say to generate themes with: the one that
     # started it, or else the usual one for this copy.
     state.COMMAND = os.environ.get("JENERATE_COMMAND") or (
-        "jenerate" if paths.INSTALLED else "./jenerate.py")
+        "jenerate" if paths.INSTALLED else "./jenerate")
 
     if not WIP.exists():
         WIP.parent.mkdir(parents=True, exist_ok=True)
@@ -737,9 +833,9 @@ def main():
         print(f"Created {paths.shown(WIP)} from Blue Purple")
 
     if args.port is None:
-        running = running_here(DEFAULT_PORT)
+        running = running_here(first_port)
         if running:
-            url = f"http://127.0.0.1:{DEFAULT_PORT}/"
+            url = f"http://127.0.0.1:{first_port}/"
             choice = ask_about_running(running, url)
             if choice == "back":
                 sys.exit(EXIT_BACK)
@@ -748,8 +844,8 @@ def main():
                 if not args.no_browser:
                     webbrowser.open(url)
                 return
-            stop_running(DEFAULT_PORT)
-        server = start_server(DEFAULT_PORT, PORT_TRIES)
+            stop_running(first_port)
+        server = start_server(first_port, PORT_TRIES)
     else:
         server = start_server(args.port, 1)
 
@@ -763,10 +859,16 @@ def main():
     except KeyboardInterrupt:
         print()
     else:
-        # serve_forever() only returns when /api/stop asks it to.
-        print("Stopped: a fresh Palette Creator was started in another terminal.")
+        # serve_forever() only returns when /api/install or /api/stop asks it
+        # to.
+        if install_request is None:
+            print("Stopped: a fresh Palette Creator was started in another terminal.")
     finally:
         server.server_close()
+    if install_request is not None:
+        Path(os.environ["JENERATE_HANDOFF"]).write_text(install_request, encoding="utf-8")
+        print("Palette Creator closed, to install the palette you saved.")
+        sys.exit(EXIT_INSTALL)
 
 
 if __name__ == "__main__":

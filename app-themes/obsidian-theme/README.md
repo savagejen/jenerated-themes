@@ -15,8 +15,8 @@ The files are generated from `theme.css.tmpl` and `manifest.json.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Obsidian, and
-it lists the vaults Obsidian knows about. To install by hand:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Obsidian,
+and it lists the vaults Obsidian knows about. To install by hand:
 
 1. Clone this repository.
 

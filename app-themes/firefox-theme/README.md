@@ -19,9 +19,9 @@ The manifests are generated from `manifest.json.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose Firefox. It
-packages the theme, can open Firefox's add-on page for you, and explains the
-steps below.
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose Firefox.
+It packages the theme, can open Firefox's add-on page for you, and explains
+the steps below.
 
 ### Try it (until Firefox restarts)
 
@@ -34,10 +34,10 @@ steps below.
 Firefox only keeps add-ons that Mozilla has signed. Signing your own theme is
 free, and it stays private (it isn't listed on the add-ons site):
 
-1. Package the theme: `./setup.sh` makes
-   `app-themes/firefox-theme/jenerated-<slug>.xpi`, which is just the
+1. Package the theme: `jenerate` makes
+   `app-themes/firefox-theme/jenerated-<short-name>.xpi`, which is just the
    `manifest.json` zipped, with a version number from the date and time.
-   Mozilla needs a new version for every upload, so run `./setup.sh` again
+   Mozilla needs a new version for every upload, so run `jenerate` again
    after changing the palette.
 2. Go to
    [addons.mozilla.org/developers/addon/submit/distribution](https://addons.mozilla.org/developers/addon/submit/distribution),

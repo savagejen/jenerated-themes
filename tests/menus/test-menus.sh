@@ -313,7 +313,7 @@ test_theme_menu_lists_every_palette() {
 # WHEN choosing an app
 # THEN the theme menu lists Forest
 test_theme_menu_lists_a_new_palette() {
-  sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^short_name = .*/short_name = "forest"/' \
     "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/forest-palette.toml"
   run_setup "1\nslack\n1\n1\n"
@@ -324,7 +324,7 @@ test_theme_menu_lists_a_new_palette() {
 # WHEN choosing Slack and Forest
 # THEN Forest is listed by name and generated
 test_theme_menu_reads_single_quoted_names() {
-  sed -e "s/^name = .*/name = 'Forest'/" -e "s/^slug = .*/slug = 'forest'/" \
+  sed -e "s/^name = .*/name = 'Forest'/" -e "s/^short_name = .*/short_name = 'forest'/" \
     "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
   run_setup "1\nslack\n1\n2\n"
   assert_status 0
@@ -712,6 +712,43 @@ test_palette_creator_back_returns_to_the_first_menu() {
   assert_contains "Your Slack theme string"
 }
 
+# hand_back_palette slug -> makes the stub serve.py do what the real one does
+# when the page's "install it now" is chosen: write the palette's slug to
+# the handoff file jenerate gave it, and exit with status 4.
+hand_back_palette() {
+  stub_palette_creator
+  printf 'open(os.environ["JENERATE_HANDOFF"], "w").write("%s")\nsys.exit(4)\n' "$1" \
+    >>"$SANDBOX/repo/jenerate_themes/creator/serve.py"
+}
+
+# GIVEN serve.py handing back Sunset to install, as it does when a palette
+#       is saved and "install it now" is chosen
+# WHEN choosing to design a palette, then Slack
+# THEN it goes straight to the app menu with Sunset chosen, without asking
+#      for a palette, and installs Slack's Sunset theme
+test_palette_creator_install_goes_to_the_app_menu() {
+  hand_back_palette sunset
+  run_setup "2\nslack\n1\n"
+  assert_status 0
+  assert_contains "==> Installing Sunset"
+  assert_contains "Choose the app to install it into"
+  assert_not_contains "Which theme do you want?"
+  assert_contains "Generating the Sunset theme"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN serve.py handing back Sunset to install
+# WHEN running setup.sh with --design, then choosing Slack
+# THEN it goes on to the app menu with Sunset chosen, and installs it
+test_design_install_goes_to_the_app_menu() {
+  hand_back_palette sunset
+  run_setup "slack\n1\n" --design
+  assert_status 0
+  assert_contains "==> Installing Sunset"
+  assert_not_contains "What would you like to do?"
+  assert_contains "Your Slack theme string"
+}
+
 # GIVEN serve.py stopping with an error
 # WHEN choosing to design a palette
 # THEN setup.sh exits with the same status
@@ -935,7 +972,7 @@ test_generates_the_chosen_palette() {
 # THEN it stops with jenerate.py's error and installs nothing
 test_choosing_a_broken_palette_stops_with_its_error() {
   fake_os Linux
-  sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
+  sed -e 's/^name = .*/name = "Bad"/' -e 's/^short_name = .*/short_name = "bad"/' \
     "$SANDBOX/repo/palettes/Dark/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blue-purple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
   run_setup "1\ntilix\n1\n1\ny\n1\n"

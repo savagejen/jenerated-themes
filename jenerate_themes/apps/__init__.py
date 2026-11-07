@@ -1,14 +1,11 @@
 """The apps Jenerated Themes installs into: one module per app, each with an
 App describing it and an install function.
 
-To add an app, add its module here, with an APP like the others'. Every
-module here is an app, found by itself; helpers they share go in modules
-whose names start with _, which are left out.
+To add an app, add its module here, with an APP like the others', then
+import it and add its APP to ALL_APPS, below.
 """
 
-import importlib
 import os
-import pkgutil
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -80,30 +77,131 @@ CATEGORIES = {
 
 SYSTEM_NAMES = {"Linux": "Linux", "Darwin": "macOS"}
 
+def menu_order(app):
+    """Where the app goes in the menus: the main app menu's own apps first,
+    then each category's apps in CATEGORIES order, alphabetically by label
+    within each."""
+    if app.category == "":
+        category_position = 0
+    else:
+        category_position = list(CATEGORIES).index(app.category) + 1
 
-def load_apps():
-    """Every app module's APP, in menu order: by category (the main app
-    menu's own apps first), then alphabetically by label."""
-    apps = []
-    for module in pkgutil.iter_modules(__path__):
-        if module.name.startswith("_") or not module.name.isidentifier():
-            continue
-        app = getattr(importlib.import_module(f".{module.name}", __name__), "APP", None)
-        where = f"jenerate_themes/apps/{module.name}.py"
-        if not isinstance(app, App):
-            raise JenerateError(f"{where} has no APP. Each module there is an app, with an "
-                                "APP like the others'; start a helper's name with _.")
-        if app.category and app.category not in CATEGORIES:
-            raise JenerateError(f'{where}: no category called "{app.category}"; the '
-                                f"categories are {', '.join(CATEGORIES)} (in "
-                                "jenerate_themes/apps/__init__.py).")
-        apps.append(app)
-    categories = list(CATEGORIES)
-    return sorted(apps, key=lambda app: (categories.index(app.category) + 1 if app.category
-                                         else 0, app.label.lower()))
+    return (category_position, app.label.lower())
 
 
-ALL_APPS = load_apps()
+# --- The apps ----------------------------------------------------------------
+
+# Import after defining App: each app module imports it from this package.
+# Only modules listed here are imported; tests/apps/test-every-app.sh checks
+# that every app module in this directory is listed.
+from . import (
+    caido,
+    chromium,
+    decky,
+    element,
+    emacs,
+    firefox,
+    fzf,
+    gemini,
+    ghidra,
+    godot,
+    gtk3,
+    gtksourceview,
+    insomnia,
+    jellyfin,
+    jetbrains,
+    kde,
+    krita,
+    libreoffice,
+    mattermost,
+    mpv,
+    obs,
+    obsidian,
+    ptyxis,
+    pwsh,
+    qtcreator,
+    qtct,
+    qterminal,
+    quassel,
+    radare2,
+    rizin,
+    rstudio,
+    slack,
+    spyder,
+    sublime,
+    tilix,
+    tmux,
+    unreal,
+    veilamp,
+    vim,
+    vivaldi,
+    vscode,
+    wireshark,
+    xcode,
+    zen,
+    zsh,
+)
+
+# Every app, in any order; sorted into menu order below.
+ALL_APPS = [
+    caido.APP,
+    chromium.APP,
+    decky.APP,
+    element.APP,
+    emacs.APP,
+    firefox.APP,
+    fzf.APP,
+    gemini.APP,
+    ghidra.APP,
+    godot.APP,
+    gtk3.APP,
+    gtksourceview.APP,
+    insomnia.APP,
+    jellyfin.APP,
+    jetbrains.APP,
+    kde.APP,
+    krita.APP,
+    libreoffice.APP,
+    mattermost.APP,
+    mpv.APP,
+    obs.APP,
+    obsidian.APP,
+    ptyxis.APP,
+    pwsh.APP,
+    qtcreator.APP,
+    qtct.APP,
+    qterminal.APP,
+    quassel.APP,
+    radare2.APP,
+    rizin.APP,
+    rstudio.APP,
+    slack.APP,
+    spyder.APP,
+    sublime.APP,
+    tilix.APP,
+    tmux.APP,
+    unreal.APP,
+    veilamp.APP,
+    vim.APP,
+    vivaldi.APP,
+    vscode.APP,
+    wireshark.APP,
+    xcode.APP,
+    zen.APP,
+    zsh.APP,
+]
+
+for app in ALL_APPS:
+    if not isinstance(app, App):
+        raise JenerateError(f"Each entry in ALL_APPS should be an app module's APP, "
+                            f"but one is a {type(app).__name__}.")
+
+    if app.category and app.category not in CATEGORIES:
+        raise JenerateError(f'The app "{app.id}" has no category called "{app.category}"; '
+                            f"the categories are {', '.join(CATEGORIES)} (in "
+                            "jenerate_themes/apps/__init__.py).")
+
+ALL_APPS.sort(key=menu_order)
 
 # The apps offered on this system, in menu order.
 APPS = [app for app in ALL_APPS if not app.system or app.system == OS]

@@ -43,8 +43,8 @@ The files are generated from `colors.zsh.tmpl` and `fast-theme.ini.tmpl` by
 
 ## Install
 
-The easiest way is `./setup.sh` from the repository root: choose zsh (under
-Terminals and command-line tools). It:
+The easiest way is `jenerate` (or `./setup.sh` in a clone): choose zsh
+(under Terminals and command-line tools). It:
 
 1. links the zsh file to `~/.config/zsh/jenerated-colors.zsh`, and adds a
    line to the end of `~/.zshrc` that loads it (creating `~/.zshrc` if
@@ -66,6 +66,6 @@ For fast-syntax-highlighting, then run `fast-theme XDG:jenerated-colors` in
 zsh.
 
 The zsh file can be loaded before or after the plugins. After changing the
-palette, run `./jenerate.py` and open a new terminal; if you use
-fast-syntax-highlighting, run `./setup.sh` again (or `fast-theme
+palette, regenerate its themes and open a new terminal; if you use
+fast-syntax-highlighting, run `jenerate` again (or `fast-theme
 XDG:jenerated-colors`), since it keeps its own copy of the theme.
