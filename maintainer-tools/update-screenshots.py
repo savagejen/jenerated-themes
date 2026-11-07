@@ -33,6 +33,7 @@ palettes.
 """
 
 import argparse
+import http.client
 import os
 import re
 import shutil
@@ -42,7 +43,7 @@ import sys
 import tempfile
 import textwrap
 import time
-import urllib.request
+from http import HTTPStatus
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -162,8 +163,10 @@ def playwright_folder():
                        env={**os.environ, "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1"},
                        check=True)
     # Fetches the browser if it's missing; quick when it's already there.
-    subprocess.run([str(CACHE / "node_modules" / ".bin" / "playwright"),
-                    "install", "--only-shell", "chromium"], check=True)
+    # Run from the cache folder, so the program's path is written out here
+    # rather than built from XDG_CACHE_HOME.
+    subprocess.run(["./node_modules/.bin/playwright", "install", "--only-shell", "chromium"],
+                   cwd=CACHE, check=True)
     return CACHE
 
 
@@ -192,17 +195,24 @@ def free_port():
         return s.getsockname()[1]
 
 
-def wait_for_server(server, base, log):
-    """Wait until the Palette Creator started as `server` answers at `base`,
+def wait_for_server(server, port, log):
+    """Wait until the Palette Creator started as `server` answers on `port`,
     or stop with what it said (in the file `log`) if it doesn't."""
     for _ in range(100):
         if server.poll() is not None:
             break
+        # http.client is given the host and port separately, so it can only
+        # ever reach this computer, over plain HTTP.
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=1)
         try:
-            with urllib.request.urlopen(base, timeout=1):
+            connection.request("GET", "/")
+            if connection.getresponse().status == HTTPStatus.OK:
                 return
-        except OSError:
-            time.sleep(0.05)
+        except (OSError, http.client.HTTPException):
+            pass  # Not answering yet.
+        finally:
+            connection.close()
+        time.sleep(0.05)
     said = log.read_text(encoding="utf-8", errors="replace").strip()
     sys.exit("The Palette Creator didn't start" + (f":\n{said}" if said else ""))
 
@@ -226,7 +236,7 @@ def take_screenshots(palettes):
                 stdout=output, stderr=subprocess.STDOUT)
         try:
             base = f"http://127.0.0.1:{port}"
-            wait_for_server(server, base, log)
+            wait_for_server(server, port, log)
             # Named as the Palette Creator lists them, like
             # Dark/sunset-palette.toml: the palettes are filed by now, so
             # each one's folder is also its screenshot's.

@@ -14,19 +14,24 @@ const [, , base, screenshotsDir, ...files] = process.argv;
 
 (async () => {
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  // Every address below is a path on the Palette Creator's page (base).
+  const page = await browser.newPage({ baseURL: base, viewport: { width: 1440, height: 900 } });
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
+
+  // Open the page once; each palette below reloads it.
+  await page.goto("/");
 
   for (const file of files) {
     const slug = path.basename(file).replace(/-palette\.toml$/, "");
     const out = path.join(screenshotsDir, path.dirname(file), `${slug}.png`);
     // Load the palette the way the page's "Load from..." does.
-    const response = await page.request.post(`${base}/api/load`, { data: { filename: file } });
+    const response = await page.request.post("/api/load", { data: { filename: file } });
     const result = await response.json();
     if (!result.ok) throw new Error(`${file}: ${result.error || "not loaded"}`);
 
-    await page.goto(base);
+    // Reload the page, so it shows the palette just loaded.
+    await page.reload();
     await page.waitForFunction(
       () => document.getElementById("status").textContent.startsWith("Looks good"));
     // Keep the mouse off the preview, so nothing is highlighted.
