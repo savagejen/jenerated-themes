@@ -1,0 +1,67 @@
+# A light palette of a spring morning in the garden: dew-white and
+# spring-green backgrounds, charcoal text, a spring-grass accent, and
+# syntax colors from the beds coming into bloom: lilac, bluebell, tulip,
+# terracotta pots, daffodil, emerald, the pond and redbud.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Spring Morning"
+short_name = "spring-morning"
+
+[colors]
+# Backgrounds: morning dew and new leaves, from the editor to the chrome
+bg_chrome = "#c9f0cf"          # activity bar, title bar, status bar: spring green
+bg_minimap = "#f3f9f4"
+bg = "#fbfdfb"                 # editor and terminal: morning dew
+bg_sidebar = "#e9f8ea"         # new leaves
+bg_widget = "#ffffff"          # popups, hovers, notifications
+bg_line_highlight = "#f2f8f3"
+bg_hover = "#dcf3de"           # hovered items, inputs
+bg_selected = "#c8ecce"        # inactive selection in lists
+bg_secondary_hover = "#acdfb4" # hovered secondary buttons
+selection = "#c2f0c8"          # selected text: spring green
+
+# Lines
+guide = "#dcefdf"              # indent guides, rulers
+whitespace = "#c4dfc8"         # rendered whitespace
+border = "#cbe6cf"             # Text: charcoal, faintest to darkest
+text_faint = "#7e8983"         # line numbers, ignored files
+text_muted = "#58635d"         # comments, inactive tabs
+text_subtle = "#3b4540"        # sidebar text, punctuation
+text = "#1d2521"               # charcoal, with a hint of green
+text_bright = "#ffffff"        # text on the accent color
+text_strong = "text"           # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#17824a"             # spring grass: cursor, focus, buttons, badges
+accent_hover = "#126b3c"       # hovered buttons
+accent_soft = "#7a45a8"        # lilac: keywords, links
+accent_light = "#2f5fb8"       # bluebell: functions
+accent_pale = "#4f5d7c"        # slate: properties
+
+# Syntax and status colors: the garden coming into bloom
+red = "#c2353a"                # tulip: errors, deleted
+orange = "#a8500d"             # terracotta pot: numbers, parameters, attributes
+yellow = "#7f6400"             # daffodil: warnings, regex
+green = "#0a786f"              # emerald: strings, added
+cyan = "#0a6c8a"               # garden pond: classes, types
+magenta = "#b3357e"            # redbud: constants, search matches
+
+# Terminal (ANSI) colors, for a light background
+term_black = "text"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_light"
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "#bfd6c3"
+term_bright_black = "text_muted"
+term_bright_red = "#dc4c50"
+term_bright_green = "#22a05e"
+term_bright_yellow = "#a27f00"
+term_bright_blue = "#4b7ad6"
+term_bright_magenta = "#cf4f9a"
+term_bright_cyan = "#1888a8"
+term_bright_white = "#e0f0e2"

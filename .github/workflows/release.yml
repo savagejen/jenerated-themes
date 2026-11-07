@@ -1,0 +1,158 @@
+# Releases Jenerated Themes. Pushing a version tag (like v1.0.0) builds the
+# packages, checks them, publishes them to PyPI, and makes a GitHub release
+# with them and the version's CHANGELOG section. Run by hand instead
+# (Actions, then Release, then "Run workflow"), it publishes to TestPyPI,
+# for a trial run. See "Releasing" in CONTRIBUTING.md.
+#
+# On a pull request, it only builds and tests the packages, and downloads
+# them again, publishing nothing. That tries out every action the release
+# uses except the publishing one, so a Dependabot update to one of them is
+# checked before it merges (see dependabot-automerge.yml).
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Check the tag, the version and the CHANGELOG agree
+        if: github.ref_type == 'tag'
+        run: |
+          version="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' jenerate_themes/__init__.py)"
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::The tag is $GITHUB_REF_NAME, but __version__ in jenerate_themes/__init__.py is $version."
+            exit 1
+          fi
+          if ! grep -q "^## \[$version\] - [0-9]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md needs a section for $version with its release date, like: ## [$version] - $(date +%Y-%m-%d)"
+            exit 1
+          fi
+
+          # The section becomes the GitHub release's notes, so it has to say
+          # something. Checked here, before anything is published, with the
+          # same awk the github-release job uses: the lines from just after
+          # the "## [x.y.z]" heading up to the next "## [" heading.
+          awk -v heading="## [$version]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md >"$RUNNER_TEMP/notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md"; then
+            echo "::error::CHANGELOG.md's section for $version is empty, but it becomes the release notes."
+            exit 1
+          fi
+
+      - name: Test the packages
+        run: tests/package/test-package.sh
+
+      - name: Build the packages
+        run: |
+          python -m venv /tmp/build-venv
+          /tmp/build-venv/bin/pip install build
+          /tmp/build-venv/bin/python -m build
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: packages
+          path: dist/
+
+  # On a pull request: the packages can be downloaded again, as the
+  # publishing jobs do.
+  try-download:
+    needs: build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: packages
+          path: dist/
+      - name: Check both packages are there
+        run: |
+          ls dist/*.whl dist/*.tar.gz
+
+  pypi:
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    # PyPI trusts this workflow, in this environment, to publish (trusted
+    # publishing), so no password is stored anywhere.
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: packages
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
+
+  testpypi:
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: packages
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # A version can only be uploaded once; a second trial run of the
+          # same version leaves the first one there.
+          skip-existing: true
+
+  github-release:
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: packages
+          path: dist/
+
+      - name: Make the GitHub release, with the version's CHANGELOG section
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+
+          # The release notes: the lines of this version's CHANGELOG section,
+          # from just after its "## [x.y.z]" heading up to the next "## ["
+          # heading.
+          awk -v heading="## [$version]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md >notes.md
+
+          # The build job already checked this before publishing; checked
+          # again here in case the jobs are ever rearranged.
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::No CHANGELOG section found for $version."
+            exit 1
+          fi
+
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notes.md
